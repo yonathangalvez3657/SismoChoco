@@ -1,0 +1,18 @@
+{
+    "name": "Plataforma Tensión Sísmica Chocó",
+    "short_name": "SismoChocó",
+    "description": "Análisis probabilístico de la acumulación de tensión sísmica en el Chocó.",
+    "start_url": "index.html",
+    "display": "standalone",
+    "background_color": "#000000",
+    "theme_color": "#121418",
+    "orientation": "portrait-primary",
+    "icons": [
+      {
+        "src": "icon.svg",
+        "type": "image/svg+xml",
+        "sizes": "512x512",
+        "purpose": "any maskable"
+      }
+    ]
+  }

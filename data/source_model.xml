@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<nrml xmlns="http://openquake.org/xmlns/nrml/0.4">
+    <sourceModel name="Modelo Area Choco Simplificado (Tesis V1)">
+        <areaSource id="1" name="Zona Sismica Choco Base" tectonicRegion="Active Shallow Crust">
+            <areaGeometry>
+                <Polygon>
+                    <exterior>
+                        <LinearRing>
+                            <posList>
+                                -78.5 3.8
+                                -75.5 3.8
+                                -75.5 8.8
+                                -78.5 8.8
+                                -78.5 3.8
+                            </posList>
+                        </LinearRing>
+                    </exterior>
+                </Polygon>
+                <upperSeismoDepth>0.0</upperSeismoDepth>
+                <lowerSeismoDepth>30.0</lowerSeismoDepth>
+            </areaGeometry>
+            <magScaleRel>PeerMSR</magScaleRel>
+            <ruptAspectRatio>1.0</ruptAspectRatio>
+            <truncGutenbergRichterMFD aValue="4.5" bValue="1.0" minMag="4.0" maxMag="7.5"/>
+            <nodalPlaneDist>
+                <nodalPlane probability="1.0" strike="0.0" dip="90.0" rake="0.0"/>
+            </nodalPlaneDist>
+            <hypoDepthDist>
+                <hypoDepth probability="1.0" depth="15.0"/>
+            </hypoDepthDist>
+        </areaSource>
+    </sourceModel>
+</nrml>

@@ -1,0 +1,525 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "via_quibdo_medellin",
+        "nombre": "Ruta 60: Vía Quibdó - El Carmen de Atrato - Medellín",
+        "tipo": "vial",
+        "subtipo": "Primaria Nacional",
+        "vulnerabilidad": "Extrema (Inestabilidad de laderas y deslizamientos cosísmicos)",
+        "longitud_km": 230,
+        "departamentos": "Chocó - Antioquia"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -76.6611,
+            5.6947
+          ],
+          [
+            -76.5333,
+            5.7167
+          ],
+          [
+            -76.4,
+            5.7667
+          ],
+          [
+            -76.3167,
+            5.8167
+          ],
+          [
+            -76.173,
+            5.904
+          ],
+          [
+            -76.0167,
+            5.9667
+          ],
+          [
+            -75.9833,
+            6.0333
+          ],
+          [
+            -75.8333,
+            6.1167
+          ],
+          [
+            -75.5636,
+            6.2518
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "via_quibdo_pereira",
+        "nombre": "Ruta 13: Vía Quibdó - Yuto - Tadó - Santa Cecilia - Pereira",
+        "tipo": "vial",
+        "subtipo": "Primaria Nacional",
+        "vulnerabilidad": "Alta (Cruce de la Cordillera Occidental)",
+        "longitud_km": 215,
+        "departamentos": "Chocó - Risaralda"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -76.6611,
+            5.6947
+          ],
+          [
+            -76.6333,
+            5.5167
+          ],
+          [
+            -76.6167,
+            5.3667
+          ],
+          [
+            -76.55,
+            5.267
+          ],
+          [
+            -76.3833,
+            5.3167
+          ],
+          [
+            -76.2167,
+            5.3333
+          ],
+          [
+            -76.0333,
+            5.2167
+          ],
+          [
+            -75.9333,
+            5.1167
+          ],
+          [
+            -75.8,
+            4.9167
+          ],
+          [
+            -75.6961,
+            4.8133
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "eje_san_juan",
+        "nombre": "Eje Subregional del San Juan (Las Ánimas - Istmina - Condoto - Sipí)",
+        "tipo": "vial",
+        "subtipo": "Secundaria Departamental",
+        "vulnerabilidad": "Alta (Inundación fluvial y licuación)",
+        "longitud_km": 95,
+        "departamentos": "Chocó"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -76.6167,
+            5.3667
+          ],
+          [
+            -76.68,
+            5.158
+          ],
+          [
+            -76.6833,
+            5.093
+          ],
+          [
+            -76.6167,
+            4.95
+          ],
+          [
+            -76.8266,
+            4.4825
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "via_buenaventura",
+        "nombre": "Ruta 40: Vía al Mar Buga - Loboguerrero - Buenaventura",
+        "tipo": "vial",
+        "subtipo": "Corredor Portuario Pacífico",
+        "vulnerabilidad": "Severa (Deslizamientos en cañón de Dagua y licuación portuaria)",
+        "longitud_km": 128,
+        "departamentos": "Valle del Cauca"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -76.2978,
+            3.9009
+          ],
+          [
+            -76.45,
+            3.8667
+          ],
+          [
+            -76.6333,
+            3.7833
+          ],
+          [
+            -76.8167,
+            3.8333
+          ],
+          [
+            -76.95,
+            3.8667
+          ],
+          [
+            -77.07,
+            3.8833
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "via_uraba_darien",
+        "nombre": "Eje Norte: Dabeiba - Mutatá - Turbo - Necoclí",
+        "tipo": "vial",
+        "subtipo": "Conexión Caribe - Chocó Norte",
+        "vulnerabilidad": "Media-Alta (Falla Murindó y aluviones)",
+        "longitud_km": 180,
+        "departamentos": "Antioquia - Chocó"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -76.2667,
+            7.0
+          ],
+          [
+            -76.4333,
+            7.25
+          ],
+          [
+            -76.65,
+            7.6667
+          ],
+          [
+            -76.7333,
+            8.0833
+          ],
+          [
+            -76.7833,
+            8.4167
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fluvial_atrato",
+        "nombre": "Corredor Fluvial del Río Atrato (Arteria Vital del Chocó)",
+        "tipo": "fluvial",
+        "subtipo": "Navegación Fluvial Primaria",
+        "vulnerabilidad": "Alta (Licuación de orillas y bloqueo por deslizamientos en afluentes)",
+        "longitud_km": 450,
+        "departamentos": "Chocó - Antioquia"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -76.6611,
+            5.6947
+          ],
+          [
+            -76.7833,
+            5.9667
+          ],
+          [
+            -76.9,
+            6.55
+          ],
+          [
+            -76.8833,
+            6.5833
+          ],
+          [
+            -76.75,
+            7.0
+          ],
+          [
+            -77.0667,
+            7.35
+          ],
+          [
+            -77.1167,
+            7.7
+          ],
+          [
+            -76.9667,
+            8.1667
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fluvial_san_juan",
+        "nombre": "Corredor Fluvial del Río San Juan",
+        "tipo": "fluvial",
+        "subtipo": "Navegación Fluvial Sur",
+        "vulnerabilidad": "Media-Alta (Tsunami en desembocadura y licuación)",
+        "longitud_km": 190,
+        "departamentos": "Chocó - Valle del Cauca"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -76.68,
+            5.158
+          ],
+          [
+            -76.7667,
+            4.9
+          ],
+          [
+            -76.9167,
+            4.5833
+          ],
+          [
+            -77.1,
+            4.25
+          ],
+          [
+            -77.3667,
+            4.0833
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "aero_el_carano",
+        "nombre": "Aeropuerto El Caraño (SKUI)",
+        "tipo": "aeropuerto",
+        "ciudad": "Quibdó",
+        "rol": "Principal nodo aéreo comercial y de emergencia del Chocó",
+        "pista_longitud_m": 1800,
+        "elevacion_msnm": 62
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -76.6411,
+          5.6911
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "aero_nuqui",
+        "nombre": "Aeropuerto Reyes Murillo (SKNQ)",
+        "tipo": "aeropuerto",
+        "ciudad": "Nuquí",
+        "rol": "Línea de vida costera (sin acceso terrestre)",
+        "pista_longitud_m": 1180,
+        "elevacion_msnm": 4
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -77.265,
+          5.711
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "aero_bahia_solano",
+        "nombre": "Aeropuerto José Celestino Mutis (SKBS)",
+        "tipo": "aeropuerto",
+        "ciudad": "Bahía Solano",
+        "rol": "Base aérea de auxilio y evacuación costera norte",
+        "pista_longitud_m": 1210,
+        "elevacion_msnm": 24
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -77.397,
+          6.202
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "aero_condoto",
+        "nombre": "Aeropuerto Mandinga (SKCD)",
+        "tipo": "aeropuerto",
+        "ciudad": "Condoto",
+        "rol": "Nodo aéreo subregional del San Juan",
+        "pista_longitud_m": 1300,
+        "elevacion_msnm": 68
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -76.683,
+          5.072
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "aero_capurgana",
+        "nombre": "Aeropuerto Capurganá (SKCA)",
+        "tipo": "aeropuerto",
+        "ciudad": "Acandí",
+        "rol": "Acceso fronterizo Golfo de Urabá / Darién",
+        "pista_longitud_m": 1000,
+        "elevacion_msnm": 12
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -77.348,
+          8.631
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "hosp_san_francisco",
+        "nombre": "Hospital Departamental San Francisco de Asís",
+        "tipo": "hospital",
+        "ciudad": "Quibdó",
+        "nivel": "Nivel II-III (Centro de Referencia Departamental)",
+        "camas_aprox": 140,
+        "importancia_nsr10": "Grupo IV (I = 1.50)"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -76.657,
+          5.698
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "hosp_eduardo_santos",
+        "nombre": "Hospital Eduardo Santos",
+        "tipo": "hospital",
+        "ciudad": "Istmina",
+        "nivel": "Nivel II (Subregión San Juan)",
+        "camas_aprox": 45,
+        "importancia_nsr10": "Grupo IV (I = 1.50)"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -76.682,
+          5.155
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "hosp_san_roque",
+        "nombre": "Hospital San Roque",
+        "tipo": "hospital",
+        "ciudad": "El Carmen de Atrato",
+        "nivel": "Nivel I (Atención cordillerana)",
+        "camas_aprox": 20,
+        "importancia_nsr10": "Grupo IV (I = 1.50)"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -76.171,
+          5.902
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "hosp_san_jose_tado",
+        "nombre": "Hospital San José de Tadó",
+        "tipo": "hospital",
+        "ciudad": "Tadó",
+        "nivel": "Nivel I (Atención intermedia)",
+        "camas_aprox": 25,
+        "importancia_nsr10": "Grupo IV (I = 1.50)"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -76.551,
+          5.265
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "centro_salud_nuqui",
+        "nombre": "Centro de Salud Gil Blas",
+        "tipo": "hospital",
+        "ciudad": "Nuquí",
+        "nivel": "Nivel I (Costa Pacífica)",
+        "camas_aprox": 12,
+        "importancia_nsr10": "Grupo IV (I = 1.50)"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -77.268,
+          5.71
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "centro_salud_bahia",
+        "nombre": "Hospital Local Bahía Solano",
+        "tipo": "hospital",
+        "ciudad": "Bahía Solano",
+        "nivel": "Nivel I (Costa Pacífica Norte)",
+        "camas_aprox": 18,
+        "importancia_nsr10": "Grupo IV (I = 1.50)"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -77.402,
+          6.221
+        ]
+      }
+    }
+  ]
+}

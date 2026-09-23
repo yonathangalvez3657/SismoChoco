@@ -1,0 +1,916 @@
+/* ==========================================================================
+   UI/UX BENTO BOX - SPATIAL DATA DASHBOARD (APPLE / STRIPE AESTHETIC)
+   ========================================================================== */
+
+:root {
+    --bg-base: #000000;
+    --glass-panel: rgba(18, 18, 18, 0.75);
+    --glass-card: rgba(255, 255, 255, 0.04);
+    --glass-card-hover: rgba(255, 255, 255, 0.08);
+    --border-subtle: rgba(255, 255, 255, 0.06);
+    
+    --text-primary: #F5F5F7;
+    --text-secondary: #A1A1A6;
+    --text-tertiary: #6E6E73;
+    
+    --accent: #0A84FF; /* iOS Blue */
+    --accent-glow: rgba(10, 132, 255, 0.3);
+    --danger: #FF453A;
+    
+    --shadow-float: 0 20px 40px -10px rgba(0, 0, 0, 0.5), 0 0 20px rgba(0,0,0,0.1);
+    --blur: blur(48px);
+    
+    --font-stack: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+body {
+    margin: 0; padding: 0;
+    font-family: var(--font-stack);
+    background-color: var(--bg-base);
+    color: var(--text-primary);
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+}
+
+#map-container {
+    width: 100vw; height: 100vh;
+    position: absolute; top: 0; left: 0; z-index: 1;
+}
+
+/* ==========================================================================
+   PANEL LATERAL (GLASSMORPHISM BENTO)
+   ========================================================================== */
+#ui-panel {
+    position: absolute;
+    background: var(--glass-panel);
+    backdrop-filter: var(--blur);
+    -webkit-backdrop-filter: var(--blur);
+    z-index: 2;
+    box-shadow: var(--shadow-float);
+    border: 1px solid var(--border-subtle);
+    display: flex;
+    flex-direction: column;
+    gap: 16px; 
+    transition: transform 0.5s cubic-bezier(0.32, 0.72, 0, 1);
+    box-sizing: border-box;
+}
+
+/* 💻 Escritorio / Tablet Horizontal */
+@media (min-width: 769px) {
+    #ui-panel {
+        top: 24px; left: 24px; bottom: 24px;
+        width: 380px;
+        max-height: calc(100vh - 48px);
+        padding: 24px;
+        border-radius: 28px;
+        overflow-y: auto;
+    }
+    #mobile-toggle, #ui-panel::before { display: none; }
+}
+
+/* 📲 Mobile First (Bottom Sheet Flotante tipo Apple Maps) */
+@media (max-width: 768px) {
+    #ui-panel {
+        bottom: 0; left: 0; top: auto;
+        width: 100vw;
+        height: 85vh; /* Altura máxima al expandir */
+        padding: 24px 20px 40px 20px;
+        border-radius: 32px 32px 0 0;
+        /* Por defecto, muestra solo los primeros 100px (El título) */
+        transform: translateY(calc(100% - 100px));
+        overflow-y: auto;
+        border-bottom: none; border-left: none; border-right: none;
+    }
+    #ui-panel.open {
+        transform: translateY(0);
+    }
+    /* Píldora de arrastre nativa */
+    #ui-panel::before {
+        content: ''; position: absolute;
+        top: 12px; left: 50%; transform: translateX(-50%);
+        width: 48px; height: 5px; border-radius: 5px;
+        background: var(--text-tertiary);
+    }
+    #mobile-toggle {
+        display: block; position: absolute;
+        top: 0; left: 0; width: 100%; height: 90px;
+        z-index: 3; cursor: pointer; background: transparent; border: none;
+    }
+}
+
+/* ==========================================================================
+   BENTO CARDS (SECCIONES)
+   ========================================================================== */
+.header-section {
+    padding: 8px 8px 16px 8px;
+}
+
+.control-group {
+    background: var(--glass-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: 20px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+h2 {
+    margin: 0 0 6px 0; font-size: 1.5rem; font-weight: 600;
+    letter-spacing: -0.02em; color: var(--text-primary);
+}
+
+.subtitle { font-size: 0.9rem; color: var(--text-secondary); line-height: 1.5; }
+
+h3 {
+    margin: 0 0 4px 0; 
+    font-size: 0.95rem; 
+    font-weight: 700;
+    text-transform: uppercase; 
+    letter-spacing: 0.1em;
+    color: var(--text-primary);
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    padding-bottom: 8px;
+}
+
+/* ==========================================================================
+   BOTONES (SEGMENTED CONTROLS)
+   ========================================================================== */
+.toggle-group {
+    display: flex; gap: 6px;
+    background: rgba(0,0,0,0.4);
+    padding: 6px;
+    border-radius: 14px;
+    border: 1px solid var(--border-subtle);
+}
+
+.toggle-btn {
+    flex: 1;
+    background: transparent; border: none;
+    color: var(--text-secondary);
+    padding: 12px 0;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 0.85rem; font-weight: 500; font-family: inherit;
+    transition: all 0.25s ease;
+}
+
+.toggle-btn:hover { color: var(--text-primary); background: rgba(255,255,255,0.02); }
+
+.toggle-btn.active {
+    background: var(--text-primary);
+    color: #000;
+    font-weight: 600;
+    box-shadow: 0 4px 12px rgba(255,255,255,0.1);
+}
+
+/* ==========================================================================
+   SLIDERS NATIVOS (PRECISIÓN)
+   ========================================================================== */
+.slider-container { display: flex; flex-direction: column; gap: 12px; }
+.slider-container label {
+    display: flex; justify-content: space-between;
+    font-size: 0.9rem; font-weight: 500; color: var(--text-primary);
+}
+.val-display { color: var(--accent); font-weight: 600; }
+
+input[type="range"] {
+    -webkit-appearance: none; width: 100%; background: transparent; cursor: pointer;
+    height: 24px; /* Touch target grande */
+}
+input[type="range"]::-webkit-slider-runnable-track {
+    width: 100%; height: 6px; border-radius: 3px; background: rgba(255,255,255,0.1);
+}
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    height: 20px; width: 20px;
+    background: var(--text-primary);
+    border-radius: 50%;
+    margin-top: -7px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+    transition: transform 0.2s;
+}
+input[type="range"]::-webkit-slider-thumb:active { transform: scale(1.2); background: var(--accent); }
+
+/* ==========================================================================
+   SWITCHES IOS STYLE
+   ========================================================================== */
+.switch-container {
+    display: flex; justify-content: space-between; align-items: center;
+    cursor: pointer; padding: 12px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.switch-container:last-child { border-bottom: none; padding-bottom: 0; }
+.switch-container:first-of-type { padding-top: 0; }
+
+.switch-container span { font-size: 0.85rem; color: var(--text-secondary); line-height: 1.4; }
+.switch-container span strong { color: var(--text-primary); font-size: 0.95rem; font-weight: 500; display:block; margin-bottom: 2px;}
+
+.switch { position: relative; display: inline-block; width: 44px; height: 26px; flex-shrink: 0; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider {
+    position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+    background-color: rgba(255,255,255,0.15); transition: .3s ease; border-radius: 26px;
+}
+.slider:before {
+    position: absolute; content: ""; height: 22px; width: 22px; left: 2px; bottom: 2px;
+    background-color: #FFF; transition: .3s cubic-bezier(0.175, 0.885, 0.32, 1.275); border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+input:checked + .slider { background-color: var(--accent); box-shadow: 0 0 12px var(--accent-glow); }
+input:checked + .slider:before { transform: translateX(18px); }
+
+/* Switch Especial OpenQuake y Simulador */
+#check-oq:checked + .slider,
+#check-simulador:checked + .slider { background-color: var(--danger); box-shadow: 0 0 12px rgba(255,69,58,0.4); }
+
+/* ==========================================================================
+   TOOLTIP 
+   ========================================================================== */
+#tooltip {
+    position: absolute;
+    background: rgba(20, 20, 20, 0.85);
+    color: var(--text-primary);
+    padding: 14px 18px;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    pointer-events: none; display: none; z-index: 10;
+    box-shadow: var(--shadow-float);
+    border: 1px solid var(--border-subtle);
+    backdrop-filter: blur(20px);
+    transform: translate(-50%, -120%);
+}
+#tooltip h4 { margin: 0 0 8px 0; font-size: 0.95rem; font-weight: 600; color: #FFF; }
+#tooltip p { margin: 4px 0; color: var(--text-secondary); }
+#tooltip strong { color: var(--text-primary); font-weight: 500; }
+
+/* ==========================================================================
+   SCROLLBAR & ACCESIBILIDAD
+   ========================================================================== */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 6px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.3); }
+:focus { outline: none; }
+/* ==========================================================================
+   SELECTOR DE MAPA BASE
+   ========================================================================== */
+#basemap-selector {
+    position: absolute;
+    top: 24px; right: 24px;
+    z-index: 10;
+    display: flex; gap: 4px;
+    background: rgba(0,0,0,0.65);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 12px;
+    padding: 4px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+}
+
+.basemap-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.basemap-btn:hover {
+    color: var(--text-primary);
+    background: rgba(255,255,255,0.05);
+}
+
+.basemap-btn.active {
+    background: var(--accent);
+    color: #FFFFFF;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(10,132,255,0.4);
+}
+
+@media (max-width: 768px) {
+    #basemap-selector {
+        top: 16px; right: 16px;
+        padding: 3px;
+    }
+    .basemap-btn {
+        padding: 4px 8px;
+        font-size: 0.7rem;
+    }
+}
+
+/* ==========================================================================
+   SELECTOR FLOTANTE DE REDES VITALES E INFRAESTRUCTURA
+   ========================================================================== */
+#infra-floating-selector {
+    position: absolute;
+    top: 70px; right: 24px;
+    z-index: 10;
+    display: flex; gap: 4px;
+    background: rgba(0,0,0,0.65);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 12px;
+    padding: 4px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    transition: all 0.25s ease;
+}
+
+.infra-pill-btn {
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--text-secondary);
+    border-radius: 8px;
+    padding: 5px 10px;
+    font-size: 0.72rem;
+    font-weight: 500;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+    user-select: none;
+}
+
+.infra-pill-btn:hover {
+    color: var(--text-primary);
+    background: rgba(255,255,255,0.06);
+}
+
+.infra-pill-btn.active[data-infra="vias"] {
+    background: rgba(255, 179, 0, 0.22);
+    border-color: rgba(255, 179, 0, 0.7);
+    color: #ffca3a;
+    font-weight: 600;
+    box-shadow: 0 0 10px rgba(255, 179, 0, 0.3);
+}
+
+.infra-pill-btn.active[data-infra="corredores"] {
+    background: rgba(56, 189, 248, 0.22);
+    border-color: rgba(56, 189, 248, 0.7);
+    color: #38bdf8;
+    font-weight: 600;
+    box-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
+}
+
+.infra-pill-btn.active[data-infra="salud"] {
+    background: rgba(255, 69, 58, 0.22);
+    border-color: rgba(255, 69, 58, 0.7);
+    color: #ff7b72;
+    font-weight: 600;
+    box-shadow: 0 0 10px rgba(255, 69, 58, 0.3);
+}
+
+.infra-pill-btn.active[data-infra="aeropuertos"] {
+    background: rgba(255, 214, 10, 0.22);
+    border-color: rgba(255, 214, 10, 0.7);
+    color: #ffd60a;
+    font-weight: 600;
+    box-shadow: 0 0 10px rgba(255, 214, 10, 0.3);
+}
+
+@media (max-width: 768px) {
+    #infra-floating-selector {
+        top: 56px; right: 16px;
+        padding: 3px;
+        gap: 2px;
+        max-width: calc(100vw - 32px);
+        overflow-x: auto;
+    }
+    .infra-pill-btn {
+        padding: 4px 6px;
+        font-size: 0.65rem;
+    }
+}
+
+/* ==========================================================================
+   PRINT STYLES (PDF Nativo WebGL & Membrete Académico)
+   ========================================================================== */
+#print-header { display: none; }
+
+@media print {
+    #ui-panel, #mobile-toggle, #loader-overlay, #tooltip, #basemap-selector, #infra-floating-selector {
+        display: none !important;
+    }
+    #print-header {
+        display: block !important;
+        position: relative;
+        z-index: 9999;
+        background: white !important;
+        padding: 10px 20px 0 20px !important;
+    }
+    body, html {
+        margin: 0 !important; padding: 0 !important;
+        background: white !important;
+        color: black !important;
+    }
+    #map-container {
+        width: 100vw !important;
+        height: 90vh !important;
+        position: relative !important;
+        top: 0 !important; left: 0 !important;
+    }
+    #map-legend {
+        display: block !important;
+        background: rgba(255,255,255,0.9) !important;
+        color: #000 !important;
+        border: 1px solid #ccc !important;
+    }
+    #map-legend h4 { color: #000 !important; }
+    #map-legend div { color: #333 !important; }
+    @page {
+        size: landscape;
+        margin: 0.5cm;
+    }
+}
+
+/* ==========================================================================
+   SELECTOR DE PERFILES TÉCNICOS (MULTIDISCIPLINAR)
+   ========================================================================== */
+.profile-tabs {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    background: rgba(0, 0, 0, 0.5);
+    padding: 4px;
+    border-radius: 16px;
+    border: 1px solid var(--border-subtle);
+    margin-bottom: 8px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.profile-tab {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    padding: 7px 1px;
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 0.65rem;
+    font-weight: 500;
+    font-family: inherit;
+    transition: all 0.25s ease;
+}
+
+.profile-tab:hover {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.profile-tab.active {
+    background: var(--accent);
+    color: #FFFFFF;
+    font-weight: 600;
+    box-shadow: 0 4px 12px rgba(10, 132, 255, 0.35);
+}
+
+.profile-tab .tab-icon {
+    font-size: 1.1rem;
+    line-height: 1;
+}
+
+.profile-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    animation: fadeInProfile 0.3s ease;
+}
+
+@keyframes fadeInProfile {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Form inputs & Selects */
+.custom-select {
+    width: 100%;
+    background: rgba(25, 25, 30, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: var(--text-primary);
+    border-radius: 12px;
+    padding: 10px 12px;
+    font-size: 0.85rem;
+    font-family: inherit;
+    cursor: pointer;
+    transition: border-color 0.2s;
+    box-sizing: border-box;
+}
+
+.custom-select:focus {
+    border-color: var(--accent);
+    outline: none;
+}
+
+.custom-select option {
+    background: #1c1c1e;
+    color: #fff;
+}
+
+/* Grid de Métricas de Ingeniería NSR-10 */
+.nsr-metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+}
+
+.metric-card {
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.metric-card.highlight {
+    background: rgba(10, 132, 255, 0.12);
+    border-color: rgba(10, 132, 255, 0.35);
+}
+
+.metric-label {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+}
+
+.metric-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #F5F5F7;
+    font-family: monospace;
+}
+
+.metric-desc {
+    font-size: 0.68rem;
+    color: var(--text-tertiary);
+    line-height: 1.2;
+}
+
+/* Badges semafóricos */
+.status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.status-pill.critico, .status-pill.danger {
+    background: rgba(255, 69, 58, 0.15);
+    color: #FF453A;
+    border: 1px solid rgba(255, 69, 58, 0.3);
+}
+
+.status-pill.alerta, .status-pill.warning {
+    background: rgba(255, 214, 10, 0.15);
+    color: #FFD60A;
+    border: 1px solid rgba(255, 214, 10, 0.3);
+}
+
+.status-pill.seguro, .status-pill.success {
+    background: rgba(50, 215, 75, 0.15);
+    color: #32D74B;
+    border: 1px solid rgba(50, 215, 75, 0.3);
+}
+
+/* Banner de Alerta de Tsunami */
+.tsunami-banner {
+    border-radius: 14px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    transition: all 0.3s ease;
+}
+
+.tsunami-banner.active {
+    background: rgba(255, 69, 58, 0.18);
+    border: 1px solid #FF453A;
+    box-shadow: 0 0 20px rgba(255, 69, 58, 0.25);
+    animation: pulseAlert 2s infinite ease-in-out;
+}
+
+.tsunami-banner.normal {
+    background: rgba(50, 215, 75, 0.08);
+    border: 1px solid rgba(50, 215, 75, 0.2);
+}
+
+@keyframes pulseAlert {
+    0%, 100% { box-shadow: 0 0 10px rgba(255, 69, 58, 0.2); }
+    50% { box-shadow: 0 0 25px rgba(255, 69, 58, 0.5); }
+}
+
+/* Botones de acción secundaria */
+.btn-secondary {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: var(--text-primary);
+    border-radius: 12px;
+    padding: 10px 14px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.btn-secondary:hover {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+}
+
+/* Botones de filtro por departamento en la Matriz de Impacto */
+.matrix-dept-btn {
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.matrix-dept-btn:hover {
+    background: rgba(255, 255, 255, 0.2) !important;
+    color: #fff !important;
+}
+.matrix-dept-btn.active {
+    background: rgba(10, 132, 255, 0.35) !important;
+    border-color: #0A84FF !important;
+    color: #fff !important;
+}
+
+/* ==========================================================================
+   MÓDULO COMUNIDAD / MODO CIUDADANO (LENGUAJE SENCILLO)
+   ========================================================================== */
+.friendly-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 12px;
+    transition: all 0.2s ease;
+}
+.friendly-card:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+.backpack-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+}
+.backpack-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+.backpack-item.checked {
+    background: rgba(50, 215, 75, 0.1);
+    border-color: rgba(50, 215, 75, 0.3);
+}
+.backpack-item.checked span.item-text {
+    text-decoration: line-through;
+    color: var(--text-secondary);
+}
+.backpack-item input[type="checkbox"] {
+    accent-color: #32D74B;
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
+.backpack-progress-track {
+    width: 100%;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    overflow: hidden;
+}
+.backpack-progress-bar {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #FF9F0A, #32D74B);
+    border-radius: 4px;
+    transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.concept-card {
+    background: rgba(0, 0, 0, 0.28);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 10px;
+    padding: 10px;
+    margin-bottom: 8px;
+}
+.concept-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-weight: 600;
+    font-size: 0.82rem;
+    color: #F5F5F7;
+    margin-bottom: 6px;
+}
+.concept-simple {
+    font-size: 0.74rem;
+    line-height: 1.45;
+    color: #E1E1E6;
+    background: rgba(10, 132, 255, 0.08);
+    border-left: 3px solid #0A84FF;
+    padding: 6px 10px;
+    border-radius: 0 6px 6px 0;
+    margin-top: 4px;
+}
+
+/* ==========================================================================
+   ALERTA TEMPRANA SÍSMICA (EEW)
+   ========================================================================== */
+.eew-city-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 0.72rem;
+}
+.eew-city-card.warning {
+    border-color: rgba(255, 69, 58, 0.4);
+    background: rgba(255, 69, 58, 0.08);
+}
+.eew-time-badge {
+    font-family: monospace;
+    font-weight: 700;
+    font-size: 0.8rem;
+    padding: 2px 6px;
+    border-radius: 6px;
+}
+.eew-time-badge.urgent {
+    background: #FF453A;
+    color: #fff;
+    animation: pulse 1s infinite alternate;
+}
+.eew-time-badge.moderate {
+    background: #FF9F0A;
+    color: #000;
+}
+.eew-time-badge.safe {
+    background: #32D74B;
+    color: #000;
+}
+
+@keyframes pulse {
+    from { opacity: 0.8; transform: scale(0.98); }
+    to { opacity: 1; transform: scale(1.04); }
+}
+
+/* ==========================================================================
+   FICHA TÉCNICA MUNICIPAL POT & IMPRESIÓN LIMPIA
+   ========================================================================== */
+.ficha-pot-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.75rem;
+    margin-top: 8px;
+}
+.ficha-pot-table th {
+    background: rgba(255, 255, 255, 0.06);
+    color: #38bdf8;
+    padding: 6px 8px;
+    text-align: left;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.ficha-pot-table td {
+    padding: 6px 8px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #E1E1E6;
+}
+
+@media print {
+    body.printing-ficha nav#ui-container,
+    body.printing-ficha #map-container,
+    body.printing-ficha #deckgl-overlay,
+    body.printing-ficha #map-legend,
+    body.printing-ficha #btn-ficha-print-action,
+    body.printing-ficha #btn-ficha-close-action {
+        display: none !important;
+    }
+    
+    body.printing-ficha #modal-ficha-pot {
+        display: block !important;
+        position: static !important;
+        background: #fff !important;
+        color: #000 !important;
+        width: 100% !important;
+        height: auto !important;
+        padding: 0 !important;
+    }
+    
+    body.printing-ficha .ficha-pot-container {
+        background: #fff !important;
+        color: #000 !important;
+        border: none !important;
+        box-shadow: none !important;
+        max-width: 100% !important;
+        width: 100% !important;
+        padding: 15px !important;
+    }
+
+    body.printing-ficha .ficha-pot-container h2,
+    body.printing-ficha .ficha-pot-container h3,
+    body.printing-ficha .ficha-pot-container strong {
+        color: #000 !important;
+    }
+
+    body.printing-ficha .ficha-pot-table th {
+        background: #f0f4f8 !important;
+        color: #0284c7 !important;
+        border: 1px solid #cbd5e1 !important;
+    }
+    body.printing-ficha .ficha-pot-table td {
+        color: #1e293b !important;
+        border: 1px solid #cbd5e1 !important;
+    }
+}
+
+/* ==========================================================================
+   BOTONES DE AYUDA / INFORMACIÓN CIRCULARES
+   ========================================================================== */
+.info-btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 20px !important;
+    height: 20px !important;
+    min-width: 20px !important;
+    min-height: 20px !important;
+    max-width: 20px !important;
+    max-height: 20px !important;
+    line-height: 1 !important;
+    border-radius: 50% !important;
+    background: #0A84FF !important;
+    color: #FFFFFF !important;
+    font-size: 0.75rem !important;
+    font-weight: 700 !important;
+    text-align: center !important;
+    cursor: pointer !important;
+    box-shadow: 0 2px 6px rgba(10, 132, 255, 0.35) !important;
+    border: none !important;
+    flex-shrink: 0 !important;
+    box-sizing: border-box !important;
+    padding: 0 !important;
+    transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease !important;
+    user-select: none !important;
+}
+
+.info-btn:hover {
+    background: #0071E3 !important;
+    transform: scale(1.1) !important;
+    box-shadow: 0 3px 8px rgba(10, 132, 255, 0.5) !important;
+}
+
+/* Excepción para badge RtD que es pill horizontal */
+.info-btn[data-info="rtd"] {
+    width: auto !important;
+    height: auto !important;
+    min-width: unset !important;
+    min-height: unset !important;
+    max-width: unset !important;
+    max-height: unset !important;
+    padding: 2px 7px !important;
+    border-radius: 12px !important;
+    background: rgba(56, 189, 248, 0.15) !important;
+    border: 1px solid rgba(56, 189, 248, 0.4) !important;
+    color: #38bdf8 !important;
+    box-shadow: none !important;
+}
+.info-btn[data-info="rtd"]:hover {
+    background: rgba(56, 189, 248, 0.3) !important;
+    box-shadow: none !important;
+}

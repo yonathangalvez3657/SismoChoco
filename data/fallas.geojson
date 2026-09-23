@@ -1,0 +1,330 @@
+{
+  "type": "FeatureCollection",
+  "name": "Fallas_Geologicas_SGC_Choco_Pacifico",
+  "crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
+  "features": [
+    {
+      "type": "Feature",
+      "id": "fosa_nazca",
+      "properties": {
+        "id": "fosa_nazca",
+        "nombre": "Fosa de Subducción Colombo-Ecuatoriana (Placa de Nazca)",
+        "sistema": "Zona de Subducción del Pacífico Colombiano",
+        "tipo": "subduccion",
+        "tipo_label": "Subducción Convergente Interplaca",
+        "tasa_mm_ano": 54.0,
+        "longitud_km": 750,
+        "m_max": 8.8,
+        "prof_sismogenica_km": "0 - 45 km (Interfase Interplaca)",
+        "sismo_historico": "Megasismos 1906 (Mw 8.8) y Tumaco 1979 (Mw 8.2)",
+        "municipios_afectados": "Juradó, Bahía Solano, Nuquí, Bajo Baudó, Litoral del San Juan, Buenaventura",
+        "descripcion": "Límite tectónico convergente mayor donde la corteza oceánica de Nazca se subduce bajo el Bloque Norandino a 5.4 cm/año. Fuente de los terremotos más energéticos y tsunamis del Pacífico.",
+        "color_rgb": [14, 165, 233]
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [-79.6, 2.5],
+          [-79.2, 3.5],
+          [-78.6, 4.8],
+          [-78.1, 6.0],
+          [-77.8, 7.0],
+          [-77.5, 8.2],
+          [-77.2, 9.4]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "falla_murindo",
+      "properties": {
+        "id": "falla_murindo",
+        "nombre": "Falla de Murindó",
+        "sistema": "Sistema Transpresivo de Murindó - Urabá",
+        "tipo": "rumbo",
+        "tipo_label": "Rumbo-deslizante Dextral Activa",
+        "tasa_mm_ano": 3.5,
+        "longitud_km": 185,
+        "m_max": 7.3,
+        "prof_sismogenica_km": "5 - 20 km (Cortical Superficial)",
+        "sismo_historico": "Terremotos de Murindó del 17 y 18 de Octubre 1992 (Mw 7.1 y 7.2)",
+        "municipios_afectados": "Murindó, Bojayá, Vigía del Fuerte, Carmen del Darién, Riosucio, Dabeiba",
+        "descripcion": "Falla rumbo-deslizante dextral intraplaca altamente activa que causó los destructivos sismos de 1992 con licuación masiva del suelo y destrucción de poblaciones sobre el río Atrato.",
+        "color_rgb": [245, 158, 11]
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [-77.05, 6.0],
+          [-76.92, 6.4],
+          [-76.81, 6.78],
+          [-76.71, 7.18],
+          [-76.60, 7.55],
+          [-76.48, 7.95]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "falla_atrato",
+      "properties": {
+        "id": "falla_atrato",
+        "nombre": "Sistema de Fallas Atrato - Uramita",
+        "sistema": "Depresión Tectónica del Río Atrato",
+        "tipo": "rumbo",
+        "tipo_label": "Rumbo-transpresiva con Componente Inversa",
+        "tasa_mm_ano": 1.8,
+        "longitud_km": 240,
+        "m_max": 7.0,
+        "prof_sismogenica_km": "5 - 25 km",
+        "sismo_historico": "Sismo de Bojayá-Quibdó (Mw 6.4)",
+        "municipios_afectados": "Quibdó, Yuto, Lloró, Medio Atrato, Atrato, Carmen del Darién",
+        "descripcion": "Estructura tectónica longitudinal que controla el curso y la cuenca sedimentaria del Río Atrato, separando la Serranía del Baudó de la Cordillera Occidental. Cruza las inmediaciones de Quibdó.",
+        "color_rgb": [245, 158, 11]
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [-76.92, 4.9],
+          [-76.82, 5.35],
+          [-76.72, 5.75],
+          [-76.65, 6.2],
+          [-76.58, 6.7],
+          [-76.5, 7.2]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "falla_bahia_solano",
+      "properties": {
+        "id": "falla_bahia_solano",
+        "nombre": "Falla de Bahía Solano",
+        "sistema": "Sistema Tectónico Litoral Pacífico Norte",
+        "tipo": "inversa",
+        "tipo_label": "Inversa de Cabalgamiento Litoral",
+        "tasa_mm_ano": 2.2,
+        "longitud_km": 135,
+        "m_max": 6.8,
+        "prof_sismogenica_km": "0 - 20 km (Foco Costero Somero)",
+        "sismo_historico": "Terremoto de Bahía Solano del 26 de Septiembre 1970 (Mw 6.5)",
+        "municipios_afectados": "Bahía Solano, Juradó, Ensenada de Utría, Golfo de Cupica",
+        "descripcion": "Falla inversa cortical adyacente a la línea de costa pacífica. El terremoto de 1970 destruyó el 80% de las construcciones de Bahía Solano, causó subsidencia costera y olas anómalas.",
+        "color_rgb": [239, 68, 68]
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [-77.58, 7.1],
+          [-77.47, 6.6],
+          [-77.41, 6.18],
+          [-77.37, 5.8],
+          [-77.33, 5.5]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "falla_garrapatas",
+      "properties": {
+        "id": "falla_garrapatas",
+        "nombre": "Falla Garrapatas",
+        "sistema": "Sistema de Fallas Garrapatas - Cañón del San Juan",
+        "tipo": "rumbo",
+        "tipo_label": "Rumbo-deslizante Sinistral Transversa",
+        "tasa_mm_ano": 2.5,
+        "longitud_km": 120,
+        "m_max": 6.9,
+        "prof_sismogenica_km": "10 - 30 km",
+        "sismo_historico": "Sismo del Cañón de Garrapatas 1961 y enjambres en San José del Palmar",
+        "municipios_afectados": "San José del Palmar, Nóvita, El Dovio (Valle), Bolívar (Valle), Roldanillo",
+        "descripcion": "Falla transversal de orientación NO-SE que corta la Cordillera Occidental comunicando las cuencas del Pacífico y el Valle del Cauca. Genera sismicidad recurrente y alta inestabilidad de laderas.",
+        "color_rgb": [245, 158, 11]
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [-76.95, 4.82],
+          [-76.75, 4.70],
+          [-76.52, 4.55],
+          [-76.32, 4.42],
+          [-76.15, 4.30]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "falla_romeral",
+      "properties": {
+        "id": "falla_romeral",
+        "nombre": "Sistema de Fallas de Romeral (San Jerónimo / Silvia-Pijao)",
+        "sistema": "Megacizalla Tectónica de Romeral",
+        "tipo": "inversa",
+        "tipo_label": "Inversa de Cabalgamiento Regional con Cizalla Dextral",
+        "tasa_mm_ano": 2.8,
+        "longitud_km": 320,
+        "m_max": 7.2,
+        "prof_sismogenica_km": "5 - 25 km",
+        "sismo_historico": "Terremoto de Armenia 1999 (Mw 6.2) y Terremoto de Pereira 1995 (Mw 6.5)",
+        "municipios_afectados": "Pereira, Manizales, Santa Rosa de Cabal, Anserma, Chinchiná",
+        "descripcion": "El límite geotectónico más importante del occidente colombiano, separando terrenos oceánicos acrecionados de corteza continental antigua. Es responsable de la amenaza sísmica directa en Risaralda y Caldas.",
+        "color_rgb": [239, 68, 68]
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [-75.82, 4.5],
+          [-75.76, 4.85],
+          [-75.69, 5.2],
+          [-75.61, 5.6],
+          [-75.52, 6.05],
+          [-75.45, 6.5]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "falla_san_juan",
+      "properties": {
+        "id": "falla_san_juan",
+        "nombre": "Falla de San Juan - Condoto",
+        "sistema": "Sistema Tectónico Cuenca del San Juan",
+        "tipo": "rumbo",
+        "tipo_label": "Rumbo-transpresiva con Componente Normal",
+        "tasa_mm_ano": 1.5,
+        "longitud_km": 160,
+        "m_max": 6.7,
+        "prof_sismogenica_km": "5 - 22 km",
+        "sismo_historico": "Enjambres sísmicos de Istmina y Tadó",
+        "municipios_afectados": "Istmina, Condoto, Tadó, Andagoya, Unión Panamericana, Medio San Juan",
+        "descripcion": "Estructura sismogénica central de la subregión del San Juan que deforma los abanicos y terrazas aluviales auríferas cuaternarias. Afecta el principal polo demográfico y minero del sur de Chocó.",
+        "color_rgb": [245, 158, 11]
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [-77.18, 4.35],
+          [-76.95, 4.75],
+          [-76.78, 5.10],
+          [-76.62, 5.38],
+          [-76.45, 5.62]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "falla_nuqui_baudo",
+      "properties": {
+        "id": "falla_nuqui_baudo",
+        "nombre": "Falla Nuquí - Serranía del Baudó",
+        "sistema": "Sistema Orogénico de la Serranía del Baudó",
+        "tipo": "inversa",
+        "tipo_label": "Inversa con Componente de Rumbo",
+        "tasa_mm_ano": 1.9,
+        "longitud_km": 140,
+        "m_max": 6.7,
+        "prof_sismogenica_km": "0 - 20 km",
+        "sismo_historico": "Sismo de Nuquí (Mw 6.1)",
+        "municipios_afectados": "Nuquí, Alto Baudó, Pizarro (Bajo Baudó), Cabo Corrientes",
+        "descripcion": "Cabalgamiento cortical que impulsa el levantamiento tectónico de los basaltos de la Serranía del Baudó contra la cuenca del Atrato-San Juan. Presenta amenaza de tsunamis locales en el golfo de Tribugá.",
+        "color_rgb": [239, 68, 68]
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [-77.48, 5.05],
+          [-77.38, 5.4],
+          [-77.29, 5.75],
+          [-77.22, 6.05]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "falla_dabeiba",
+      "properties": {
+        "id": "falla_dabeiba",
+        "nombre": "Falla Dabeiba - Mutatá",
+        "sistema": "Falla Frontal Occidental de Antioquia - Urabá",
+        "tipo": "rumbo",
+        "tipo_label": "Rumbo-deslizante Dextral",
+        "tasa_mm_ano": 2.7,
+        "longitud_km": 150,
+        "m_max": 7.0,
+        "prof_sismogenica_km": "5 - 20 km",
+        "sismo_historico": "Sismo de Dabeiba 2020 (Mw 5.5) y sismos del Urabá",
+        "municipios_afectados": "Mutatá, Chigorodó, Dabeiba, Carmen del Darién, Turbo",
+        "descripcion": "Falla sismogénica en el piedemonte de la Cordillera Occidental que controla el corredor logístico entre Chocó, Antioquia y el Golfo de Urabá (Ruta Nacional 62).",
+        "color_rgb": [245, 158, 11]
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [-76.35, 6.85],
+          [-76.45, 7.2],
+          [-76.55, 7.55],
+          [-76.68, 7.95],
+          [-76.78, 8.25]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "falla_mistrato",
+      "properties": {
+        "id": "falla_mistrato",
+        "nombre": "Falla Mistrató - Pueblo Rico",
+        "sistema": "Sistema Tectónico Cordillera Occidental Central",
+        "tipo": "inversa",
+        "tipo_label": "Inversa de Cabalgamiento de Alta Pendiente",
+        "tasa_mm_ano": 1.4,
+        "longitud_km": 95,
+        "m_max": 6.6,
+        "prof_sismogenica_km": "8 - 25 km",
+        "sismo_historico": "Sismos de Pueblo Rico y límite Risaralda-Chocó",
+        "municipios_afectados": "Pueblo Rico, Mistrató, Bagadó, Belén de Umbría",
+        "descripcion": "Cruza la divisoria de aguas de la Cordillera Occidental en una de las zonas más lluviosas del planeta. Los sismos en esta falla disparan avalanchas torrenciales y colapsos de la vía Quibdó-Pereira.",
+        "color_rgb": [239, 68, 68]
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [-76.28, 5.02],
+          [-76.19, 5.3],
+          [-76.08, 5.58],
+          [-75.98, 5.85]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "falla_cauca",
+      "properties": {
+        "id": "falla_cauca",
+        "nombre": "Falla Cauca - Almaguer",
+        "sistema": "Sistema de Fallas de la Depresión Cauca - Patía",
+        "tipo": "rumbo",
+        "tipo_label": "Rumbo-deslizante Dextral Transcurrente",
+        "tasa_mm_ano": 3.0,
+        "longitud_km": 280,
+        "m_max": 7.1,
+        "prof_sismogenica_km": "10 - 30 km",
+        "sismo_historico": "Sismo de Toro-Cartago (Mw 6.2) y sismos del Valle del Cauca",
+        "municipios_afectados": "Cartago, La Virginia, Anserma, Buga, Cali, Jamundí",
+        "descripcion": "Estructura tectónica principal del valle interandino del Río Cauca que acomoda el movimiento relativo hacia el norte del Bloque Norandino.",
+        "color_rgb": [245, 158, 11]
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [-76.52, 3.35],
+          [-76.42, 3.75],
+          [-76.26, 4.15],
+          [-76.08, 4.55],
+          [-75.92, 4.95],
+          [-75.78, 5.3]
+        ]
+      }
+    }
+  ]
+}

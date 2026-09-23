@@ -1690,12 +1690,65 @@ document.getElementById('btn-print').addEventListener('click', () => {
     window.print();
 });
 
-// Mobile Panel Toggle
-document.getElementById('mobile-toggle').addEventListener('click', (e) => {
-    const panel = document.getElementById('ui-panel');
-    panel.classList.toggle('open');
-    e.target.setAttribute('aria-expanded', panel.classList.contains('open'));
-});
+// Mobile Panel Toggle & Gestos Táctiles (Swipe Up / Down tipo Apple Maps)
+const mobileToggleBtn = document.getElementById('mobile-toggle');
+const uiPanel = document.getElementById('ui-panel');
+
+if (mobileToggleBtn && uiPanel) {
+    mobileToggleBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isOpen = uiPanel.classList.toggle('open');
+        mobileToggleBtn.setAttribute('aria-expanded', isOpen);
+    });
+
+    // Gestos táctiles en el drag handle
+    let touchStartY = 0;
+    let touchCurrentY = 0;
+
+    mobileToggleBtn.addEventListener('touchstart', (e) => {
+        if (e.touches && e.touches.length > 0) {
+            touchStartY = e.touches[0].clientY;
+            touchCurrentY = touchStartY;
+        }
+    }, { passive: true });
+
+    mobileToggleBtn.addEventListener('touchmove', (e) => {
+        if (e.touches && e.touches.length > 0) {
+            touchCurrentY = e.touches[0].clientY;
+        }
+    }, { passive: true });
+
+    mobileToggleBtn.addEventListener('touchend', () => {
+        const deltaY = touchCurrentY - touchStartY;
+        // Si desliza hacia arriba al menos 35px, expande el panel
+        if (deltaY < -35 && !uiPanel.classList.contains('open')) {
+            uiPanel.classList.add('open');
+            mobileToggleBtn.setAttribute('aria-expanded', 'true');
+        }
+        // Si desliza hacia abajo al menos 35px, colapsa el panel
+        else if (deltaY > 35 && uiPanel.classList.contains('open')) {
+            uiPanel.classList.remove('open');
+            mobileToggleBtn.setAttribute('aria-expanded', 'false');
+        }
+    }, { passive: true });
+
+    // Si el usuario toca el contenedor del mapa mientras el panel está abierto en móvil, colapsarlo suavemente
+    const mapContainer = document.getElementById('map-container');
+    if (mapContainer) {
+        mapContainer.addEventListener('click', () => {
+            if (window.innerWidth <= 768 && uiPanel.classList.contains('open')) {
+                uiPanel.classList.remove('open');
+                mobileToggleBtn.setAttribute('aria-expanded', 'false');
+            }
+        });
+        mapContainer.addEventListener('touchstart', () => {
+            if (window.innerWidth <= 768 && uiPanel.classList.contains('open')) {
+                uiPanel.classList.remove('open');
+                mobileToggleBtn.setAttribute('aria-expanded', 'false');
+            }
+        }, { passive: true });
+    }
+}
 
 // Modal Dinámico de Información
 const infoModal = document.getElementById('info-modal');

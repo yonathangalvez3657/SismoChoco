@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <!-- SEO Meta Tags Primarios -->
     <title>Plataforma interactiva basada en Research through Design para visualización analítica de tensión sísmica en el Chocó</title>
     <meta name="title" content="Plataforma interactiva basada en Research through Design para visualización analítica de tensión sísmica en el Chocó">
@@ -54,7 +54,7 @@
     <script src="lib/chart.js"></script>
     
     <!-- Estilos Bento Box -->
-    <link rel="stylesheet" href="css/styles.css?v=27">
+    <link rel="stylesheet" href="css/styles.css?v=32">
 
     <!-- Datos Estructurados Schema.org JSON-LD para Google -->
     <script type="application/ld+json">
@@ -129,7 +129,9 @@
 
 
     <nav id="ui-panel">
-        <button id="mobile-toggle" aria-label="Abrir panel"></button>
+        <button id="mobile-toggle" aria-label="Deslizar panel de control" aria-expanded="false">
+            <span class="sheet-drag-pill" aria-hidden="true"></span>
+        </button>
         
         <section class="header-section">
             <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -806,16 +808,16 @@
     </div>
 
     <!-- Arquitectura Orientada a Objetos y Patrones de Diseño (Singleton, Strategy, Factory, Observer) -->
-    <script src="js/core-oop.js?v=31"></script>
+    <script src="js/core-oop.js?v=32"></script>
 
     <!-- Lógica principal con versionamiento para evitar caché persistente -->
-    <script src="js/main.js?v=31"></script>
+    <script src="js/main.js?v=32"></script>
 
     <!-- PWA -->
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js?v=31')
+                navigator.serviceWorker.register('sw.js?v=32')
                     .then(reg => {
                         reg.update();
                     })

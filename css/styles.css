@@ -68,33 +68,67 @@ body {
     #mobile-toggle, #ui-panel::before { display: none; }
 }
 
-/* 📲 Mobile First (Bottom Sheet Flotante tipo Apple Maps) */
+/* 📲 Mobile First (Bottom Sheet Flotante tipo Apple Maps con Safe Areas) */
 @media (max-width: 768px) {
     #ui-panel {
         bottom: 0; left: 0; top: auto;
         width: 100vw;
         height: 85vh; /* Altura máxima al expandir */
-        padding: 24px 20px 40px 20px;
-        border-radius: 32px 32px 0 0;
-        /* Por defecto, muestra solo los primeros 100px (El título) */
-        transform: translateY(calc(100% - 100px));
+        padding: 28px 18px calc(30px + env(safe-area-inset-bottom, 16px)) 18px;
+        border-radius: 28px 28px 0 0;
+        /* Por defecto, peek de la cabecera visible */
+        transform: translateY(calc(100% - 100px - env(safe-area-inset-bottom, 0px)));
         overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior-y: contain;
         border-bottom: none; border-left: none; border-right: none;
+        touch-action: pan-y;
+        box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.65);
     }
     #ui-panel.open {
         transform: translateY(0);
     }
-    /* Píldora de arrastre nativa */
-    #ui-panel::before {
-        content: ''; position: absolute;
-        top: 12px; left: 50%; transform: translateX(-50%);
-        width: 48px; height: 5px; border-radius: 5px;
-        background: var(--text-tertiary);
-    }
     #mobile-toggle {
-        display: block; position: absolute;
-        top: 0; left: 0; width: 100%; height: 90px;
-        z-index: 3; cursor: pointer; background: transparent; border: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: absolute;
+        top: 0; left: 0; width: 100%; height: 38px;
+        z-index: 5;
+        cursor: grab;
+        background: transparent;
+        border: none;
+        padding: 0;
+        touch-action: none;
+    }
+    #mobile-toggle:active {
+        cursor: grabbing;
+    }
+    .sheet-drag-pill {
+        display: block;
+        width: 44px; height: 5px;
+        border-radius: 5px;
+        background: rgba(255, 255, 255, 0.35);
+        transition: background 0.2s, transform 0.2s;
+    }
+    #mobile-toggle:active .sheet-drag-pill {
+        background: var(--accent);
+        transform: scale(1.1);
+    }
+    #ui-panel::before { display: none; }
+}
+
+@media (max-width: 480px) {
+    #ui-panel {
+        height: 88vh;
+        padding: 26px 14px calc(24px + env(safe-area-inset-bottom, 16px)) 14px;
+        transform: translateY(calc(100% - 94px - env(safe-area-inset-bottom, 0px)));
+    }
+    h2 {
+        font-size: 1.25rem !important;
+    }
+    .subtitle {
+        font-size: 0.8rem !important;
     }
 }
 
@@ -297,12 +331,16 @@ input:checked + .slider:before { transform: translateX(18px); }
 
 @media (max-width: 768px) {
     #basemap-selector {
-        top: 16px; right: 16px;
-        padding: 3px;
+        top: calc(14px + env(safe-area-inset-top, 0px));
+        right: calc(14px + env(safe-area-inset-right, 0px));
+        padding: 3px 5px;
+        border-radius: 10px;
     }
     .basemap-btn {
-        padding: 4px 8px;
-        font-size: 0.7rem;
+        padding: 6px 10px;
+        font-size: 0.72rem;
+        min-height: 32px;
+        min-width: 44px;
     }
 }
 
@@ -381,15 +419,22 @@ input:checked + .slider:before { transform: translateX(18px); }
 
 @media (max-width: 768px) {
     #infra-floating-selector {
-        top: 56px; right: 16px;
-        padding: 3px;
-        gap: 2px;
-        max-width: calc(100vw - 32px);
+        top: calc(56px + env(safe-area-inset-top, 0px));
+        right: calc(14px + env(safe-area-inset-right, 0px));
+        padding: 3px 4px;
+        gap: 4px;
+        max-width: calc(100vw - 28px);
         overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+    #infra-floating-selector::-webkit-scrollbar {
+        display: none;
     }
     .infra-pill-btn {
-        padding: 4px 6px;
-        font-size: 0.65rem;
+        padding: 5px 8px;
+        font-size: 0.68rem;
+        min-height: 32px;
     }
 }
 
@@ -914,3 +959,84 @@ input:checked + .slider:before { transform: translateX(18px); }
     background: rgba(56, 189, 248, 0.3) !important;
     box-shadow: none !important;
 }
+
+/* ==========================================================================
+   OPTIMIZACIONES MÓVILES Y RESPONSIVE UNIVERSAL (CROSS-BROWSER)
+   ========================================================================== */
+
+/* Leyenda cartográfica adaptativa */
+@media (max-width: 768px) {
+    #map-legend {
+        bottom: calc(110px + env(safe-area-inset-bottom, 0px)) !important;
+        right: 14px !important;
+        max-width: calc(100vw - 28px);
+        padding: 10px 14px !important;
+        font-size: 0.78rem !important;
+        border-radius: 10px !important;
+        z-index: 2 !important;
+    }
+}
+
+/* Modales e interacción táctil en dispositivos móviles */
+@media (max-width: 768px) {
+    #info-modal > div,
+    #modal-ficha-pot .ficha-pot-container {
+        width: 95vw !important;
+        max-width: 95vw !important;
+        max-height: 88vh !important;
+        padding: 18px 16px !important;
+        margin: auto !important;
+        border-radius: 16px !important;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    #info-modal h2, #ficha-pot-titulo {
+        font-size: 1.15rem !important;
+    }
+
+    /* Target táctil mínimo de 44px en controles interactivos (Apple HIG / Material Design) */
+    .btn-secondary,
+    .btn-primary,
+    .preset-btn,
+    .metric-filter-btn {
+        min-height: 40px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* Input ranges táctiles más cómodos para el dedo */
+    input[type="range"] {
+        height: 28px;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+        width: 26px;
+        height: 26px;
+    }
+    input[type="range"]::-moz-range-thumb {
+        width: 26px;
+        height: 26px;
+    }
+
+    /* Switches táctiles accesibles */
+    .switch {
+        width: 48px;
+        height: 28px;
+    }
+    .slider:before {
+        height: 24px;
+        width: 24px;
+    }
+    input:checked + .slider:before {
+        transform: translateX(20px);
+    }
+}
+
+/* Adaptación para pantallas de tablets o pantallas pequeñas en modo horizontal */
+@media (min-width: 769px) and (max-width: 1024px) {
+    #ui-panel {
+        width: 340px;
+        padding: 18px;
+    }
+}
+

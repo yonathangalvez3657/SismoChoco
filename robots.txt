@@ -1,4 +1,6 @@
 User-agent: *
 Allow: /
 
+Sitemap: https://sismochoco.onrender.com/sitemap.xml
 Sitemap: https://sismochoco.edu.co/sitemap.xml
+

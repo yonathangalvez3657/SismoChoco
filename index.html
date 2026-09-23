@@ -15,23 +15,23 @@
     <meta name="geo.placename" content="Chocó, Colombia">
     <meta name="geo.position" content="5.694722;-76.661111">
     <meta name="ICBM" content="5.694722, -76.661111">
-    <link rel="canonical" href="https://sismochoco.edu.co/">
+    <link rel="canonical" href="https://sismochoco.onrender.com/">
 
     <!-- Open Graph / Facebook / WhatsApp -->
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://sismochoco.edu.co/">
-    <meta property="og:title" content="Plataforma interactiva basada en Research through Design para visualización analítica de tensión sísmica en el Chocó">
-    <meta property="og:description" content="Investigación a través del Diseño (RtD) aplicada a la sismicidad y gestión del riesgo en el Chocó. Tesis de Maestría en Diseño y Creación Interactiva, Universidad de Caldas.">
-    <meta property="og:image" content="https://sismochoco.edu.co/icon.svg">
+    <meta property="og:url" content="https://sismochoco.onrender.com/">
+    <meta property="og:title" content="SismoChocó: Visualización Analítica de Tensión Sísmica y Gestión del Riesgo en Chocó">
+    <meta property="og:description" content="Plataforma de Research through Design (RtD) para la visualización de sismicidad histórica, deformación cortical, norma sismorresistente NSR-10 y planes de ordenamiento territorial en Chocó, Colombia.">
+    <meta property="og:image" content="https://sismochoco.onrender.com/icon.svg">
     <meta property="og:locale" content="es_CO">
-    <meta property="og:site_name" content="SismoChocó RtD - Universidad de Caldas">
+    <meta property="og:site_name" content="SismoChocó - Universidad de Caldas">
 
     <!-- Twitter Cards -->
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:url" content="https://sismochoco.edu.co/">
-    <meta name="twitter:title" content="Plataforma interactiva basada en Research through Design para visualización analítica de tensión sísmica en el Chocó">
-    <meta name="twitter:description" content="Investigación a través del Diseño (RtD) y Visual Analytics aplicada a la tensión sísmica del Chocó.">
-    <meta name="twitter:image" content="https://sismochoco.edu.co/icon.svg">
+    <meta name="twitter:url" content="https://sismochoco.onrender.com/">
+    <meta name="twitter:title" content="SismoChocó: Visualización Analítica de Tensión Sísmica">
+    <meta name="twitter:description" content="Visualización interactiva 3D con Research through Design de sismicidad del Chocó (1993-2026), subducción Nazca y perfiles POT / NSR-10.">
+    <meta name="twitter:image" content="https://sismochoco.onrender.com/icon.svg">
 
     <!-- PWA Config -->
     <link rel="manifest" href="manifest.json">
@@ -54,43 +54,64 @@
     <script src="lib/chart.js"></script>
     
     <!-- Estilos Bento Box -->
-    <link rel="stylesheet" href="css/styles.css?v=32">
+    <link rel="stylesheet" href="css/styles.css?v=33">
 
-    <!-- Datos Estructurados Schema.org JSON-LD para Google -->
+    <!-- Datos Estructurados Schema.org JSON-LD para Google Search & Google Dataset Search -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
-      "@type": "SoftwareApplication",
-      "name": "Plataforma interactiva basada en Research through Design para visualización analítica de tensión sísmica en el Chocó",
-      "alternateName": "SismoChocó RtD",
-      "operatingSystem": "Web, iOS, Android, macOS, Windows",
-      "applicationCategory": "EducationalApplication",
-      "genre": "Interaction Design, Seismology & Earth Sciences",
-      "description": "Plataforma interactiva basada en Research through Design (RtD) para la visualización analítica de la acumulación de tensión sísmica del departamento del Chocó en Colombia. Universidad de Caldas, Maestría en Diseño y Creación Interactiva.",
-      "url": "https://sismochoco.edu.co/",
-      "author": {
-        "@type": "Person",
-        "name": "Yonathan Andrés Gálvez Giraldo",
-        "email": "ogiraldo272@gmail.com",
-        "affiliation": {
-          "@type": "Organization",
-          "name": "Universidad de Caldas - Maestría en Diseño y Creación Interactiva"
+      "@graph": [
+        {
+          "@type": "SoftwareApplication",
+          "@id": "https://sismochoco.onrender.com/#software",
+          "name": "SismoChocó - Plataforma Analítica de Tensión Sísmica",
+          "alternateName": "SismoChocó RtD",
+          "operatingSystem": "Web Browser, iOS Safari, Android Chrome, macOS, Windows",
+          "applicationCategory": "EducationalApplication",
+          "genre": "Interaction Design, Seismology, Geospatial Data Science",
+          "description": "Plataforma interactiva basada en Research through Design (RtD) y Diseño Centrado en el Usuario para la visualización analítica de la acumulación de tensión sísmica en el departamento del Chocó (1993-2026). Integra datos oficiales del Servicio Geológico Colombiano (SGC), algoritmos de agrupamiento no supervisado DBSCAN, cálculo dinámico de la Ley de Gutenberg-Richter, proyección ortogonal 3D de la losa de subducción de Nazca (Benioff) y fichas técnicas de ordenamiento territorial municipal bajo la norma sismorresistente NSR-10.",
+          "url": "https://sismochoco.onrender.com/",
+          "author": {
+            "@type": "Person",
+            "name": "Yonathan Andrés Gálvez Giraldo",
+            "email": "yonathan.galvez3657@ucaldas.edu.co",
+            "jobTitle": "Investigador y Diseñador Interactivo",
+            "affiliation": {
+              "@type": "CollegeOrUniversity",
+              "name": "Universidad de Caldas",
+              "department": "Facultad de Artes y Humanidades — Maestría en Diseño y Creación Interactiva",
+              "url": "https://www.ucaldas.edu.co/"
+            }
+          },
+          "spatialCoverage": {
+            "@type": "Place",
+            "name": "Departamento del Chocó, Región Pacífica, Colombia",
+            "geo": {
+              "@type": "GeoCoordinates",
+              "latitude": 5.694722,
+              "longitude": -76.661111
+            }
+          },
+          "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "COP"
+          }
+        },
+        {
+          "@type": "Dataset",
+          "@id": "https://sismochoco.onrender.com/#dataset",
+          "name": "Catálogo Sísmico Estructurado e Infraestructura Crítica del Chocó (1993-2026)",
+          "description": "Compilado sismológico oficial del Chocó con magnitudes Mw, profundidades focales, agrupamientos DBSCAN, fallas geológicas activas y redes vitales de transporte y salud.",
+          "license": "https://creativecommons.org/licenses/by/4.0/",
+          "creator": {
+            "@type": "Person",
+            "name": "Yonathan Andrés Gálvez Giraldo"
+          },
+          "temporalCoverage": "1993-01-01/2026-09-23",
+          "spatialCoverage": "Chocó, Colombia"
         }
-      },
-      "spatialCoverage": {
-        "@type": "Place",
-        "name": "Departamento del Chocó, Colombia",
-        "geo": {
-          "@type": "GeoCoordinates",
-          "latitude": "5.694722",
-          "longitude": "-76.661111"
-        }
-      },
-      "offers": {
-        "@type": "Offer",
-        "price": "0",
-        "priceCurrency": "COP"
-      }
+      ]
     }
     </script>
 </head>
@@ -120,11 +141,10 @@
         </div>
     </header>
 
-    <!-- Selector de Mapa Base Flotante -->
+    <!-- Selector de Mapa Base Flotante (Diseño Centrado en el Usuario) -->
     <div id="basemap-selector" role="toolbar" aria-label="Estilo del mapa base">
-        <button class="basemap-btn" data-style="pos" title="Estilo CartoDB Positron (Luz)">Luz</button>
-        <button class="basemap-btn active" data-style="voy" title="Estilo CartoDB Voyager / Relieve (Topografía)">Relieve</button>
-        <button class="basemap-btn" data-style="dark" title="Estilo CartoDB Dark Matter (Oscuro)">Oscuro</button>
+        <button class="basemap-btn active" data-style="voy" title="Mapa Físico / Relieve Topográfico">🏔️ Relieve</button>
+        <button class="basemap-btn" data-style="dark" title="Modo Oscuro / Contraste Sísmico">🌙 Oscuro</button>
     </div>
 
 
@@ -808,16 +828,16 @@
     </div>
 
     <!-- Arquitectura Orientada a Objetos y Patrones de Diseño (Singleton, Strategy, Factory, Observer) -->
-    <script src="js/core-oop.js?v=32"></script>
+    <script src="js/core-oop.js?v=33"></script>
 
     <!-- Lógica principal con versionamiento para evitar caché persistente -->
-    <script src="js/main.js?v=32"></script>
+    <script src="js/main.js?v=33"></script>
 
     <!-- PWA -->
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js?v=32')
+                navigator.serviceWorker.register('sw.js?v=33')
                     .then(reg => {
                         reg.update();
                     })

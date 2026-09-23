@@ -1,7 +1,8 @@
-const CACHE_NAME = 'sismo-choco-v30';
+const CACHE_NAME = 'sismo-choco-v31';
 const ASSETS_TO_CACHE = [
   './index.html',
   './css/styles.css',
+  './js/core-oop.js',
   './js/main.js',
   './lib/deck.gl.min.js',
   './lib/maplibre-gl.js',
@@ -21,7 +22,7 @@ self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
-        console.log('Archivos en caché para modo offline (v30)');
+        console.log('Archivos en caché para modo offline (v31)');
         return cache.addAll(ASSETS_TO_CACHE);
       })
   );

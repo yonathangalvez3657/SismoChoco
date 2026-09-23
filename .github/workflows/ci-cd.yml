@@ -1,0 +1,71 @@
+name: CI/CD Pipeline — SismoChocó Platform
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test-and-audit:
+    name: 🧪 Pruebas Unitarias, Auditoría y Calidad de Código
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Clonar repositorio
+        uses: actions/checkout@v4
+
+      - name: 🐍 Configurar entorno Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: 📦 Instalar dependencias backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest flake8
+
+      - name: 🔍 Verificación estática y linting
+        run: |
+          # Detección de errores de sintaxis críticos o nombres indefinidos
+          flake8 main.py procesamiento.py --count --select=E9,F63,F7,F82 --show-source --statistics
+
+      - name: 🌐 Verificación de sintaxis de JavaScript Frontend
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: |
+          node --check app/js/main.js
+          node --check app/sw.js
+
+      - name: 🚀 Ejecutar pruebas de carga de APIs y Modelo
+        run: |
+          python -c "
+          import main
+          print('FastAPI App Iniciada:', main.app.title)
+          assert main.app.version == '2.0.0'
+          "
+
+  deploy-production:
+    name: 🚀 Despliegue Automático Continuo (CD)
+    needs: test-and-audit
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Clonar repositorio
+        uses: actions/checkout@v4
+
+      - name: 📡 Despliegue en Plataforma Cloud (Ej: Render / Railway / CapRover)
+        # Nota: Configurable con Webhook de despliegue directo de Render / Railway
+        env:
+          DEPLOY_WEBHOOK_URL: ${{ secrets.DEPLOY_WEBHOOK_URL }}
+        run: |
+          if [ -n "$DEPLOY_WEBHOOK_URL" ]; then
+            echo "Detonando despliegue seguro mediante Webhook..."
+            curl -X POST "$DEPLOY_WEBHOOK_URL" -f
+          else
+            echo "Webhook no configurado en secretos de GitHub. Saltando paso automático."
+          fi

@@ -1,0 +1,18 @@
+# Python / Entorno
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.env
+.env.local
+*.log
+
+# Datos temporales / extracciones
+tesis_laureada_extracted.txt
+docx_edit_tmp/
+
+# Archivos de Sistema / SO
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

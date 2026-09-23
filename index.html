@@ -805,14 +805,17 @@
         </div>
     </div>
 
-    <!-- Lógica separada con versionamiento para evitar caché persistente -->
-    <script src="js/main.js?v=30"></script>
+    <!-- Arquitectura Orientada a Objetos y Patrones de Diseño (Singleton, Strategy, Factory, Observer) -->
+    <script src="js/core-oop.js?v=31"></script>
+
+    <!-- Lógica principal con versionamiento para evitar caché persistente -->
+    <script src="js/main.js?v=31"></script>
 
     <!-- PWA -->
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js?v=30')
+                navigator.serviceWorker.register('sw.js?v=31')
                     .then(reg => {
                         reg.update();
                     })

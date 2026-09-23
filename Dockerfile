@@ -6,6 +6,7 @@ FROM python:3.11-slim
 # Evitar prompts interactivos y optimizar buffer de python
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
+    TZ=America/Bogota \
     PORT=8000
 
 # Directorio de trabajo en el contenedor

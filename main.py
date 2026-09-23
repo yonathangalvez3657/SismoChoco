@@ -3,9 +3,16 @@ from fastapi.middleware.cors import CORSMiddleware
 import json
 import os
 import numpy as np
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 import random
 from sklearn.cluster import DBSCAN
+
+# Zona Horaria Oficial de Colombia: America/Bogota (UTC-5)
+COLOMBIA_TZ = timezone(timedelta(hours=-5))
+
+def get_now_colombia() -> datetime:
+    """Retorna la fecha y hora oficial de Colombia (UTC-5) independiente de la región del servidor."""
+    return datetime.now(COLOMBIA_TZ)
 
 app = FastAPI(
     title="SismoChocó API — Backend Analítico (RtD)",
@@ -74,7 +81,8 @@ def healthcheck():
     return {
         "status": "ok",
         "service": "SismoChocó API",
-        "timestamp": datetime.now().isoformat(),
+        "timestamp": get_now_colombia().isoformat(),
+        "timezone": "America/Bogota (UTC-5)",
         "total_eventos": count
     }
 
@@ -210,11 +218,11 @@ import random
 
 @app.websocket("/ws/live_sgc")
 async def websocket_live_sgc(websocket: WebSocket):
-    """Túnel de WebSockets para transmitir sismos en tiempo real simulando SGC Live."""
+    """Túnel de WebSockets para transmitir sismos en tiempo real simulando SGC Live en Hora de Colombia (UTC-5)."""
     await websocket.accept()
     try:
-        # Enviar historial inicial (mock)
-        now = datetime.now()
+        # Enviar historial inicial (mock) con hora oficial de Colombia (UTC-5)
+        now_col = get_now_colombia()
         historial = {
             "type": "FeatureCollection",
             "features": [
@@ -222,8 +230,8 @@ async def websocket_live_sgc(websocket: WebSocket):
                     "type": "Feature",
                     "geometry": { "type": "Point", "coordinates": [-76.5, 4.8, -35000] },
                     "properties": {
-                        "fecha": now.strftime('%Y-%m-%d %H:%M'), "anio": now.year,
-                        "magnitud": 4.1, "profundidad": 35.0, "municipio": "Nóvita - Chocó (SGC Live Inicial)"
+                        "fecha": now_col.strftime('%Y-%m-%d %H:%M'), "anio": now_col.year,
+                        "magnitud": 4.1, "profundidad": 35.0, "municipio": "Nóvita - Chocó (SGC Live Inicial - Hora Colombia)"
                     }
                 }
             ]
@@ -233,17 +241,18 @@ async def websocket_live_sgc(websocket: WebSocket):
         # Bucle de transmisión en tiempo real
         while True:
             await asyncio.sleep(random.randint(4, 10))
+            cur_col = get_now_colombia()
             nuevo_sismo = {
                 "type": "FeatureCollection",
                 "features": [{
                     "type": "Feature",
                     "geometry": { "type": "Point", "coordinates": [-76.5 + random.uniform(-1, 1), 5.5 + random.uniform(-1, 1), -random.randint(10, 100)*1000] },
                     "properties": {
-                        "fecha": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                        "anio": datetime.now().year,
+                        "fecha": cur_col.strftime('%Y-%m-%d %H:%M:%S'),
+                        "anio": cur_col.year,
                         "magnitud": round(random.uniform(2.5, 5.5), 1),
                         "profundidad": round(random.uniform(10.0, 100.0), 1),
-                        "municipio": "SGC Live (WebSocket Push)"
+                        "municipio": "SGC Live (WebSocket Push - Hora Colombia)"
                     }
                 }]
             }

@@ -1568,25 +1568,56 @@ if (checkFallasBuffer) {
 
 let liveSocket = null;
 
+async function loadRealSgcHttp() {
+    try {
+        const resp = await fetch(ENDPOINTS.SGC_API);
+        if (resp.ok) {
+            const data = await resp.json();
+            if (data.features && data.features.length > 0) {
+                sgcData.features = data.features;
+                if (showLiveSGC) queueRender();
+            }
+        }
+    } catch (err) {
+        console.warn("Fallback SGC HTTP no disponible", err);
+    }
+}
+
 document.getElementById('check-live-sgc').addEventListener('change', e => {
     showLiveSGC = e.target.checked;
     
     if (showLiveSGC) {
+        // Carga inmediata de los sismos reales por REST mientras conecta el socket
+        loadRealSgcHttp();
+
         if (!liveSocket) {
-            // Conectar al satélite vía WebSocket usando endpoint dinámico
-            liveSocket = new WebSocket(ENDPOINTS.WS_URL);
-            
-            liveSocket.onmessage = (event) => {
-                const incoming = JSON.parse(event.data);
-                if (incoming.features && incoming.features.length > 0) {
-                    // Agregar sismos al array en vivo
-                    sgcData.features = [...sgcData.features, ...incoming.features];
-                    // Renderizar automáticamente el mapa si la capa sigue activa
-                    if (showLiveSGC) queueRender();
-                }
-            };
-            
-            liveSocket.onclose = () => { console.log("Satélite SGC Desconectado"); };
+            try {
+                liveSocket = new WebSocket(ENDPOINTS.WS_URL);
+                
+                liveSocket.onmessage = (event) => {
+                    const incoming = JSON.parse(event.data);
+                    if (incoming.features && incoming.features.length > 0) {
+                        const existingIds = new Set(sgcData.features.map(f => f.properties.id || f.properties.fecha));
+                        const brandNew = incoming.features.filter(f => !existingIds.has(f.properties.id || f.properties.fecha));
+                        if (brandNew.length > 0) {
+                            sgcData.features = [...brandNew, ...sgcData.features];
+                        } else if (sgcData.features.length === 0) {
+                            sgcData.features = incoming.features;
+                        }
+                        if (showLiveSGC) queueRender();
+                    }
+                };
+                
+                liveSocket.onerror = () => {
+                    console.warn("WebSocket en reconexión, usando API telemétrica REST");
+                    loadRealSgcHttp();
+                };
+                
+                liveSocket.onclose = () => { console.log("Satélite SGC Telemétrico Desconectado"); };
+            } catch (wsErr) {
+                console.warn("WebSocket no soportado, cargando vía HTTP", wsErr);
+                loadRealSgcHttp();
+            }
         }
     } else {
         // Desconectar satélite y limpiar memoria

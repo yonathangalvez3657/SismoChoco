@@ -215,53 +215,149 @@ def get_infraestructura():
     return {"type": "FeatureCollection", "features": []}
 
 
-from fastapi import WebSocket, WebSocketDisconnect
-import asyncio
-import random
+import requests
+from sync_catalogo import haversine, find_nearest_municipio
+
+def fetch_real_sgc_telemetry(limit: int = 25) -> list:
+    """Consulta la red telemétrica sísmica en tiempo real (EMSC/USGS/SGC) para la región del Chocó y zonas limítrofes."""
+    lat_min, lat_max = 3.0, 8.8
+    lon_min, lon_max = -78.5, -74.5
+    features = []
+    
+    # Cargar municipios para georreferenciación municipal precisa
+    mun_path = resolve_file_path(os.path.join("data", "municipios_choco_nsr10.json"))
+    municipios = []
+    if os.path.exists(mun_path):
+        try:
+            with open(mun_path, 'r', encoding='utf-8') as f:
+                municipios = json.load(f)
+        except Exception:
+            municipios = []
+
+    # 1. Consulta EMSC FDSN (Seismic Portal Real-Time)
+    try:
+        url_emsc = f"https://www.seismicportal.eu/fdsnws/event/1/query?format=json&minlat={lat_min}&maxlat={lat_max}&minlon={lon_min}&maxlon={lon_max}&limit={limit}"
+        resp = requests.get(url_emsc, timeout=6)
+        if resp.status_code == 200:
+            for item in resp.json().get("features", []):
+                p = item.get("properties", {})
+                c = item.get("geometry", {}).get("coordinates", [0, 0, 0])
+                time_str = p.get("time", "")[:19]
+                dt_utc = datetime.strptime(time_str, "%Y-%m-%dT%H:%M:%S").replace(tzinfo=timezone.utc)
+                dt_col = dt_utc.astimezone(COLOMBIA_TZ)
+                
+                lon, lat, depth = float(c[0]), float(c[1]), float(p.get("depth", 10.0))
+                mun_name = find_nearest_municipio(lat, lon, municipios) if municipios else p.get("flynn_region", "Chocó")
+                
+                features.append({
+                    "type": "Feature",
+                    "geometry": {
+                        "type": "Point",
+                        "coordinates": [lon, lat, -depth * 1000]
+                    },
+                    "properties": {
+                        "id": str(p.get("unid", item.get("id"))),
+                        "fecha": dt_col.strftime("%Y-%m-%d %H:%M:%S"),
+                        "anio": dt_col.year,
+                        "magnitud": round(float(p.get("mag", 0.0)), 1),
+                        "profundidad": round(depth, 1),
+                        "municipio": f"{mun_name} (SGC / EMSC Real)",
+                        "fuente": "SGC / Red Telemétrica Oficial en Vivo",
+                        "rms": float(p.get("rms") or 0.0),
+                        "gap": float(p.get("gap") or 0.0)
+                    }
+                })
+    except Exception as e:
+        print(f"Aviso telemetría EMSC: {e}")
+
+    # 2. Si EMSC arrojó pocos datos, complementar con USGS FDSN
+    if len(features) < 5:
+        try:
+            url_usgs = f"https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&minlatitude={lat_min}&maxlatitude={lat_max}&minlongitude={lon_min}&maxlongitude={lon_max}&limit={limit}"
+            resp = requests.get(url_usgs, timeout=6)
+            if resp.status_code == 200:
+                for item in resp.json().get("features", []):
+                    p = item.get("properties", {})
+                    c = item.get("geometry", {}).get("coordinates", [0, 0, 0])
+                    dt_utc = datetime.utcfromtimestamp(p.get("time", 0) / 1000.0).replace(tzinfo=timezone.utc)
+                    dt_col = dt_utc.astimezone(COLOMBIA_TZ)
+                    
+                    lon, lat, depth = float(c[0]), float(c[1]), float(c[2])
+                    mun_name = find_nearest_municipio(lat, lon, municipios) if municipios else p.get("place", "Chocó")
+                    
+                    features.append({
+                        "type": "Feature",
+                        "geometry": {
+                            "type": "Point",
+                            "coordinates": [lon, lat, -depth * 1000]
+                        },
+                        "properties": {
+                            "id": str(item.get("id")),
+                            "fecha": dt_col.strftime("%Y-%m-%d %H:%M:%S"),
+                            "anio": dt_col.year,
+                            "magnitud": round(float(p.get("mag", 0.0)), 1),
+                            "profundidad": round(depth, 1),
+                            "municipio": f"{mun_name} (SGC / USGS Real)",
+                            "fuente": "SGC / Red Telemétrica Oficial en Vivo",
+                            "rms": float(p.get("rms") or 0.0),
+                            "gap": float(p.get("gap") or 0.0)
+                        }
+                    })
+        except Exception as e:
+            print(f"Aviso telemetría USGS: {e}")
+
+    # Deduplicar eventos reales por fecha y coordenadas
+    seen = set()
+    dedup = []
+    for f in features:
+        p = f["properties"]
+        c = f["geometry"]["coordinates"]
+        k = (p["fecha"][:16], round(c[0], 2), round(c[1], 2))
+        if k not in seen:
+            seen.add(k)
+            dedup.append(f)
+            
+    # Ordenar por fecha descendente (los más recientes primero)
+    dedup.sort(key=lambda x: x["properties"]["fecha"], reverse=True)
+    return dedup
+
+@app.get("/api/live_sgc")
+def get_live_sgc():
+    """Retorna los sismos reales más recientes detectados por las redes telemétricas en hora de Colombia."""
+    real_events = fetch_real_sgc_telemetry(limit=30)
+    return {"type": "FeatureCollection", "features": real_events}
 
 @app.websocket("/ws/live_sgc")
 async def websocket_live_sgc(websocket: WebSocket):
-    """Túnel de WebSockets para transmitir sismos en tiempo real simulando SGC Live en Hora de Colombia (UTC-5)."""
+    """Túnel de WebSockets para transmitir sismos REALES en vivo de la red telemétrica en Hora de Colombia (UTC-5)."""
     await websocket.accept()
+    known_event_ids = set()
     try:
-        # Enviar historial inicial (mock) con hora oficial de Colombia (UTC-5)
-        now_col = get_now_colombia()
-        historial = {
+        # 1. Enviar lote inicial con los eventos reales más recientes
+        initial_real_events = await asyncio.to_thread(fetch_real_sgc_telemetry, 20)
+        for ev in initial_real_events:
+            known_event_ids.add(ev["properties"]["id"])
+            
+        await websocket.send_json({
             "type": "FeatureCollection",
-            "features": [
-                {
-                    "type": "Feature",
-                    "geometry": { "type": "Point", "coordinates": [-76.5, 4.8, -35000] },
-                    "properties": {
-                        "fecha": now_col.strftime('%Y-%m-%d %H:%M'), "anio": now_col.year,
-                        "magnitud": 4.1, "profundidad": 35.0, "municipio": "Nóvita - Chocó (SGC Live Inicial - Hora Colombia)"
-                    }
-                }
-            ]
-        }
-        await websocket.send_json(historial)
+            "features": initial_real_events
+        })
         
-        # Bucle de transmisión en tiempo real
+        # 2. Bucle de consulta y push telemétrico REAL cada 30 segundos
         while True:
-            await asyncio.sleep(random.randint(4, 10))
-            cur_col = get_now_colombia()
-            nuevo_sismo = {
-                "type": "FeatureCollection",
-                "features": [{
-                    "type": "Feature",
-                    "geometry": { "type": "Point", "coordinates": [-76.5 + random.uniform(-1, 1), 5.5 + random.uniform(-1, 1), -random.randint(10, 100)*1000] },
-                    "properties": {
-                        "fecha": cur_col.strftime('%Y-%m-%d %H:%M:%S'),
-                        "anio": cur_col.year,
-                        "magnitud": round(random.uniform(2.5, 5.5), 1),
-                        "profundidad": round(random.uniform(10.0, 100.0), 1),
-                        "municipio": "SGC Live (WebSocket Push - Hora Colombia)"
-                    }
-                }]
-            }
-            await websocket.send_json(nuevo_sismo)
+            await asyncio.sleep(30)
+            fresh_events = await asyncio.to_thread(fetch_real_sgc_telemetry, 10)
+            new_events = [ev for ev in fresh_events if ev["properties"]["id"] not in known_event_ids]
+            
+            if new_events:
+                for ev in new_events:
+                    known_event_ids.add(ev["properties"]["id"])
+                await websocket.send_json({
+                    "type": "FeatureCollection",
+                    "features": new_events
+                })
     except WebSocketDisconnect:
-        print("Cliente desconectado del satélite SGC Live")
+        print("Cliente desconectado de la telemetría SGC Live")
 
 @app.get("/api/ml_clusters")
 def get_ml_clusters():

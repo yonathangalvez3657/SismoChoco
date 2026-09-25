@@ -880,16 +880,16 @@
 
 
     <!-- Arquitectura Orientada a Objetos y Patrones de Diseño (Singleton, Strategy, Factory, Observer) -->
-    <script src="js/core-oop.js?v=38"></script>
+    <script src="js/core-oop.js?v=39"></script>
 
     <!-- Lógica principal con versionamiento para evitar caché persistente -->
-    <script src="js/main.js?v=38"></script>
+    <script src="js/main.js?v=39"></script>
 
     <!-- PWA -->
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js?v=38')
+                navigator.serviceWorker.register('sw.js?v=39')
                     .then(reg => {
                         reg.update();
                     })

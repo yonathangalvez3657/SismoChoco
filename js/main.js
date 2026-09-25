@@ -1789,9 +1789,11 @@ if (mobileToggleBtn && uiPanel) {
         });
     }
 
-    // 1. Caso Teléfono Móvil: Sugerir Tablet o Computador
-    const mobileModalSeen = sessionStorage.getItem('sismochoco_mobile_modal_seen');
-    if (isMobilePhone && !mobileModalSeen && mobileModal) {
+    // 1. Sugerencia de Visualización en PC para Dispositivo Móvil y Tablet
+    const deviceModalSeen = sessionStorage.getItem('sismochoco_device_modal_seen') || sessionStorage.getItem('sismochoco_mobile_modal_seen');
+    const isMobileOrTablet = isMobilePhone || isTabletDimension;
+
+    if (isMobileOrTablet && !deviceModalSeen && mobileModal) {
         setTimeout(() => {
             mobileModal.style.display = 'flex';
             requestAnimationFrame(() => {
@@ -1804,27 +1806,33 @@ if (mobileToggleBtn && uiPanel) {
                 mobileModal.style.opacity = '0';
                 setTimeout(() => {
                     mobileModal.style.display = 'none';
+                    // Si es tablet y está en vertical, sugerir luego la orientación horizontal
+                    if (isTabletDimension && window.innerHeight > window.innerWidth) {
+                        checkTabletOrientation();
+                    }
                 }, 300);
-                sessionStorage.setItem('sismochoco_mobile_modal_seen', 'true');
+                sessionStorage.setItem('sismochoco_device_modal_seen', 'true');
             });
         }
     }
 
-    // 2. Caso Tablet en orientación vertical: Sugerir girar a horizontal
+    // 2. En Tablet en orientación vertical: Sugerir además pantalla horizontal
     function checkTabletOrientation() {
         if (!tabletModal) return;
         const currentW = window.innerWidth;
         const currentH = window.innerHeight;
         const currentlyPortrait = currentH > currentW;
         const tabletSeen = sessionStorage.getItem('sismochoco_tablet_orientation_seen');
+        const modalOpen = mobileModal && mobileModal.style.display === 'flex';
 
-        if (isTabletDimension && currentlyPortrait && !tabletSeen) {
+        // Solo mostrar si no está abierto el modal de PC
+        if (isTabletDimension && currentlyPortrait && !tabletSeen && !modalOpen) {
             setTimeout(() => {
                 tabletModal.style.display = 'flex';
                 requestAnimationFrame(() => {
                     tabletModal.style.opacity = '1';
                 });
-            }, 800);
+            }, 600);
         } else if (!currentlyPortrait) {
             // Si el usuario gira la tablet a horizontal, ocultamos el aviso de inmediato
             tabletModal.style.opacity = '0';
@@ -1834,7 +1842,10 @@ if (mobileToggleBtn && uiPanel) {
         }
     }
 
-    checkTabletOrientation();
+    // Si ya vio el modal de PC o no aplica, verificar orientación de la tablet
+    if (deviceModalSeen && isTabletDimension) {
+        checkTabletOrientation();
+    }
 
     if (continueTabletBtn && tabletModal) {
         continueTabletBtn.addEventListener('click', () => {

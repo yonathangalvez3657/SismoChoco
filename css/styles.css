@@ -1057,9 +1057,9 @@ input:checked + .slider:before { transform: translateX(18px); }
     position: relative;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
     .mobile-device-banner {
-        display: flex; /* Visible en pantallas móviles */
+        display: flex; /* Visible en pantallas móviles y tablets */
     }
 }
 

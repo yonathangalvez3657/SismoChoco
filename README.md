@@ -141,8 +141,9 @@ curl http://localhost:8000/api/health
 ## 👤 Autor e Información de Contacto
 
 **Yonathan Andrés Gálvez Giraldo**  
-Diseñador Visual e Investigador  
-Maestría en Diseño y Creación Interactiva — Universidad de Caldas, Manizales, Colombia.  
+Ingeniero Informático  
+Magister en diseño y creación interactiva  
+Universidad de Caldas, Manizales, Colombia.  
 - 💼 LinkedIn: [yonathanandresgalvezgiraldo](https://www.linkedin.com/in/yonathanandresgalvezgiraldo/)  
 - ✉️ Correo electrónico: [ogiraldo272@gmail.com](mailto:ogiraldo272@gmail.com)  
 

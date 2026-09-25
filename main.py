@@ -90,6 +90,34 @@ def healthcheck():
     }
 
 @app.on_event("startup")
+def startup_event():
+    load_data_from_supabase()
+    # Iniciar tarea en segundo plano para sincronizar automáticamente el catálogo todos los días a las 00:00 (UTC-5)
+    import asyncio
+    asyncio.create_task(daily_sync_scheduler())
+
+async def daily_sync_scheduler():
+    """Ejecuta la actualización del catálogo sísmico todos los días a las 00:00 (Hora oficial de Colombia / UTC-5)."""
+    while True:
+        try:
+            now_col = get_now_colombia()
+            # Calcular cuántos segundos faltan exactamente para la próxima medianoche 00:00:00
+            tomorrow = now_col.date() + timedelta(days=1)
+            next_midnight = datetime(tomorrow.year, tomorrow.month, tomorrow.day, 0, 0, 5, tzinfo=COLOMBIA_TZ)
+            seconds_until_midnight = (next_midnight - now_col).total_seconds()
+            
+            print(f"[Cron Diario] Próxima actualización programada para {next_midnight.isoformat()} (en {int(seconds_until_midnight)} segundos).")
+            await asyncio.sleep(seconds_until_midnight)
+            
+            print("[Cron Diario] Iniciando sincronización automática de catálogo sísmico a las 00:00...")
+            from sync_catalogo import sync_catalogo_live
+            res = await asyncio.to_thread(sync_catalogo_live)
+            await asyncio.to_thread(load_data_from_supabase)
+            print(f"[Cron Diario] Sincronización completada con éxito: {res}")
+        except Exception as e:
+            print(f"[Cron Diario] Error en sincronización programada: {e}")
+            await asyncio.sleep(60)
+
 def load_data_from_supabase():
     global SISMOS_CACHE
     actual_geojson = resolve_file_path(GEOJSON_PATH)
@@ -112,12 +140,20 @@ def load_data_from_supabase():
             all_rows.extend(data)
     except Exception as e:
         print(f"Error descargando datos de Supabase: {e}. Usando fallback local.")
-        if os.path.exists(GEOJSON_PATH):
-            with open(GEOJSON_PATH, 'r', encoding='utf-8') as f:
+        actual_geojson = resolve_file_path(GEOJSON_PATH)
+        if os.path.exists(actual_geojson):
+            with open(actual_geojson, 'r', encoding='utf-8') as f:
                 SISMOS_CACHE = json.load(f)
         return
         
     print(f"Éxito: {len(all_rows)} registros descargados desde la nube.")
+    
+    if not all_rows:
+        actual_geojson = resolve_file_path(GEOJSON_PATH)
+        if os.path.exists(actual_geojson):
+            with open(actual_geojson, 'r', encoding='utf-8') as f:
+                SISMOS_CACHE = json.load(f)
+        return
     
     # Transformar a FeatureCollection
     features = []
@@ -151,9 +187,10 @@ def get_sismos():
         return SISMOS_CACHE
     
     # Fallback local
-    if not os.path.exists(GEOJSON_PATH):
+    actual_geojson = resolve_file_path(GEOJSON_PATH)
+    if not os.path.exists(actual_geojson):
         return {"error": "Caché vacío y archivo local no encontrado."}
-    with open(GEOJSON_PATH, 'r', encoding='utf-8') as f:
+    with open(actual_geojson, 'r', encoding='utf-8') as f:
         return json.load(f)
 
 def verify_admin_token(x_admin_token: str = Header(None)):

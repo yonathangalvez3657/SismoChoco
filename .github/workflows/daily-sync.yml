@@ -1,0 +1,50 @@
+name: Sincronización Diaria de Sismicidad (00:00 UTC-5)
+
+on:
+  schedule:
+    # 00:00 en Colombia (UTC-5) equivale exactamente a 05:00 UTC todos los días
+    - cron: '0 5 * * *'
+  workflow_dispatch: # Permite ejecución manual desde la pestaña Actions de GitHub
+
+jobs:
+  sync-database:
+    name: 🔄 Descargar sismos recientes y actualizar catálogo
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Clonar repositorio
+        uses: actions/checkout@v4
+
+      - name: 🐍 Configurar Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: 📦 Instalar dependencias
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests
+
+      - name: 📡 Ejecutar sincronizador de catálogo (USGS + EMSC + SGC)
+        run: |
+          python -c "
+          import sys
+          sys.path.append('.')
+          from sync_catalogo import sync_catalogo_live
+          res = sync_catalogo_live()
+          print('Resultado de la sincronización:', res)
+          "
+
+      - name: 💾 Confirmar y guardar cambios en el repositorio si hay nuevos sismos
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add sismicidad_choco_consolidado.geojson
+          if git diff --staged --quiet; then
+            echo "No se encontraron sismos nuevos en este ciclo."
+          else
+            TODAY=$(date -u +"%Y-%m-%d")
+            git commit -m "data(cron): actualizacion automatica de catalogo sismico [$TODAY 00:00 UTC-5]"
+            git push origin main
+          fi

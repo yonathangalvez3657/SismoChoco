@@ -1119,3 +1119,19 @@ input:checked + .slider:before { transform: translateX(18px); }
     }
 }
 
+@keyframes rotateDevice {
+    0% {
+        transform: rotate(0deg) scale(1);
+    }
+    30% {
+        transform: rotate(-90deg) scale(1.1);
+    }
+    70% {
+        transform: rotate(-90deg) scale(1.1);
+    }
+    100% {
+        transform: rotate(0deg) scale(1);
+    }
+}
+
+

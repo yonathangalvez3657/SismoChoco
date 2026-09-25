@@ -1751,12 +1751,30 @@ if (mobileToggleBtn && uiPanel) {
 }
 
 // ============================================================================
-// SUGERENCIA DE VISUALIZACIÓN EN TABLET O PC PARA DISPOSITIVOS MÓVILES
+// SUGERENCIA DE DISPOSITIVOS Y ORIENTACIÓN HORIZONTAL (TABLET / MÓVIL)
 // ============================================================================
 (function initDeviceAdvice() {
-    const isMobileDevice = /Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || (window.innerWidth <= 768 && !navigator.maxTouchPoints > 2 && window.innerHeight > window.innerWidth);
+    const userAgent = navigator.userAgent || '';
+    const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+    const screenW = window.innerWidth;
+    const screenH = window.innerHeight;
+    const isPortrait = screenH > screenW;
+
+    // Criterios precisos para diferenciar Tablet de Teléfono móvil
+    const isTabletUserAgent = /iPad|Tablet|(Android(?!.*Mobile))/i.test(userAgent) ||
+        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1 && !window.MSStream); // iPads recientes con iPadOS
+    const isTabletDimension = isTouch && (
+        (Math.min(screenW, screenH) >= 600 && Math.max(screenW, screenH) <= 1366) || isTabletUserAgent
+    );
+    const isMobilePhone = !isTabletDimension && (
+        /Android.*Mobile|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent) ||
+        (isTouch && Math.min(screenW, screenH) < 600)
+    );
+
     const mobileModal = document.getElementById('mobile-device-modal');
-    const continueBtn = document.getElementById('btn-continue-mobile');
+    const continueMobileBtn = document.getElementById('btn-continue-mobile');
+    const tabletModal = document.getElementById('tablet-orientation-modal');
+    const continueTabletBtn = document.getElementById('btn-continue-tablet');
     const adviceBanner = document.getElementById('mobile-device-advice');
     const dismissAdviceBtn = document.getElementById('btn-dismiss-device-advice');
 
@@ -1771,10 +1789,9 @@ if (mobileToggleBtn && uiPanel) {
         });
     }
 
-    // Modal modal emergente de primer acceso móvil
-    const adviceShown = sessionStorage.getItem('sismochoco_mobile_modal_seen');
-    if (isMobileDevice && !adviceShown && mobileModal) {
-        // Mostrar tras 800ms después de que la carga del mapa finalice
+    // 1. Caso Teléfono Móvil: Sugerir Tablet o Computador
+    const mobileModalSeen = sessionStorage.getItem('sismochoco_mobile_modal_seen');
+    if (isMobilePhone && !mobileModalSeen && mobileModal) {
         setTimeout(() => {
             mobileModal.style.display = 'flex';
             requestAnimationFrame(() => {
@@ -1782,8 +1799,8 @@ if (mobileToggleBtn && uiPanel) {
             });
         }, 900);
 
-        if (continueBtn) {
-            continueBtn.addEventListener('click', () => {
+        if (continueMobileBtn) {
+            continueMobileBtn.addEventListener('click', () => {
                 mobileModal.style.opacity = '0';
                 setTimeout(() => {
                     mobileModal.style.display = 'none';
@@ -1792,7 +1809,48 @@ if (mobileToggleBtn && uiPanel) {
             });
         }
     }
+
+    // 2. Caso Tablet en orientación vertical: Sugerir girar a horizontal
+    function checkTabletOrientation() {
+        if (!tabletModal) return;
+        const currentW = window.innerWidth;
+        const currentH = window.innerHeight;
+        const currentlyPortrait = currentH > currentW;
+        const tabletSeen = sessionStorage.getItem('sismochoco_tablet_orientation_seen');
+
+        if (isTabletDimension && currentlyPortrait && !tabletSeen) {
+            setTimeout(() => {
+                tabletModal.style.display = 'flex';
+                requestAnimationFrame(() => {
+                    tabletModal.style.opacity = '1';
+                });
+            }, 800);
+        } else if (!currentlyPortrait) {
+            // Si el usuario gira la tablet a horizontal, ocultamos el aviso de inmediato
+            tabletModal.style.opacity = '0';
+            setTimeout(() => {
+                tabletModal.style.display = 'none';
+            }, 300);
+        }
+    }
+
+    checkTabletOrientation();
+
+    if (continueTabletBtn && tabletModal) {
+        continueTabletBtn.addEventListener('click', () => {
+            tabletModal.style.opacity = '0';
+            setTimeout(() => {
+                tabletModal.style.display = 'none';
+            }, 300);
+            sessionStorage.setItem('sismochoco_tablet_orientation_seen', 'true');
+        });
+    }
+
+    // Escuchar rotaciones del dispositivo en vivo
+    window.addEventListener('resize', checkTabletOrientation, { passive: true });
+    window.addEventListener('orientationchange', checkTabletOrientation, { passive: true });
 })();
+
 
 
 // Modal Dinámico de Información

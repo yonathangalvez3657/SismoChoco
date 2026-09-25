@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sismo-choco-v34';
+const CACHE_NAME = 'sismo-choco-v35';
 const ASSETS_TO_CACHE = [
   './index.html',
   './css/styles.css',
@@ -22,7 +22,7 @@ self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
-        console.log('Archivos en caché para modo offline (v34)');
+        console.log('Archivos en caché para modo offline (v35)');
         return cache.addAll(ASSETS_TO_CACHE);
       })
   );

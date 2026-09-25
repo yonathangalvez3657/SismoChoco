@@ -1750,6 +1750,51 @@ if (mobileToggleBtn && uiPanel) {
     }
 }
 
+// ============================================================================
+// SUGERENCIA DE VISUALIZACIÓN EN TABLET O PC PARA DISPOSITIVOS MÓVILES
+// ============================================================================
+(function initDeviceAdvice() {
+    const isMobileDevice = /Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || (window.innerWidth <= 768 && !navigator.maxTouchPoints > 2 && window.innerHeight > window.innerWidth);
+    const mobileModal = document.getElementById('mobile-device-modal');
+    const continueBtn = document.getElementById('btn-continue-mobile');
+    const adviceBanner = document.getElementById('mobile-device-advice');
+    const dismissAdviceBtn = document.getElementById('btn-dismiss-device-advice');
+
+    // Descarte manual del banner contextual en la cabecera
+    if (dismissAdviceBtn && adviceBanner) {
+        dismissAdviceBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            adviceBanner.style.opacity = '0';
+            adviceBanner.style.transition = 'opacity 0.25s ease';
+            setTimeout(() => { adviceBanner.style.display = 'none'; }, 250);
+            sessionStorage.setItem('sismochoco_device_advice_dismissed', 'true');
+        });
+    }
+
+    // Modal modal emergente de primer acceso móvil
+    const adviceShown = sessionStorage.getItem('sismochoco_mobile_modal_seen');
+    if (isMobileDevice && !adviceShown && mobileModal) {
+        // Mostrar tras 800ms después de que la carga del mapa finalice
+        setTimeout(() => {
+            mobileModal.style.display = 'flex';
+            requestAnimationFrame(() => {
+                mobileModal.style.opacity = '1';
+            });
+        }, 900);
+
+        if (continueBtn) {
+            continueBtn.addEventListener('click', () => {
+                mobileModal.style.opacity = '0';
+                setTimeout(() => {
+                    mobileModal.style.display = 'none';
+                }, 300);
+                sessionStorage.setItem('sismochoco_mobile_modal_seen', 'true');
+            });
+        }
+    }
+})();
+
+
 // Modal Dinámico de Información
 const infoModal = document.getElementById('info-modal');
 const closeInfoModal = document.getElementById('close-info-modal');

@@ -6,8 +6,20 @@ import math
 import requests
 from datetime import datetime, timedelta
 
-MUNICIPIOS_PATH = os.path.join(os.path.dirname(__file__), 'app', 'data', 'municipios_choco_nsr10.json')
-GEOJSON_CONSOLIDADO = os.path.join(os.path.dirname(__file__), 'sismicidad_choco_consolidado.geojson')
+def resolve_path(rel_path):
+    candidates = [
+        os.path.join(os.path.dirname(__file__), rel_path),
+        os.path.join(os.path.dirname(__file__), 'app', rel_path),
+        os.path.join(os.getcwd(), rel_path),
+        os.path.join(os.getcwd(), 'app', rel_path)
+    ]
+    for c in candidates:
+        if os.path.exists(c):
+            return c
+    return candidates[0]
+
+MUNICIPIOS_PATH = resolve_path(os.path.join('data', 'municipios_choco_nsr10.json'))
+GEOJSON_CONSOLIDADO = resolve_path('sismicidad_choco_consolidado.geojson')
 
 def haversine(lat1, lon1, lat2, lon2):
     R = 6371.0

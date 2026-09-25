@@ -1816,34 +1816,68 @@ if (mobileToggleBtn && uiPanel) {
         }
     }
 
-    // 2. En Tablet en orientación vertical: Sugerir además pantalla horizontal
+    // Función para detectar si el dispositivo actual es una tablet
+    function checkIsTablet() {
+        const curW = window.innerWidth;
+        const curH = window.innerHeight;
+        const isTabletUA = /iPad|Tablet|(Android(?!.*Mobile))/i.test(navigator.userAgent || '') ||
+            (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1 && !window.MSStream);
+        const minDim = Math.min(curW, curH);
+        const maxDim = Math.max(curW, curH);
+        return isTouch && ((minDim >= 600 && maxDim <= 1366) || isTabletUA);
+    }
+
+    // 2. En Tablet: Detección y retiro automático al cambiar orientación
+    let tabletPromptTimer = null;
+
     function checkTabletOrientation() {
         if (!tabletModal) return;
-        const currentW = window.innerWidth;
-        const currentH = window.innerHeight;
-        const currentlyPortrait = currentH > currentW;
-        const tabletSeen = sessionStorage.getItem('sismochoco_tablet_orientation_seen');
-        const modalOpen = mobileModal && mobileModal.style.display === 'flex';
 
-        // Solo mostrar si no está abierto el modal de PC
-        if (isTabletDimension && currentlyPortrait && !tabletSeen && !modalOpen) {
-            setTimeout(() => {
-                tabletModal.style.display = 'flex';
-                requestAnimationFrame(() => {
-                    tabletModal.style.opacity = '1';
-                });
-            }, 600);
-        } else if (!currentlyPortrait) {
-            // Si el usuario gira la tablet a horizontal, ocultamos el aviso de inmediato
-            tabletModal.style.opacity = '0';
-            setTimeout(() => {
-                tabletModal.style.display = 'none';
-            }, 300);
+        // Evaluación dinámica y precisa de orientación
+        let isLandscape = false;
+        if (window.screen && window.screen.orientation && window.screen.orientation.type) {
+            isLandscape = window.screen.orientation.type.includes('landscape');
+        } else if (typeof window.orientation !== 'undefined') {
+            isLandscape = (Math.abs(window.orientation) === 90);
+        } else {
+            isLandscape = window.innerWidth > window.innerHeight;
+        }
+
+        const currentlyPortrait = !isLandscape;
+        const isTablet = checkIsTablet();
+        const tabletSeen = sessionStorage.getItem('sismochoco_tablet_orientation_seen');
+        const isPcModalOpen = mobileModal && (mobileModal.style.display === 'flex' || mobileModal.style.opacity === '1');
+
+        if (isLandscape || !currentlyPortrait) {
+            // RETIRO AUTOMÁTICO INMEDIATO si el usuario gira la tablet a horizontal
+            if (tabletPromptTimer) {
+                clearTimeout(tabletPromptTimer);
+                tabletPromptTimer = null;
+            }
+            if (tabletModal.style.display !== 'none') {
+                tabletModal.style.opacity = '0';
+                setTimeout(() => {
+                    tabletModal.style.display = 'none';
+                }, 200);
+            }
+        } else if (isTablet && currentlyPortrait && !tabletSeen && !isPcModalOpen) {
+            // Mostrar si está en vertical
+            if (!tabletPromptTimer && tabletModal.style.display === 'none') {
+                tabletPromptTimer = setTimeout(() => {
+                    tabletPromptTimer = null;
+                    if (window.innerHeight > window.innerWidth) {
+                        tabletModal.style.display = 'flex';
+                        requestAnimationFrame(() => {
+                            tabletModal.style.opacity = '1';
+                        });
+                    }
+                }, 500);
+            }
         }
     }
 
     // Si ya vio el modal de PC o no aplica, verificar orientación de la tablet
-    if (deviceModalSeen && isTabletDimension) {
+    if (deviceModalSeen && checkIsTablet()) {
         checkTabletOrientation();
     }
 
@@ -1852,14 +1886,27 @@ if (mobileToggleBtn && uiPanel) {
             tabletModal.style.opacity = '0';
             setTimeout(() => {
                 tabletModal.style.display = 'none';
-            }, 300);
+            }, 250);
             sessionStorage.setItem('sismochoco_tablet_orientation_seen', 'true');
         });
     }
 
-    // Escuchar rotaciones del dispositivo en vivo
+    // Escucha permanente multievento para retiro reactivo inmediato
     window.addEventListener('resize', checkTabletOrientation, { passive: true });
-    window.addEventListener('orientationchange', checkTabletOrientation, { passive: true });
+    window.addEventListener('orientationchange', () => {
+        setTimeout(checkTabletOrientation, 50);
+        setTimeout(checkTabletOrientation, 250);
+    }, { passive: true });
+
+    if (window.screen && window.screen.orientation) {
+        window.screen.orientation.addEventListener('change', checkTabletOrientation);
+    }
+    const landscapeMql = window.matchMedia('(orientation: landscape)');
+    if (landscapeMql.addEventListener) {
+        landscapeMql.addEventListener('change', checkTabletOrientation);
+    } else if (landscapeMql.addListener) {
+        landscapeMql.addListener(checkTabletOrientation);
+    }
 })();
 
 

@@ -62,12 +62,15 @@ def resolve_file_path(relative_path: str) -> str:
             return c
     return candidates[0]
 
-# Variables de Entorno Seguras con Fallback
+# Variables de Entorno Seguras (Inyectadas en producción vía secrets)
 SUPABASE_URL = os.getenv("SUPABASE_URL", "https://ukqjtulsbzabadvgfybh.supabase.co")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVrcWp0dWxzYnphYmFkdmdmeWJoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4OTI1MzYxNSwiZXhwIjoyMTA0ODI5NjE1fQ.NNZTb2ic2OnLkzE0qqsc9m0E08nv4-jFvozQJh-hsrM")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY", "")
 
 try:
-    supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+    if SUPABASE_URL and SUPABASE_KEY:
+        supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+    else:
+        supabase = None
 except Exception:
     supabase = None
 

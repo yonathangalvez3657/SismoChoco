@@ -1,8 +1,9 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Header, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 import json
 import os
-import numpy as np
+import asyncio
 from datetime import datetime, timezone, timedelta
 import random
 from sklearn.cluster import DBSCAN
@@ -42,9 +43,7 @@ async def add_security_headers(request, call_next):
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     return response
 
-from fastapi.staticfiles import StaticFiles
 from supabase import create_client, Client
-from fastapi import Header, HTTPException, status
 
 GEOJSON_PATH = "sismicidad_choco_consolidado.geojson"
 ADMIN_SECRET_TOKEN = os.getenv("ADMIN_SECRET_TOKEN", "sismochoco_secure_admin_2026")

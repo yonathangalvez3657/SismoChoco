@@ -54,7 +54,7 @@
     <script src="lib/chart.js"></script>
     
     <!-- Estilos Bento Box -->
-    <link rel="stylesheet" href="css/styles.css?v=35">
+    <link rel="stylesheet" href="css/styles.css?v=36">
 
     <!-- Datos Estructurados Schema.org JSON-LD para Google Search & Google Dataset Search -->
     <script type="application/ld+json">
@@ -865,7 +865,7 @@
             </div>
             <h3 style="margin: 0 0 10px 0; font-size: 1.25rem; font-weight: 700; color: #FFF; border-bottom: none; padding-bottom: 0;">Girar a Pantalla Horizontal</h3>
             <p style="font-size: 0.86rem; color: #A1A1A6; line-height: 1.5; margin: 0 0 20px 0;">
-                Para una experiencia inmersiva en tu Tablet, sugerimos usar la <strong>orientación horizontal (Landscape)</strong>. Así dispondrás del mapa 3D completo y los paneles Bento sin superposiciones.
+                Para una mejor visualización y navegación de los datos en tu tablet, te sugerimos usar la <strong>orientación horizontal</strong>. De este modo podrás explorar el mapa tridimensional y los paneles de análisis con mayor comodidad y sin superposiciones.
             </p>
             <div style="display: flex; flex-direction: column; gap: 10px;">
                 <button id="btn-continue-tablet" style="background: var(--accent); color: #FFF; border: none; border-radius: 12px; padding: 12px 16px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: background 0.2s; box-shadow: 0 4px 14px rgba(10,132,255,0.4);">
@@ -880,16 +880,16 @@
 
 
     <!-- Arquitectura Orientada a Objetos y Patrones de Diseño (Singleton, Strategy, Factory, Observer) -->
-    <script src="js/core-oop.js?v=35"></script>
+    <script src="js/core-oop.js?v=36"></script>
 
     <!-- Lógica principal con versionamiento para evitar caché persistente -->
-    <script src="js/main.js?v=35"></script>
+    <script src="js/main.js?v=36"></script>
 
     <!-- PWA -->
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js?v=35')
+                navigator.serviceWorker.register('sw.js?v=36')
                     .then(reg => {
                         reg.update();
                     })

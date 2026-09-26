@@ -2900,6 +2900,15 @@ document.querySelectorAll('.profile-tab').forEach(tab => {
             updateNSR10Metrics();
         } else if (profile === 'alcaldia') {
             updatePOTMetrics();
+        } else if (profile === 'danos') {
+            if (typeof openDamageModal === 'function') {
+                openDamageModal('palmar_74');
+            }
+            // Restaurar pestaña sismología activa para no dejar el panel vacío
+            setTimeout(() => {
+                const tabSismo = document.querySelector('.profile-tab[data-profile="sismologia"]');
+                if (tabSismo) tabSismo.click();
+            }, 300);
         }
         queueRender();
     });
@@ -3705,6 +3714,13 @@ if (btnOpenDamageModal) {
 
 if (btnQuickDamageDb) {
     btnQuickDamageDb.addEventListener('click', () => {
+        openDamageModal('palmar_74');
+    });
+}
+
+const btnBannerDanos = document.getElementById('btn-banner-danos');
+if (btnBannerDanos) {
+    btnBannerDanos.addEventListener('click', () => {
         openDamageModal('palmar_74');
     });
 }

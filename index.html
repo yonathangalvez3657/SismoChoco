@@ -190,7 +190,7 @@
         </section>
         
         <!-- Selector de Especialidad Multidisciplinar (Segmented Control Estilo iOS) -->
-        <div class="profile-tabs" role="tablist" aria-label="Perfiles profesionales">
+        <div class="profile-tabs" role="tablist" aria-label="Perfiles profesionales" style="grid-template-columns: repeat(4, 1fr);">
             <button class="profile-tab active" data-profile="sismologia" role="tab" aria-selected="true" title="Modo Geología y Sismología Tectónica">
                 <span class="tab-icon">🌋</span>
                 <span>Geología</span>
@@ -201,7 +201,11 @@
             </button>
             <button class="profile-tab" data-profile="alcaldia" role="tab" aria-selected="false" title="Alcaldía y Ordenamiento Territorial (POT)">
                 <span class="tab-icon">🏛️</span>
-                <span>Alcaldía/POT</span>
+                <span>Alcaldía</span>
+            </button>
+            <button class="profile-tab" data-profile="danos" id="tab-btn-danos" role="tab" aria-selected="false" title="Registro Oficial de Daños y Afectaciones Sísmicas (UNGRD / SGC / REPS)">
+                <span class="tab-icon">📊</span>
+                <span style="color:#ff453a; font-weight:700;">Daños</span>
             </button>
         </div>
 
@@ -209,6 +213,22 @@
              PANEL 1: GEOLOGÍA & SISMOLOGÍA (Modo Integral por Defecto)
              ================================================================== -->
         <div id="panel-sismologia" class="profile-panel">
+            <!-- Tarjeta Prominente: Base Oficial de Afectaciones y Daños Sísmicos -->
+            <div style="margin: 0 0 12px 0; background: linear-gradient(135deg, rgba(255,59,48,0.18), rgba(255,69,58,0.08)); border: 1px solid rgba(255,59,48,0.4); border-radius: 12px; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; gap: 10px; box-shadow: 0 4px 14px rgba(255,59,48,0.15);">
+                <div>
+                    <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
+                        <span style="font-size: 1.1rem;">📊</span>
+                        <strong style="font-size: 0.82rem; color: #FFF;">Registro Oficial de Daños</strong>
+                        <span class="status-pill critico" style="font-size: 0.6rem; padding: 1px 6px;">UNGRD / REPS</span>
+                    </div>
+                    <div style="font-size: 0.72rem; color: #A1A1A6; line-height: 1.3;">
+                        25 eventos y afectaciones comprobadas (Hospitales, Vías, Vivienda).
+                    </div>
+                </div>
+                <button type="button" id="btn-banner-danos" style="background: #ff453a; color: #FFF; border: none; border-radius: 8px; padding: 8px 12px; font-size: 0.75rem; font-weight: 700; cursor: pointer; white-space: nowrap; box-shadow: 0 2px 10px rgba(255,59,48,0.4); transition: transform 0.15s;" onmouseover="this.style.transform='scale(1.04)'" onmouseout="this.style.transform='scale(1)'">
+                    Ver Tabla 📊
+                </button>
+            </div>
             <!-- Grafico Estadistico: Ley de Gutenberg-Richter -->
             <div id="chart-container" style="padding: 0 8px;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
@@ -999,7 +1019,7 @@
     <script src="js/core-oop.js?v=39"></script>
 
     <!-- Lógica principal con versionamiento para evitar caché persistente -->
-    <script src="js/main.js?v=40"></script>
+    <script src="js/main.js?v=41"></script>
 
     <!-- PWA -->
     <script>

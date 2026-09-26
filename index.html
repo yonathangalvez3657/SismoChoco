@@ -758,6 +758,94 @@
                     </span>
                     <div class="switch"><input type="checkbox" id="check-infra"><span class="slider"></span></div>
                 </label>
+
+                <!-- Convenciones Cartográficas de Líneas Vitales (Se despliega dinámicamente al activar el switch) -->
+                <div id="infra-convenciones" style="display: none; margin-top: 10px; background: rgba(0, 0, 0, 0.45); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; padding: 12px; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid rgba(255, 255, 255, 0.08);">
+                        <span style="font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #F5F5F7; display: flex; align-items: center; gap: 5px;">
+                            🧭 Convenciones Cartográficas
+                        </span>
+                        <span style="font-size: 0.64rem; color: #32D74B; background: rgba(50, 215, 75, 0.12); border: 1px solid rgba(50, 215, 75, 0.3); border-radius: 4px; padding: 2px 6px; font-weight: 600;">
+                            ● Red Activa
+                        </span>
+                    </div>
+
+                    <div style="display: flex; flex-direction: column; gap: 9px; font-size: 0.72rem;">
+                        <!-- Redes Viales Primarias -->
+                        <div style="display: flex; align-items: flex-start; gap: 10px; background: rgba(255, 255, 255, 0.02); padding: 7px 8px; border-radius: 6px; border-left: 3px solid #FFB703;">
+                            <div style="display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 28px; margin-top: 1px;">
+                                <span style="font-size: 1rem; line-height: 1;">🛣️</span>
+                                <span style="display: block; width: 22px; height: 4px; background: #FFB703; border-radius: 2px; box-shadow: 0 0 6px rgba(255, 183, 3, 0.5);"></span>
+                            </div>
+                            <div style="flex: 1; line-height: 1.35;">
+                                <div style="display: flex; justify-content: space-between; align-items: baseline;">
+                                    <strong style="color: #FFB703; font-size: 0.74rem;">Redes Viales Primarias</strong>
+                                    <span style="font-size: 0.64rem; color: #A1A1A6;">Rutas 60 / 13</span>
+                                </div>
+                                <div style="color: #C7C7CC; font-size: 0.68rem; margin-top: 2px;">
+                                    Corredores interdepartamentales pavimentados. Alta susceptibilidad a deslizamientos cosísmicos en laderas y corte de suministros.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Corredores Fluviales -->
+                        <div style="display: flex; align-items: flex-start; gap: 10px; background: rgba(255, 255, 255, 0.02); padding: 7px 8px; border-radius: 6px; border-left: 3px solid #38BDF8;">
+                            <div style="display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 28px; margin-top: 1px;">
+                                <span style="font-size: 1rem; line-height: 1;">🚢</span>
+                                <span style="display: block; width: 22px; height: 5px; background: #38BDF8; border-radius: 2px; box-shadow: 0 0 6px rgba(56, 189, 248, 0.5);"></span>
+                            </div>
+                            <div style="flex: 1; line-height: 1.35;">
+                                <div style="display: flex; justify-content: space-between; align-items: baseline;">
+                                    <strong style="color: #38BDF8; font-size: 0.74rem;">Corredores Fluviales</strong>
+                                    <span style="font-size: 0.64rem; color: #A1A1A6;">Atrato / San Juan</span>
+                                </div>
+                                <div style="color: #C7C7CC; font-size: 0.68rem; margin-top: 2px;">
+                                    Ejes navegables esenciales para movilidad y socorro de comunidades ribereñas ante aislamiento terrestre; vulnerables a licuación de orillas.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Terminales Aéreos -->
+                        <div style="display: flex; align-items: flex-start; gap: 10px; background: rgba(255, 255, 255, 0.02); padding: 7px 8px; border-radius: 6px; border-left: 3px solid #0A84FF;">
+                            <div style="display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 28px; margin-top: 1px;">
+                                <span style="font-size: 1rem; line-height: 1;">✈️</span>
+                                <span style="display: block; width: 12px; height: 12px; background: #0A84FF; border: 2px solid #FFFFFF; border-radius: 50%; box-shadow: 0 0 6px rgba(10, 132, 255, 0.6);"></span>
+                            </div>
+                            <div style="flex: 1; line-height: 1.35;">
+                                <div style="display: flex; justify-content: space-between; align-items: baseline;">
+                                    <strong style="color: #60A5FA; font-size: 0.74rem;">Terminales Aéreos</strong>
+                                    <span style="font-size: 0.64rem; color: #A1A1A6;">Quibdó / Condoto / Bahía</span>
+                                </div>
+                                <div style="color: #C7C7CC; font-size: 0.68rem; margin-top: 2px;">
+                                    Aeropuertos y pistas departamentales para soporte de puentes aéreos y despliegue rápido de auxilio humanitario de emergencia.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Centros Asistenciales Esenciales -->
+                        <div style="display: flex; align-items: flex-start; gap: 10px; background: rgba(255, 255, 255, 0.02); padding: 7px 8px; border-radius: 6px; border-left: 3px solid #FF2D55;">
+                            <div style="display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 28px; margin-top: 1px;">
+                                <span style="font-size: 1rem; line-height: 1;">🏥</span>
+                                <span style="display: block; width: 13px; height: 13px; background: #FF2D55; border: 2px solid #FFFFFF; border-radius: 50%; box-shadow: 0 0 6px rgba(255, 45, 85, 0.6);"></span>
+                            </div>
+                            <div style="flex: 1; line-height: 1.35;">
+                                <div style="display: flex; justify-content: space-between; align-items: baseline;">
+                                    <strong style="color: #FF6482; font-size: 0.74rem;">Centros Asistenciales Esenciales</strong>
+                                    <span style="font-size: 0.64rem; color: #FFD60A; font-weight: 600;">NSR-10 Grupo IV (I=1.5)</span>
+                                </div>
+                                <div style="color: #C7C7CC; font-size: 0.68rem; margin-top: 2px;">
+                                    Hospitales de referencia y centros de salud (Red REPS). Requisito estricto de integridad estructural y operación post-sismo ininterrumpida.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pauta de Interacción -->
+                    <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(255, 255, 255, 0.06); font-size: 0.66rem; color: #8E8E93; display: flex; align-items: center; gap: 5px;">
+                        <span>💡</span>
+                        <span><em>Pasa el cursor sobre cualquier vía, río o punto en el mapa para consultar nombre, categoría y vulnerabilidad.</em></span>
+                    </div>
+                </div>
             </section>
 
             <!-- Directrices POT -->
@@ -871,7 +959,7 @@
     <script src="js/core-oop.js?v=39"></script>
 
     <!-- Lógica principal con versionamiento para evitar caché persistente -->
-    <script src="js/main.js?v=42"></script>
+    <script src="js/main.js?v=43"></script>
 
     <!-- PWA -->
     <script>

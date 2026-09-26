@@ -1238,8 +1238,46 @@ function renderLayers() {
                     </div>
                 `;
             }
+        } else if (showInfra) {
+            legend.style.display = 'block';
+            legend.innerHTML = `
+                <h4 style="margin: 0 0 10px 0; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #F5F5F7;">Líneas Vitales</h4>
+                <div style="display: flex; flex-direction: column; gap: 7px; color: #A1A1A6; font-size: 0.74rem; font-weight: 500;">
+                    <div style="display:flex; align-items:center; gap: 8px;">
+                        <span style="display:inline-block; width:16px; height:4px; border-radius:2px; background:#FFB703;"></span>
+                        <span>🛣️ <strong style="color:#FFB703;">Red Vial Primaria</strong></span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap: 8px;">
+                        <span style="display:inline-block; width:16px; height:5px; border-radius:2px; background:#38BDF8;"></span>
+                        <span>🚢 <strong style="color:#38BDF8;">Corredor Fluvial</strong></span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap: 8px;">
+                        <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#0A84FF; border:1.5px solid #fff;"></span>
+                        <span>✈️ <strong style="color:#60A5FA;">Terminal Aéreo</strong></span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap: 8px;">
+                        <span style="display:inline-block; width:11px; height:11px; border-radius:50%; background:#FF2D55; border:1.5px solid #fff;"></span>
+                        <span>🏥 <strong style="color:#FF6482;">Centro Asistencial</strong></span>
+                    </div>
+                </div>
+            `;
         } else {
             legend.style.display = 'none';
+        }
+
+        // Si hay una capa sismica activa y ademas estan visibles las lineas vitales, concatenar sub-leyenda compacta
+        if (showInfra && (viewMode !== 'none' || (isSimulatorActive && currentShakemapData))) {
+            legend.innerHTML += `
+                <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.12);">
+                    <div style="font-size: 0.68rem; font-weight: 700; text-transform: uppercase; color: #38bdf8; margin-bottom: 5px;">Líneas Vitales</div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; font-size: 0.67rem; color: #D1D5DB;">
+                        <div style="display:flex; align-items:center; gap:5px;"><span style="width:12px; height:3px; background:#FFB703; display:inline-block; border-radius:1px;"></span> 🛣️ Vías</div>
+                        <div style="display:flex; align-items:center; gap:5px;"><span style="width:12px; height:4px; background:#38BDF8; display:inline-block; border-radius:1px;"></span> 🚢 Fluvial</div>
+                        <div style="display:flex; align-items:center; gap:5px;"><span style="width:8px; height:8px; border-radius:50%; background:#0A84FF; border:1px solid #fff; display:inline-block;"></span> ✈️ Aéreo</div>
+                        <div style="display:flex; align-items:center; gap:5px;"><span style="width:8px; height:8px; border-radius:50%; background:#FF2D55; border:1px solid #fff; display:inline-block;"></span> 🏥 Salud</div>
+                    </div>
+                </div>
+            `;
         }
     }
 
@@ -1336,6 +1374,9 @@ document.getElementById('btn-reset-capas').addEventListener('click', () => {
         const el = document.getElementById(id);
         if(el) el.checked = false;
     });
+
+    const infraConvenciones = document.getElementById('infra-convenciones');
+    if (infraConvenciones) infraConvenciones.style.display = 'none';
 
     const fallasPanel = document.getElementById('fallas-interactive-panel');
     if (fallasPanel) fallasPanel.style.display = 'none';
@@ -3171,9 +3212,13 @@ if (sldDepth) {
 // MÓDULO 2: CONTROLADOR DE CAPA VECTORIAL INFRAESTRUCTURA CRÍTICA
 // ============================================================================
 const checkInfra = document.getElementById('check-infra');
+const infraConvenciones = document.getElementById('infra-convenciones');
 if (checkInfra) {
     checkInfra.addEventListener('change', async (e) => {
         showInfra = e.target.checked;
+        if (infraConvenciones) {
+            infraConvenciones.style.display = showInfra ? 'block' : 'none';
+        }
         if (showInfra && !infraData) {
             try {
                 let infraRes = await fetch(INFRA_API).catch(() => null);

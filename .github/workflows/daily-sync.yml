@@ -51,5 +51,6 @@ jobs:
           else
             TODAY=$(date -u +"%Y-%m-%d")
             git commit -m "data(cron): actualizacion automatica de catalogo sismico [$TODAY 00:00 UTC-5]"
+            git pull --rebase origin main
             git push origin main
           fi

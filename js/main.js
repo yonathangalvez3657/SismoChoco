@@ -3260,6 +3260,21 @@ if (timeSlider) {
 // MÓDULO 4: MOTOR SIMULADOR INTERACTIVO DE SHAKEMAP (ATENUACIÓN GMPE & MMI)
 // ============================================================================
 const SHAKEMAP_SCENARIOS = {
+    'palmar_74': {
+        nombre: 'Sismo 10 de Agosto (San José del Palmar - Losa Benioff)',
+        mw: 7.4,
+        profundidad: 108,
+        epicentro: [-76.24, 4.97], // [lng, lat] San José del Palmar
+        falla: 'Losa de Subducción Placa de Nazca (Intraplaca Profunda ~108 km)',
+        pgaMax: '0.42 g',
+        radioDestrKm: 28,
+        isoseistas: [
+            { mmi: 'VII - VIII', label: 'Fuerte Epicentral / Losa Benioff', pgaRange: '0.30 - 0.42 g', radioM: 28000, color: [255, 59, 48, 160], borde: [255, 255, 255, 230] },
+            { mmi: 'VI', label: 'Sentido con Alarma en Chocó y Eje Cafetero', pgaRange: '0.15 - 0.30 g', radioM: 80000, color: [255, 140, 0, 115], borde: [255, 180, 0, 200] },
+            { mmi: 'V', label: 'Ampliamente Sentido en Cuenca del San Juan', pgaRange: '0.06 - 0.15 g', radioM: 160000, color: [255, 214, 10, 75], borde: [255, 230, 80, 170] },
+            { mmi: 'IV', label: 'Perceptible en Valle del Cauca y Antioquia', pgaRange: '0.02 - 0.06 g', radioM: 280000, color: [56, 189, 248, 45], borde: [56, 189, 248, 140] }
+        ]
+    },
     'murindo_73': {
         nombre: 'Falla Murindó (Sismo Histórico 1992)',
         mw: 7.3,

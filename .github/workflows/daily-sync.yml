@@ -10,6 +10,8 @@ jobs:
   sync-database:
     name: 🔄 Descargar sismos recientes y actualizar catálogo
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - name: 📥 Clonar repositorio
@@ -34,6 +36,9 @@ jobs:
           from sync_catalogo import sync_catalogo_live
           res = sync_catalogo_live()
           print('Resultado de la sincronización:', res)
+          if isinstance(res, dict) and 'error' in res:
+              print('Error detectado:', res['error'], file=sys.stderr)
+              sys.exit(1)
           "
 
       - name: 💾 Confirmar y guardar cambios en el repositorio si hay nuevos sismos

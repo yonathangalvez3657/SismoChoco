@@ -43,10 +43,13 @@ def find_nearest_municipio(lat, lon, municipios):
 
 def sync_catalogo_live(start_date_str=None):
     """Consulta USGS y EMSC para descargar sismos recientes y consolidarlos."""
-    if not os.path.exists(GEOJSON_CONSOLIDADO):
-        return {'error': 'No existe el archivo sismicidad_choco_consolidado.geojson'}
+    geojson_path = resolve_path('sismicidad_choco_consolidado.geojson')
+    municipios_path = resolve_path(os.path.join('data', 'municipios_choco_nsr10.json'))
+    
+    if not os.path.exists(geojson_path):
+        raise FileNotFoundError(f'No se encontró el archivo sismicidad_choco_consolidado.geojson en: {geojson_path}')
 
-    with open(GEOJSON_CONSOLIDADO, 'r', encoding='utf-8') as f:
+    with open(geojson_path, 'r', encoding='utf-8') as f:
         geojson_data = json.load(f)
 
     existing_features = geojson_data.get('features', [])
@@ -67,8 +70,8 @@ def sync_catalogo_live(start_date_str=None):
     lon_min, lon_max = -78.5, -74.5
 
     municipios = []
-    if os.path.exists(MUNICIPIOS_PATH):
-        with open(MUNICIPIOS_PATH, 'r', encoding='utf-8') as f:
+    if os.path.exists(municipios_path):
+        with open(municipios_path, 'r', encoding='utf-8') as f:
             municipios = json.load(f)
 
     new_events = []
@@ -168,7 +171,7 @@ def sync_catalogo_live(start_date_str=None):
 
     if added_features:
         total = existing_features + added_features
-        with open(GEOJSON_CONSOLIDADO, 'w', encoding='utf-8') as f:
+        with open(geojson_path, 'w', encoding='utf-8') as f:
             json.dump({'type': 'FeatureCollection', 'features': total}, f, ensure_ascii=False)
 
     return {

@@ -520,6 +520,86 @@
           6.221
         ]
       }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "hosp_san_jose_palmar",
+        "nombre": "ESE Hospital San José de San José del Palmar",
+        "tipo": "hospital",
+        "ciudad": "San José del Palmar",
+        "nivel": "Nivel I (Atención Básica y Urgencias)",
+        "camas_aprox": 16,
+        "importancia_nsr10": "Grupo IV (I = 1.50)",
+        "fuente": "REPS MinSalud / SGC Macrosísmica"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -76.2275,
+          4.9739
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "hosp_novita",
+        "nombre": "Centro de Salud de Nóvita (IPS Local)",
+        "tipo": "hospital",
+        "ciudad": "Nóvita",
+        "nivel": "Nivel I (Subregión San Juan)",
+        "camas_aprox": 12,
+        "importancia_nsr10": "Grupo IV (I = 1.50)",
+        "fuente": "REPS MinSalud"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -76.6128,
+          4.9547
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "hosp_condoto_roque",
+        "nombre": "Hospital San Roque de Condoto",
+        "tipo": "hospital",
+        "ciudad": "Condoto",
+        "nivel": "Nivel I-II (Referencia Media San Juan)",
+        "camas_aprox": 32,
+        "importancia_nsr10": "Grupo IV (I = 1.50)",
+        "fuente": "REPS MinSalud"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -76.6533,
+          5.0944
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "hosp_cartago_departamental",
+        "nombre": "Hospital Departamental de Cartago",
+        "tipo": "hospital",
+        "ciudad": "Cartago (Zona Límite Valle-Chocó)",
+        "nivel": "Nivel III (Alta Complejidad Regional)",
+        "camas_aprox": 180,
+        "importancia_nsr10": "Grupo IV (I = 1.50)",
+        "fuente": "REPS MinSalud"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -75.9125,
+          4.7467
+        ]
+      }
     }
   ]
 }

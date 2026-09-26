@@ -3343,7 +3343,7 @@ const btnClearShakemap = document.getElementById('btn-clear-shakemap');
 const shakemapText = document.getElementById('btn-shakemap-text');
 const shakemapImpactBox = document.getElementById('shakemap-impact-box');
 
-function activateShakemap(scenarioKey) {
+async function activateShakemap(scenarioKey) {
     const scenario = SHAKEMAP_SCENARIOS[scenarioKey];
     if (!scenario) return;
 
@@ -3351,11 +3351,26 @@ function activateShakemap(scenarioKey) {
     isSimulatorActive = true;
     currentShakemapData = scenario;
 
-    if (shakemapText) shakemapText.innerHTML = '🔄 Recalcular Escenario';
+    if (shakemapText) shakemapText.innerHTML = '🔄 Recalcular Ruptura';
     if (btnClearShakemap) btnClearShakemap.style.display = 'inline-flex';
     if (btnToggleShakemap) {
         btnToggleShakemap.style.background = '#ff453a';
         btnToggleShakemap.style.color = '#fff';
+    }
+
+    // Asegurar que la capa de infraestructura crítica esté disponible en memoria para el cálculo espacial
+    if (!infraData) {
+        try {
+            let infraRes = await fetch(INFRA_API).catch(() => null);
+            if (!infraRes || !infraRes.ok) {
+                infraRes = await fetch('./data/vias_infraestructura.geojson');
+            }
+            if (infraRes && infraRes.ok) {
+                infraData = await infraRes.json();
+            }
+        } catch (err) {
+            console.error("Error al cargar infraestructura para ShakeMap:", err);
+        }
     }
 
     if (shakemapImpactBox) {
@@ -3376,9 +3391,9 @@ function activateShakemap(scenarioKey) {
         const viasCountEl = document.getElementById('shakemap-impact-vias');
 
         if (infraData && infraData.features) {
-            // Radio crítico de daño severo/moderado (Isoseista VII: Sa >= 0.25g)
-            const isoSevera = scenario.isoseistas.find(iso => iso.mmi.includes('VII')) || scenario.isoseistas[1] || scenario.isoseistas[0];
-            const radioKm = isoSevera ? (isoSevera.radioM / 1000) : scenario.radioDestrKm;
+            // Radio de aceleración fuerte a severa (Sa >= 0.15g - 0.25g / MMI VI - VII)
+            const isoSevera = scenario.isoseistas.find(iso => iso.mmi.includes('VI') || iso.mmi.includes('VII')) || scenario.isoseistas[1] || scenario.isoseistas[0];
+            const radioKm = isoSevera ? (isoSevera.radioM / 1000) : Math.max(scenario.radioDestrKm * 1.5, 60);
 
             let hospExpuestos = 0;
             let aeroExpuestos = 0;
@@ -3433,7 +3448,7 @@ function deactivateShakemap() {
     isSimulatorActive = false;
     currentShakemapData = null;
 
-    if (shakemapText) shakemapText.innerHTML = '💥 Simular Escenario';
+    if (shakemapText) shakemapText.innerHTML = '⚡ Simular Ruptura Sísmica';
     if (btnClearShakemap) btnClearShakemap.style.display = 'none';
     if (btnToggleShakemap) {
         btnToggleShakemap.style.background = 'rgba(255,59,48,0.15)';
@@ -3458,6 +3473,333 @@ if (btnToggleShakemap && selectShakemap) {
 if (btnClearShakemap) {
     btnClearShakemap.addEventListener('click', () => {
         deactivateShakemap();
+    });
+}
+
+// ============================================================================
+// MÓDULO 5: CONTROLADOR DEL REGISTRO OFICIAL DE AFECTACIONES Y DAÑOS SÍSMICOS
+// (Fuentes Primarias: UNGRD / SGC / MINSALUD REPS / INVIAS HERMES / DESINVENTAR)
+// ============================================================================
+let damageData = null;
+let activeDamageEvent = 'palmar_74';
+let activeDamageCategory = 'all';
+let damageSearchQuery = '';
+
+const damageModal = document.getElementById('damage-registry-modal');
+const btnCloseDamageModal = document.getElementById('btn-close-damage-modal');
+const btnOpenDamageModal = document.getElementById('btn-open-damage-modal');
+const btnQuickDamageDb = document.getElementById('btn-quick-damage-db');
+const damageFilterEvent = document.getElementById('damage-filter-event');
+const damageSearchInput = document.getElementById('damage-search-input');
+const damageTableBody = document.getElementById('damage-table-body');
+const damageKpiTotal = document.getElementById('damage-kpi-total');
+const damageKpiHosp = document.getElementById('damage-kpi-hosp');
+const damageKpiVias = document.getElementById('damage-kpi-vias');
+const damageKpiEms = document.getElementById('damage-kpi-ems');
+const btnExportDamageCsv = document.getElementById('btn-export-damage-csv');
+const btnCopyDamageJson = document.getElementById('btn-copy-damage-json');
+
+async function loadDamageData() {
+    if (!damageData) {
+        try {
+            const res = await fetch('./data/danos_lineas_vitales.json');
+            if (res.ok) {
+                damageData = await res.json();
+            }
+        } catch (err) {
+            console.error("Error al cargar base de datos de daños:", err);
+        }
+    }
+}
+
+function openDamageModal(eventId) {
+    if (!damageModal) return;
+    if (eventId && damageFilterEvent) {
+        damageFilterEvent.value = eventId;
+        activeDamageEvent = eventId;
+    }
+    damageModal.style.display = 'flex';
+    requestAnimationFrame(() => {
+        damageModal.style.opacity = '1';
+    });
+    loadDamageData().then(() => {
+        renderDamageTable();
+    });
+}
+
+function closeDamageModal() {
+    if (!damageModal) return;
+    damageModal.style.opacity = '0';
+    setTimeout(() => {
+        damageModal.style.display = 'none';
+    }, 280);
+}
+
+function getFilteredDamageRecords() {
+    if (!damageData || !damageData.eventos) return [];
+    let items = [];
+
+    damageData.eventos.forEach(ev => {
+        if (activeDamageEvent === 'all' || ev.id === activeDamageEvent) {
+            ev.afectaciones.forEach(af => {
+                items.push({
+                    ...af,
+                    evento_id: ev.id,
+                    evento_nombre: ev.nombre,
+                    evento_mw: ev.magnitud_mw
+                });
+            });
+        }
+    });
+
+    if (activeDamageCategory !== 'all') {
+        const targetCat = activeDamageCategory.toLowerCase();
+        items = items.filter(it => {
+            const itCat = (it.categoria || '').toLowerCase();
+            if (targetCat === 'vial') return itCat === 'vial' || itCat === 'fluvial';
+            return itCat === targetCat;
+        });
+    }
+
+    if (damageSearchQuery.trim() !== '') {
+        const q = damageSearchQuery.toLowerCase().trim();
+        items = items.filter(it => 
+            (it.municipio && it.municipio.toLowerCase().includes(q)) ||
+            (it.infraestructura && it.infraestructura.toLowerCase().includes(q)) ||
+            (it.tipo_dano && it.tipo_dano.toLowerCase().includes(q)) ||
+            (it.fuente && it.fuente.toLowerCase().includes(q)) ||
+            (it.impacto_cuantitativo && it.impacto_cuantitativo.toLowerCase().includes(q))
+        );
+    }
+
+    return items;
+}
+
+function renderDamageTable() {
+    if (!damageTableBody) return;
+    const records = getFilteredDamageRecords();
+
+    // Actualizar KPIs
+    let hospCount = 0;
+    let viasCount = 0;
+    let maxEms = 'Grado 2';
+
+    records.forEach(r => {
+        if (r.categoria === 'Salud') hospCount++;
+        if (r.categoria === 'Vial' || r.categoria === 'Fluvial') viasCount++;
+        if (r.grado_ems98 && (r.grado_ems98.includes('5') || r.grado_ems98.includes('4'))) {
+            maxEms = 'Grado 4 - 5 (Severo/Colapso)';
+        }
+    });
+
+    if (damageKpiTotal) damageKpiTotal.innerText = records.length;
+    if (damageKpiHosp) damageKpiHosp.innerText = `${hospCount} centros`;
+    if (damageKpiVias) damageKpiVias.innerText = `${viasCount} corredores`;
+    if (damageKpiEms) damageKpiEms.innerText = maxEms;
+
+    if (records.length === 0) {
+        damageTableBody.innerHTML = `
+            <tr>
+                <td colspan="7" style="text-align: center; padding: 28px; color: #86868B;">
+                    No se encontraron registros de daños con los filtros aplicados.
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    const categoryIcons = {
+        'Salud': '🏥',
+        'Vial': '🛣️',
+        'Fluvial': '🚢',
+        'Vivienda': '🏠',
+        'Aeropuertos': '✈️',
+        'Marítimo': '⚓',
+        'Acueducto': '💧'
+    };
+
+    const categoryColors = {
+        'Salud': '#ff453a',
+        'Vial': '#ffd60a',
+        'Fluvial': '#38bdf8',
+        'Vivienda': '#bf5af2',
+        'Aeropuertos': '#0A84FF',
+        'Marítimo': '#64d2ff',
+        'Acueducto': '#30d158'
+    };
+
+    damageTableBody.innerHTML = records.map(r => {
+        const icon = categoryIcons[r.categoria] || '📌';
+        const color = categoryColors[r.categoria] || '#0A84FF';
+        const isSevere = r.grado_ems98 && (r.grado_ems98.includes('4') || r.grado_ems98.includes('5'));
+
+        return `
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.06); transition: background 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.04)'" onmouseout="this.style.background='transparent'">
+                <td style="padding: 10px; font-weight: 600; color: #FFF; white-space: nowrap;">
+                    ${r.municipio}<br>
+                    <span style="font-size: 0.65rem; color: #86868B; font-weight: normal;">${r.departamento}</span>
+                </td>
+                <td style="padding: 10px; white-space: nowrap;">
+                    <span style="display: inline-flex; align-items: center; gap: 4px; padding: 2px 7px; border-radius: 6px; font-size: 0.68rem; font-weight: 600; background: ${color}1a; color: ${color}; border: 1px solid ${color}40;">
+                        ${icon} ${r.categoria}
+                    </span>
+                </td>
+                <td style="padding: 10px;">
+                    <strong style="color: #F5F5F7;">${r.infraestructura}</strong>
+                    <div style="font-size: 0.65rem; color: #86868B; margin-top: 2px;">
+                        ${r.codigo_reps ? `REPS: ${r.codigo_reps}` : (r.codigo_invias ? `INVIAS: ${r.codigo_invias}` : (r.codigo_aerocivil ? `AERO: ${r.codigo_aerocivil}` : ''))}
+                    </div>
+                </td>
+                <td style="padding: 10px;">
+                    <span style="color: ${isSevere ? '#ff453a' : '#ffd60a'}; font-weight: 600;">
+                        ${r.tipo_dano}
+                    </span>
+                    <div style="font-size: 0.66rem; color: #A1A1A6; margin-top: 1px;">
+                        EMS-98: <strong>${r.grado_ems98}</strong>
+                    </div>
+                </td>
+                <td style="padding: 10px; color: #E5E5EA; max-width: 260px;">
+                    ${r.impacto_cuantitativo}
+                </td>
+                <td style="padding: 10px; white-space: nowrap;">
+                    <span style="color: #38bdf8; font-size: 0.7rem; font-weight: 500;">${r.fuente}</span>
+                    <div style="font-size: 0.64rem; color: ${r.estado_operativo.includes('Cierre') || r.estado_operativo.includes('Inoperativo') || r.estado_operativo.includes('Inhabitable') ? '#ff453a' : '#32D74B'}; margin-top: 2px;">
+                        ● ${r.estado_operativo}
+                    </div>
+                </td>
+                <td style="padding: 10px; text-align: center; white-space: nowrap;">
+                    ${r.coordenadas ? `
+                        <button onclick="flyToDamageLocation(${r.coordenadas[0]}, ${r.coordenadas[1]}, '${r.infraestructura.replace(/'/g, "\\'")}')" style="background: rgba(10,132,255,0.15); border: 1px solid rgba(10,132,255,0.35); color: #0A84FF; border-radius: 6px; padding: 4px 8px; font-size: 0.68rem; cursor: pointer; transition: all 0.15s;" onmouseover="this.style.background='#0A84FF'; this.style.color='#fff';" onmouseout="this.style.background='rgba(10,132,255,0.15)'; this.style.color='#0A84FF';">
+                            📍 Volar 3D
+                        </button>
+                    ` : '--'}
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+window.flyToDamageLocation = function(lng, lat, title) {
+    closeDamageModal();
+    if (deckgl) {
+        deckgl.setProps({
+            initialViewState: {
+                longitude: lng,
+                latitude: lat,
+                zoom: 12.8,
+                pitch: 52,
+                bearing: 15,
+                transitionDuration: 1500,
+                transitionInterpolator: new deck.FlyToInterpolator()
+            }
+        });
+    }
+};
+
+// Event Listeners para el Modal de Daños
+if (btnOpenDamageModal) {
+    btnOpenDamageModal.addEventListener('click', () => {
+        openDamageModal(activeShakemapScenario || 'palmar_74');
+    });
+}
+
+if (btnQuickDamageDb) {
+    btnQuickDamageDb.addEventListener('click', () => {
+        openDamageModal('palmar_74');
+    });
+}
+
+if (btnCloseDamageModal) {
+    btnCloseDamageModal.addEventListener('click', () => {
+        closeDamageModal();
+    });
+}
+
+if (damageModal) {
+    damageModal.addEventListener('click', (e) => {
+        if (e.target === damageModal) closeDamageModal();
+    });
+}
+
+if (damageFilterEvent) {
+    damageFilterEvent.addEventListener('change', (e) => {
+        activeDamageEvent = e.target.value;
+        renderDamageTable();
+    });
+}
+
+const damageCategoryPills = document.querySelectorAll('.damage-pill-btn');
+damageCategoryPills.forEach(btn => {
+    btn.addEventListener('click', () => {
+        damageCategoryPills.forEach(b => {
+            b.classList.remove('active');
+            b.style.borderColor = 'rgba(255,255,255,0.15)';
+            b.style.background = 'rgba(255,255,255,0.05)';
+            b.style.color = '#A1A1A6';
+        });
+        btn.classList.add('active');
+        btn.style.borderColor = '#0A84FF';
+        btn.style.background = 'rgba(10,132,255,0.2)';
+        btn.style.color = '#fff';
+
+        activeDamageCategory = btn.dataset.cat;
+        renderDamageTable();
+    });
+});
+
+if (damageSearchInput) {
+    damageSearchInput.addEventListener('input', (e) => {
+        damageSearchQuery = e.target.value;
+        renderDamageTable();
+    });
+}
+
+if (btnExportDamageCsv) {
+    btnExportDamageCsv.addEventListener('click', () => {
+        const records = getFilteredDamageRecords();
+        if (records.length === 0) {
+            alert("No hay registros para exportar con los filtros actuales.");
+            return;
+        }
+
+        const headers = ["Municipio", "Departamento", "Longitud", "Latitud", "Categoria", "Infraestructura", "Tipo_Dano", "Grado_EMS98", "Impacto_Cuantitativo", "Fuente", "Estado_Operativo"];
+        const rows = records.map(r => [
+            `"${r.municipio || ''}"`,
+            `"${r.departamento || ''}"`,
+            r.coordenadas ? r.coordenadas[0] : '',
+            r.coordenadas ? r.coordenadas[1] : '',
+            `"${r.categoria || ''}"`,
+            `"${r.infraestructura || ''}"`,
+            `"${r.tipo_dano || ''}"`,
+            `"${r.grado_ems98 || ''}"`,
+            `"${r.impacto_cuantitativo ? r.impacto_cuantitativo.replace(/"/g, '""') : ''}"`,
+            `"${r.fuente || ''}"`,
+            `"${r.estado_operativo || ''}"`
+        ]);
+
+        const csvContent = "data:text/csv;charset=utf-8," + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `afectaciones_sismicas_choco_${activeDamageEvent}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    });
+}
+
+if (btnCopyDamageJson) {
+    btnCopyDamageJson.addEventListener('click', () => {
+        const records = getFilteredDamageRecords();
+        navigator.clipboard.writeText(JSON.stringify(records, null, 2)).then(() => {
+            const originalText = btnCopyDamageJson.innerText;
+            btnCopyDamageJson.innerText = '✅ ¡Copiado!';
+            setTimeout(() => {
+                btnCopyDamageJson.innerText = originalText;
+            }, 1800);
+        }).catch(err => {
+            console.error("Error al copiar JSON:", err);
+        });
     });
 }
 

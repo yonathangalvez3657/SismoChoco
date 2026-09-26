@@ -1,0 +1,453 @@
+{
+  "metadatos": {
+    "titulo": "Registro Oficial y Georreferenciado de Afectaciones y Daños Sísmicos en el Chocó y Área de Influencia",
+    "autor": "Yonathan Andrés Gálvez Giraldo - Tesis de Maestría en Diseño y Creación Interactiva (Universidad de Caldas)",
+    "version": "2.0.0",
+    "fecha_actualizacion": "2026-09-26",
+    "normativa_referencia": "NSR-10 (Títulos A y H) / Escala Macrosísmica Europea EMS-98",
+    "fuentes_oficiales": [
+      {
+        "sigla": "UNGRD",
+        "nombre": "Unidad Nacional para la Gestión del Riesgo de Desastres",
+        "sistema": "SNIGRD / Sala de Crisis Nacional / Formularios EDANPRI / RUD",
+        "url": "https://portal.gestiondelriesgo.gov.co"
+      },
+      {
+        "sigla": "SGC",
+        "nombre": "Servicio Geológico Colombiano",
+        "sistema": "SIMAS (Sistema de Información de Macrosísmica) y Red Sismológica Nacional de Colombia (RSNC)",
+        "url": "https://sismo.sgc.gov.co"
+      },
+      {
+        "sigla": "MINSALUD",
+        "nombre": "Ministerio de Salud y Protección Social",
+        "sistema": "REPS (Registro Especial de Prestadores de Servicios de Salud) / OPS-OMS",
+        "url": "https://prestadores.minsalud.gov.co"
+      },
+      {
+        "sigla": "INVIAS",
+        "nombre": "Instituto Nacional de Vías",
+        "sistema": "HERMES / SIG-VIAL y Reportes de Emergencias Viales (#767)",
+        "url": "https://hermes.invias.gov.co"
+      },
+      {
+        "sigla": "AEROCIVIL",
+        "nombre": "Unidad Administrativa Especial de Aeronáutica Civil",
+        "sistema": "SIGA - Sistema de Información Geográfica Aeronáutica",
+        "url": "https://www.aerocivil.gov.co"
+      },
+      {
+        "sigla": "DESINVENTAR",
+        "nombre": "UNDRR / Corporación OSSO",
+        "sistema": "Sistema de Inventario de Efectos de Desastres de Colombia (1970 - 2026)",
+        "url": "https://online.desinventar.org"
+      },
+      {
+        "sigla": "CODECHOCO",
+        "nombre": "Corporación Autónoma Regional para el Desarrollo Sostenible del Chocó",
+        "sistema": "Evaluaciones Técnicas Geológicas y Ambientales de Emergencia",
+        "url": "https://www.codechoco.gov.co"
+      }
+    ]
+  },
+  "eventos": [
+    {
+      "id": "palmar_74",
+      "nombre": "Sismo 10 de Agosto (Mw 7.4 - San José del Palmar / Losa Benioff)",
+      "fecha": "2026-08-10 07:34 Local",
+      "magnitud_mw": 7.4,
+      "profundidad_km": 103,
+      "mecanismo": "Intraplaca Oceánica - Losa de Subducción Placa de Nazca (Benioff)",
+      "epicentro": [-76.2292, 4.9758],
+      "resumen_impacto": "Sismo de subducción profunda de alta energía sentida en 16 departamentos (PGA 0.35-0.42g en roca). En Chocó y el límite cordillerano con Valle y Risaralda provocó incomunicación terrestre por derrumbes masivos cosísmicos, daños no estructurales y estructurales en centros hospitalarios y más de 35.000 viviendas afectadas a nivel regional (468 destruidas y 3.199 averiadas en Chocó).",
+      "afectaciones": [
+        {
+          "id": "SIS-CHO-001",
+          "municipio": "San José del Palmar",
+          "departamento": "Chocó",
+          "coordenadas": [-76.2292, 4.9758],
+          "categoria": "Salud",
+          "infraestructura": "ESE Hospital San José de San José del Palmar (Nivel I)",
+          "codigo_reps": "276600000101",
+          "tipo_dano": "Daño No Estructural Severo y Agrietamiento de Muros",
+          "grado_ems98": "Grado 3 - 4",
+          "impacto_cuantitativo": "Evacuación parcial preventiva de camas; habilitación de carpas de campaña externas para triage y urgencias; fisuras en tabiques de mampostería no confinada y colapso de redes hidrosanitarias.",
+          "fuente": "UNGRD / EDANPRI / MinSalud REPS",
+          "estado_operativo": "Operativo en carpas exteriores"
+        },
+        {
+          "id": "SIS-CHO-002",
+          "municipio": "San José del Palmar - Ansermanuevo",
+          "departamento": "Chocó - Valle del Cauca",
+          "coordenadas": [-76.1550, 4.8850],
+          "categoria": "Vial",
+          "infraestructura": "Vía Terrestre Ansermanuevo - El Cairo - San José del Palmar",
+          "codigo_invias": "Red Secundaria 2302",
+          "tipo_dano": "Bloqueo Total por Deslizamientos Cosísmicos y Pérdida de Banca",
+          "grado_ems98": "Grado 4 (Colapso de bancada)",
+          "impacto_cuantitativo": "4 tramos con pérdida de calzada y más de 12 derrumbes masivos en la Serranía de los Paraguas; incomunicación terrestre total de la cabecera municipal por más de 72 horas.",
+          "fuente": "INVIAS HERMES / UNGRD Sala de Crisis",
+          "estado_operativo": "Cierre total durante emergencia inicial"
+        },
+        {
+          "id": "SIS-CHO-003",
+          "municipio": "San José del Palmar",
+          "departamento": "Chocó",
+          "coordenadas": [-76.2292, 4.9758],
+          "categoria": "Acueducto",
+          "infraestructura": "Red Matriz de Aducción y Distribución de Acueducto",
+          "codigo_reps": "Línea Vital",
+          "tipo_dano": "Fractura de Tuberías y Desabastecimiento de Agua Potable",
+          "grado_ems98": "Grado 3",
+          "impacto_cuantitativo": "Desabastecimiento al 100% de la cabecera municipal por 4 días; atención con plantas potabilizadoras móviles de la UNGRD.",
+          "fuente": "UNGRD / Alcaldía de San José del Palmar",
+          "estado_operativo": "Servicio provisional con carrotanques"
+        },
+        {
+          "id": "SIS-CHO-004",
+          "municipio": "Quibdó",
+          "departamento": "Chocó",
+          "coordenadas": [-76.6611, 5.6947],
+          "categoria": "Salud",
+          "infraestructura": "Hospital Departamental San Francisco de Asís (Nivel II)",
+          "codigo_reps": "270010001401",
+          "tipo_dano": "Grietas Diagonales en Pórticos y Evacuación Preventiva",
+          "grado_ems98": "Grado 3 - 4",
+          "impacto_cuantitativo": "Grietas estructurales en vigas y columnas de pabellones antiguos; evacuación de hospitalización hacia carpas exteriores; saturación de urgencias al 230% con puente aéreo humanitario a Medellín.",
+          "fuente": "MinSalud REPS / Gobernación del Chocó / OPS",
+          "estado_operativo": "Alerta Roja - Atención en contingencia"
+        },
+        {
+          "id": "SIS-CHO-005",
+          "municipio": "Quibdó",
+          "departamento": "Chocó",
+          "coordenadas": [-76.6580, 5.6920],
+          "categoria": "Vivienda",
+          "infraestructura": "Edificio Don Prisciliano (Sector Medrano)",
+          "codigo_dane": "27001",
+          "tipo_dano": "Colapso Estructural Total por Falla de Corte y Suelo Aluvial",
+          "grado_ems98": "Grado 5 (Colapso Total)",
+          "impacto_cuantitativo": "Colapso total de 4 niveles; evacuación de emergencia del cuadrante circundante por riesgo de colapso progresivo.",
+          "fuente": "UNGRD / CODECHOCÓ / Bomberos Quibdó",
+          "estado_operativo": "Demolición y remoción de escombros"
+        },
+        {
+          "id": "SIS-CHO-006",
+          "municipio": "Quibdó",
+          "departamento": "Chocó",
+          "coordenadas": [-76.6540, 5.6970],
+          "categoria": "Vivienda",
+          "infraestructura": "I.E. Integrado Carrasquilla Industrial (Sede Principal)",
+          "codigo_dane": "27001-EDU",
+          "tipo_dano": "Falla Frágil de Columnas y Colapso Parcial de Bloque",
+          "grado_ems98": "Grado 4",
+          "impacto_cuantitativo": "Colapso parcial de bloque de 12 aulas; suspensión indefinida de actividades presenciales para 1.400 estudiantes.",
+          "fuente": "Secretaría de Educación Quibdó / UNGRD",
+          "estado_operativo": "Clausurado por riesgo de colapso"
+        },
+        {
+          "id": "SIS-CHO-007",
+          "municipio": "Quibdó",
+          "departamento": "Chocó",
+          "coordenadas": [-76.6414, 5.6914],
+          "categoria": "Aeropuertos",
+          "infraestructura": "Aeropuerto El Caraño (SKUI)",
+          "codigo_aerocivil": "SKUI",
+          "tipo_dano": "Desprendimiento de Cielos Rasos e Inspección Técnica de Pista",
+          "grado_ems98": "Grado 2",
+          "impacto_cuantitativo": "Cierre operativo temporal de 48 horas para barrido de pista, revisión de radioayudas y reparación de acabados en terminal de pasajeros.",
+          "fuente": "Aeronáutica Civil de Colombia (Aerocivil)",
+          "estado_operativo": "Reabierto tras peritaje técnico"
+        },
+        {
+          "id": "SIS-CHO-008",
+          "municipio": "Nóvita",
+          "departamento": "Chocó",
+          "coordenadas": [-76.6083, 4.9547],
+          "categoria": "Salud",
+          "infraestructura": "Centro de Salud de Nóvita (IPS Primaria)",
+          "codigo_reps": "274950000101",
+          "tipo_dano": "Fisuración de Mampostería y Colapso de Red Eléctrica Local",
+          "grado_ems98": "Grado 2 - 3",
+          "impacto_cuantitativo": "Afectación en farmacia y consulta externa; saturación operativa por arribo de lesionados desde las cuencas de los ríos Tamaná y San Juan.",
+          "fuente": "Secretaría Departamental de Salud Chocó / EDAN",
+          "estado_operativo": "Operativo parcial"
+        },
+        {
+          "id": "SIS-CHO-009",
+          "municipio": "Condoto",
+          "departamento": "Chocó",
+          "coordenadas": [-76.6503, 5.0944],
+          "categoria": "Salud",
+          "infraestructura": "Hospital San Roque de Condoto (Nivel I-II)",
+          "codigo_reps": "272050000101",
+          "tipo_dano": "Sobrecarga de Urgencias y Desprendimiento de Acabados de Fachada",
+          "grado_ems98": "Grado 2",
+          "impacto_cuantitativo": "Saturación del 140% en área de urgencias por traslados desde municipios vecinos; falla en tanque elevado de reserva de agua.",
+          "fuente": "MinSalud REPS / EDANPRI",
+          "estado_operativo": "Operativo a máxima capacidad"
+        },
+        {
+          "id": "SIS-CHO-010",
+          "municipio": "Tadó",
+          "departamento": "Chocó",
+          "coordenadas": [-76.5567, 5.2678],
+          "categoria": "Salud",
+          "infraestructura": "Hospital San José de Tadó",
+          "codigo_reps": "277870000101",
+          "tipo_dano": "Fisuras en Mampostería y Caída de Luminarias",
+          "grado_ems98": "Grado 2",
+          "impacto_cuantitativo": "Agrietamiento en muros divisorios y desprendimiento de revestimiento cerámico en farmacia y laboratorio clínico.",
+          "fuente": "MinSalud REPS / UNGRD",
+          "estado_operativo": "Operativo"
+        },
+        {
+          "id": "SIS-CHO-011",
+          "municipio": "Istmina",
+          "departamento": "Chocó",
+          "coordenadas": [-76.6853, 5.1583],
+          "categoria": "Salud",
+          "infraestructura": "Hospital Eduardo Santos",
+          "codigo_reps": "273610000101",
+          "tipo_dano": "Fisuración de Mampostería e Instalación de Triaje Externo",
+          "grado_ems98": "Grado 2 - 3",
+          "impacto_cuantitativo": "Agrietamiento en muros divisorios; réplicas continuas obligaron a habilitar carpas externas para triaje en patios descubiertos.",
+          "fuente": "MinSalud REPS / UNGRD",
+          "estado_operativo": "Operativo en contingencia exterior"
+        },
+        {
+          "id": "SIS-CHO-012",
+          "municipio": "Todo el Departamento",
+          "departamento": "Chocó",
+          "coordenadas": [-76.6611, 5.6947],
+          "categoria": "Vivienda",
+          "infraestructura": "Parque Habitacional de 29 Municipios Afectados",
+          "codigo_dane": "27000",
+          "tipo_dano": "Destrucción Severa y Asentamientos Cosísmicos",
+          "grado_ems98": "Grado 3 - 5",
+          "impacto_cuantitativo": "468 viviendas destruidas en su totalidad; 3.199 viviendas averiadas; más de 43.000 personas damnificadas en Chocó.",
+          "fuente": "UNGRD SNIGRD / RUD / CODECHOCÓ",
+          "estado_operativo": "Planes de Reconstrucción Integral (PAE)"
+        },
+        {
+          "id": "SIS-CHO-013",
+          "municipio": "Santa Cecilia - Tadó - Quibdó",
+          "departamento": "Chocó - Risaralda",
+          "coordenadas": [-76.0336, 5.2289],
+          "categoria": "Vial",
+          "infraestructura": "Ruta Nacional 13: Corredor Pereira - Santa Cecilia - Tadó - Quibdó",
+          "codigo_invias": "Ruta 1301",
+          "tipo_dano": "Deslizamientos Cosísmicos y Caída de Rocas en Taludes",
+          "grado_ems98": "Grado 3",
+          "impacto_cuantitativo": "Desprendimiento de rocas y caída de árboles en 6 puntos críticos entre Guarato, Santa Cecilia y Pueblo Rico; paso restringido a un carril por 48 horas.",
+          "fuente": "INVIAS HERMES",
+          "estado_operativo": "Paso restringido a un carril"
+        },
+        {
+          "id": "SIS-CHO-014",
+          "municipio": "Cartago",
+          "departamento": "Valle del Cauca",
+          "coordenadas": [-75.9117, 4.7464],
+          "categoria": "Salud",
+          "infraestructura": "Hospital Departamental de Cartago (Nivel II)",
+          "codigo_reps": "761470000101",
+          "tipo_dano": "Grietas Estructurales Severas y Evacuación Parcial",
+          "grado_ems98": "Grado 3 - 4",
+          "impacto_cuantitativo": "Graves fisuras estructurales, desprendimiento de fachadas y colapso de muros divisorios en urgencias y pediatría; evacuación parcial.",
+          "fuente": "MinSalud REPS / CVC / UNGRD",
+          "estado_operativo": "Operativo parcial en áreas no comprometidas"
+        },
+        {
+          "id": "SIS-CHO-015",
+          "municipio": "Pereira",
+          "departamento": "Risaralda",
+          "coordenadas": [-75.6961, 4.8133],
+          "categoria": "Vivienda",
+          "infraestructura": "Edificaciones Multifamiliares y Comerciales (Sector Circunvalar)",
+          "codigo_dane": "66001",
+          "tipo_dano": "Colapso Parcial y Rotura Masiva de Ventanería y Fachadas",
+          "grado_ems98": "Grado 3 - 4",
+          "impacto_cuantitativo": "Daños estructurales severos en edificaciones del sector céntrico y circunvalar; evacuación preventiva de decenas de inmuebles.",
+          "fuente": "DIGER Pereira / UNGRD",
+          "estado_operativo": "Zona bajo apuntalamiento técnico"
+        },
+        {
+          "id": "SIS-CHO-016",
+          "municipio": "Cali",
+          "departamento": "Valle del Cauca",
+          "coordenadas": [-76.5442, 3.4286],
+          "categoria": "Salud",
+          "infraestructura": "Hospital Universitario del Valle (HUV - Nivel IV)",
+          "codigo_reps": "760010004501",
+          "tipo_dano": "Colapso de Secciones de Cielo Raso y Daño en Redes Médicas",
+          "grado_ems98": "Grado 3",
+          "impacto_cuantitativo": "Caída de plafones, grietas en juntas de dilatación y rotura de tuberías de gases medicinales; evacuación masiva a patios y Alerta Roja hospitalaria.",
+          "fuente": "MinSalud / Gobernación del Valle",
+          "estado_operativo": "Alerta Roja - Urgencias críticas"
+        }
+      ]
+    },
+    {
+      "id": "murindo_73",
+      "nombre": "Terremotos de Murindó (Mw 7.3 y 7.2 - Octubre 1992)",
+      "fecha": "1992-10-18 11:11 Local",
+      "magnitud_mw": 7.3,
+      "profundidad_km": 15,
+      "mecanismo": "Cortical Superficial - Sistema de Fallas de Murindó / Rumbo Dextral",
+      "epicentro": [-76.75, 6.95],
+      "resumen_impacto": "Uno de los terremotos corticales más destructivos del occidente colombiano. Ruptura de falla en superficie con licuación masiva de suelos aluviales a lo largo del Río Atrato y Río Murindó, obligando a la reubicación completa del municipio y arrasando hospitales, escuelas y viviendas en Chocó y Antioquia.",
+      "afectaciones": [
+        {
+          "id": "SIS-CHO-018",
+          "municipio": "Murindó (Casco Antiguo)",
+          "departamento": "Antioquia / Límite Chocó",
+          "coordenadas": [-76.75, 6.95],
+          "categoria": "Salud",
+          "infraestructura": "Hospital Local de Murindó",
+          "codigo_reps": "Histórico 1992",
+          "tipo_dano": "Colapso Estructural Total por Sacudimiento y Licuación",
+          "grado_ems98": "Grado 5 (Destrucción Total)",
+          "impacto_cuantitativo": "Destrucción del 100% de la edificación asistencial; pérdida total de camas, instrumental médico y medicamentos.",
+          "fuente": "INGEOMINAS (SGC) / DesInventar Colombia",
+          "estado_operativo": "Inhabitable - Reubicación del municipio"
+        },
+        {
+          "id": "SIS-CHO-019",
+          "municipio": "Bojayá (Bellavista Antiguo)",
+          "departamento": "Chocó",
+          "coordenadas": [-76.9022, 6.5517],
+          "categoria": "Salud",
+          "infraestructura": "Puesto de Salud de Bellavista (Atrato Medio)",
+          "codigo_reps": "Histórico 1992",
+          "tipo_dano": "Falla de Cimentación por Licuación en Ribera del Atrato",
+          "grado_ems98": "Grado 4 - 5",
+          "impacto_cuantitativo": "Inclinación severa y fractura de losa de piso; inoperatividad total durante la emergencia.",
+          "fuente": "DesInventar / OSSO / Corporación Araracuara",
+          "estado_operativo": "Inoperativo"
+        },
+        {
+          "id": "SIS-CHO-020",
+          "municipio": "Murindó / Bojayá / Riosucio",
+          "departamento": "Chocó y Antioquia",
+          "coordenadas": [-76.75, 6.95],
+          "categoria": "Vivienda",
+          "infraestructura": "Viviendas Urbanas y Poblados Indígenas Ribereños",
+          "codigo_dane": "05475 / 27099 / 27615",
+          "tipo_dano": "Destrucción Generalizada por Ruptura y Licuación",
+          "grado_ems98": "Grado 5",
+          "impacto_cuantitativo": "Destrucción del 95% de las construcciones de Murindó; 1.801 viviendas destruidas en la cuenca del Atrato; traslado oficial del casco urbano a nuevo emplazamiento.",
+          "fuente": "DesInventar OSSO / DNP",
+          "estado_operativo": "Reconstrucción y reasentamiento total"
+        },
+        {
+          "id": "SIS-CHO-021",
+          "municipio": "Bocas de Murindó - Río Atrato",
+          "departamento": "Chocó - Antioquia",
+          "coordenadas": [-76.8167, 6.9167],
+          "categoria": "Fluvial",
+          "infraestructura": "Arteria Fluvial Río Murindó y Río Atrato Medio",
+          "codigo_invias": "Vía Fluvial Nacional 01",
+          "tipo_dano": "Represamiento Fluvial y Taponamiento por Empalizada Gigante",
+          "grado_ems98": "Grado 5",
+          "impacto_cuantitativo": "Formación de empalizada de 2 km de longitud con árboles y lodo en Bocas de Murindó; paralización total del transporte de víveres y socorro por más de 20 días.",
+          "fuente": "INGEOMINAS / DesInventar Colombia",
+          "estado_operativo": "Bloqueo severo de navegación"
+        }
+      ]
+    },
+    {
+      "id": "bahia_solano_70",
+      "nombre": "Sismo de Bahía Solano (Mw 7.2 - Septiembre 1970)",
+      "fecha": "1970-09-26 15:45 Local",
+      "magnitud_mw": 7.2,
+      "profundidad_km": 20,
+      "mecanismo": "Subducción Somera / Falla Bahía Solano en Costa Pacífica",
+      "epicentro": [-77.4044, 6.2183],
+      "resumen_impacto": "Fuerte terremoto costero en el norte del litoral chocoano. Causó deformación costera, agrietamiento del muelle marítimo, colapso de viviendas palafíticas y averías en la infraestructura médica y de acueducto del municipio de Mutis.",
+      "afectaciones": [
+        {
+          "id": "SIS-CHO-022",
+          "municipio": "Bahía Solano (Ciudad Mutis)",
+          "departamento": "Chocó",
+          "coordenadas": [-77.4044, 6.2183],
+          "categoria": "Vivienda",
+          "infraestructura": "Casco Urbano y Poblados Costeros",
+          "codigo_dane": "27075",
+          "tipo_dano": "Colapso Estructural y Hundimiento por Licuación",
+          "grado_ems98": "Grado 4 - 5",
+          "impacto_cuantitativo": "Destrucción o avería severa en el 84% de las 267 viviendas del casco urbano de Mutis; colapso masivo de edificaciones de madera y mampostería.",
+          "fuente": "SGC Catálogo Histórico / DesInventar",
+          "estado_operativo": "Reconstrucción municipal"
+        },
+        {
+          "id": "SIS-CHO-023",
+          "municipio": "Bahía Solano (Ciudad Mutis)",
+          "departamento": "Chocó",
+          "coordenadas": [-77.4044, 6.2183],
+          "categoria": "Acueducto",
+          "infraestructura": "Red Matriz de Acueducto Municipal",
+          "codigo_reps": "Línea Vital",
+          "tipo_dano": "Fractura Total de Tuberías Matrices Subterráneas",
+          "grado_ems98": "Grado 4",
+          "impacto_cuantitativo": "Ruptura total de redes de distribución de agua potable; anegamiento urbano por escape de agua a presión y desabastecimiento generalizado.",
+          "fuente": "DesInventar Colombia / Corporación OSSO",
+          "estado_operativo": "Inoperativo"
+        },
+        {
+          "id": "SIS-CHO-024",
+          "municipio": "Bahía Solano (Costa Pacífica)",
+          "departamento": "Chocó",
+          "coordenadas": [-77.4044, 6.2183],
+          "categoria": "Marítimo",
+          "infraestructura": "Franja Litoral de Bajamar y Muelle de Mutis",
+          "codigo_invias": "Infraestructura Costera",
+          "tipo_dano": "Subsidencia Cosísmica del Terreno (20 a 30 cm) y Desplazamiento Lateral",
+          "grado_ems98": "Grado 4",
+          "impacto_cuantitativo": "Descenso cosísmico de 20 a 30 cm en la franja costera; mareas altas posteriores inundaron permanentemente zonas residenciales.",
+          "fuente": "SGC / Geología y Geodesia Universidad Nacional",
+          "estado_operativo": "Daño geotécnico permanente"
+        }
+      ]
+    },
+    {
+      "id": "enjambre_san_juan_26",
+      "nombre": "Enjambre Sísmico Cuenca del San Juan (Agosto - Septiembre 2026)",
+      "fecha": "2026-08-11 a la fecha",
+      "magnitud_mw": 5.1,
+      "profundidad_km": 45,
+      "mecanismo": "Reactivación de Fallas Corticales / Deformación Post-Sismo Principal",
+      "epicentro": [-76.80, 4.85],
+      "resumen_impacto": "Secuencia persistente de más de 1.500 sismos en los municipios de Istmina, Medio San Juan, Sipí y Litoral del San Juan, asociada a reacomodo de esfuerzos en la cuenca del San Juan.",
+      "afectaciones": [
+        {
+          "id": "afect_san_juan_acueducto",
+          "municipio": "Istmina y Sipí",
+          "departamento": "Chocó",
+          "coordenadas": [-76.682, 5.155],
+          "categoria": "Acueducto",
+          "infraestructura": "Redes de Distribución y Tanques de Almacenamiento",
+          "codigo_reps": "Servicios Públicos Chocó",
+          "tipo_dano": "Microfisuración y Turbidez Extrema en Bocatomas",
+          "grado_ems98": "Grado 2",
+          "impacto_cuantitativo": "Suspensión preventiva del suministro de agua potable durante 36 horas en cabeceras ribereñas por alta turbidez tras remociones en masa en afluentes.",
+          "fuente": "Empresas Públicas Municipales / Alcaldías de Istmina y Sipí",
+          "estado_operativo": "Suministro restablecido con carrotanques"
+        },
+        {
+          "id": "afect_san_juan_puentes",
+          "municipio": "Medio San Juan (Andagoya) - Sipí",
+          "departamento": "Chocó",
+          "coordenadas": [-76.720, 5.010],
+          "categoria": "Vial",
+          "infraestructura": "Puentes Colgantes Peatonales y Pasarelas Veredales",
+          "codigo_invias": "Vías Terciarias Chocó",
+          "tipo_dano": "Fatiga de Tirantes y Desajuste en Estribos Ribereños",
+          "grado_ems98": "Grado 2 - 3",
+          "impacto_cuantitativo": "Restricción de carga en 3 puentes colgantes comunitarios; paso peatonal uno a uno bajo supervisión de Defensa Civil.",
+          "fuente": "Defensa Civil Colombiana Seccional Chocó / SGC",
+          "estado_operativo": "Uso restringido peatonal"
+        }
+      ]
+    }
+  ]
+}

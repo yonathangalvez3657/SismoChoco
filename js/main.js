@@ -1991,31 +1991,103 @@ const infoBtns = document.querySelectorAll('.info-btn');
 
 const modalData = {
     'guia': `
-        <h2 style="margin-top:0; color:#0A84FF; font-size:1.4rem; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:15px; margin-bottom:20px;">Guía de Uso de la Plataforma</h2>
-        <p style="color:var(--text-secondary); font-size:0.95rem; line-height:1.6; margin-bottom:15px;">Bienvenido a la <strong>Plataforma interactiva basada en Research through Design para la visualización analítica de la acumulación de tensión sísmica en el departamento del Chocó</strong> (Universidad de Caldas — Maestría en Diseño y Creación Interactiva).</p>
-        
-        <h3 style="color:#F5F5F7; font-size:1.05rem; margin-top:15px; margin-bottom:8px;">1. Enfoque Research through Design (RtD)</h3>
-        <p style="color:var(--text-secondary); font-size:0.9rem; line-height:1.5; margin-bottom:15px;">Esta plataforma no opera únicamente como un visor cartográfico, sino como un <em>artefacto generador de conocimiento</em>. A través de la interacción paramétrica en tiempo real, el usuario formula y valida hipótesis espaciales sobre la acumulación de deformación elástica en la zona de subducción del Pacífico y fallas corticales activas.</p>
+        <div style="display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.12); padding-bottom:16px; margin-bottom:20px;">
+            <div style="display:flex; align-items:center; gap:12px;">
+                <div style="width:42px; height:42px; border-radius:12px; background:linear-gradient(135deg, #0A84FF, #0056B3); display:flex; align-items:center; justify-content:center; font-size:1.35rem; box-shadow:0 4px 14px rgba(10,132,255,0.45);">
+                    🗺️
+                </div>
+                <div>
+                    <h2 style="margin:0; color:#FFFFFF; font-size:1.35rem; font-weight:700; letter-spacing:-0.02em;">Guía de Uso de la Plataforma</h2>
+                    <span style="font-size:0.75rem; color:#38BDF8; font-weight:600; text-transform:uppercase; letter-spacing:0.06em;">Investigación a través del Diseño (RtD) — U. de Caldas</span>
+                </div>
+            </div>
+        </div>
 
-        <h3 style="color:#F5F5F7; font-size:1.05rem; margin-top:15px; margin-bottom:8px;">2. Navegación en el Espacio Geoespacial 3D</h3>
-        <ul style="color:var(--text-secondary); font-size:0.9rem; line-height:1.5; margin-bottom:15px; padding-left:20px;">
-            <li><strong>Clic izquierdo + Arrastrar:</strong> Desplazar el mapa (Panorámica).</li>
-            <li><strong>Clic derecho (o Ctrl + Clic) + Arrastrar:</strong> Orbitar e inclinar la perspectiva 3D (Pitch & Bearing).</li>
-            <li><strong>Rueda del ratón:</strong> Acercar o alejar el zoom.</li>
-            <li><strong>Botón Restablecer (⌂):</strong> Retorna la cámara a la vista cenital departamental y restaura filtros.</li>
-        </ul>
+        <p style="color:#D1D5DB; font-size:0.92rem; line-height:1.6; margin-bottom:18px;">
+            Bienvenido a <strong>SismoChocó</strong>, plataforma interactiva de <em>Visual Analytics</em> concebida para explorar y comprender la <strong>acumulación de tensión sísmica, la subducción de la Placa de Nazca y las fallas geológicas activas</strong> en el departamento del Chocó a partir de datos oficiales del Servicio Geológico Colombiano (SGC).
+        </p>
 
-        <h3 style="color:#F5F5F7; font-size:1.05rem; margin-top:15px; margin-bottom:8px;">3. Capas Analíticas y Modelado Estadístico</h3>
-        <ul style="color:var(--text-secondary); font-size:0.9rem; line-height:1.5; margin-bottom:15px; padding-left:20px;">
-            <li><strong>Eventos Individuales (Scatter 3D):</strong> Esferas codificadas por magnitud y profundidad focal hipocentral.</li>
-            <li><strong>Concentración de Deformación (Heatmap):</strong> Densidad kernel de energía liberada en la corteza.</li>
-            <li><strong>Agrupación Hexagonal 3D:</strong> Binning espacial volumétrico de densidad de sismicidad.</li>
-            <li><strong>Ley Gutenberg-Richter:</strong> Estimación paramétrica del valor <em>b</em> y periodos de retorno sísmico.</li>
-            <li><strong>Agrupamiento DBSCAN (IA):</strong> Detección de enjambres sísmicos y réplicas sin supervisión.</li>
-            <li><strong>Perfil Benioff 3D:</strong> Proyección ortogonal de la losa oceánica subducida de Nazca (buzamiento ~32° Este).</li>
-        </ul>
-    `,
-    'rtd': `
+        <!-- SECCIÓN 1: MODOS DE ANÁLISIS -->
+        <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:16px; margin-bottom:16px;">
+            <h3 style="color:#38BDF8; font-size:1.02rem; margin:0 0 10px 0; display:flex; align-items:center; gap:8px;">
+                <span>🎯</span> 1. Tres Modos Especializados de Trabajo
+            </h3>
+            <p style="color:#9CA3AF; font-size:0.86rem; line-height:1.5; margin:0 0 12px 0;">
+                En el panel superior izquierdo puedes alternar entre tres perfiles adaptados a tu rol técnico:
+            </p>
+            <div style="display:grid; grid-template-columns:1fr; gap:10px;">
+                <div style="background:rgba(10,132,255,0.08); border-left:3px solid #0A84FF; padding:10px 12px; border-radius:6px;">
+                    <strong style="color:#60A5FA; font-size:0.88rem;">🔬 Modo Científico (Geociencias):</strong>
+                    <div style="color:#E5E7EB; font-size:0.82rem; line-height:1.4; margin-top:3px;">
+                        Análisis de recurrencia con la ley de <strong>Gutenberg-Richter</strong> (cálculo dinámico del valor <em>b</em> y periodos de retorno), corte 3D del <strong>plano de subducción de Wadati-Benioff</strong> y detección de enjambres con inteligencia artificial (DBSCAN).
+                    </div>
+                </div>
+                <div style="background:rgba(16,185,129,0.08); border-left:3px solid #10B981; padding:10px 12px; border-radius:6px;">
+                    <strong style="color:#34D399; font-size:0.88rem;">📐 Modo NSR-10 (Ingeniería y Construcción):</strong>
+                    <div style="color:#E5E7EB; font-size:0.82rem; line-height:1.4; margin-top:3px;">
+                        Selecciona entre los 67 municipios del Chocó y el Eje Cafetero, perfil de suelo (A a F) y grupo de uso para generar el <strong>Espectro Elástico de Diseño sísmico (Sa vs. Periodo T)</strong> con exportación directa a formato CSV para software estructural (ETABS / SAP2000).
+                    </div>
+                </div>
+                <div style="background:rgba(245,158,11,0.08); border-left:3px solid #F59E0B; padding:10px 12px; border-radius:6px;">
+                    <strong style="color:#FBBF24; font-size:0.88rem;">🏛️ Modo POT (Alcaldías y Planificación Territorial):</strong>
+                    <div style="color:#E5E7EB; font-size:0.82rem; line-height:1.4; margin-top:3px;">
+                        Semáforo de peligro sísmico municipal, análisis de población expuesta, corredores de retiro de 100 m respecto a fallas activas (Ley 388 de 1997) y descarga de la <strong>Ficha Técnica Ejecutiva en PDF</strong>.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN 2: NAVEGACIÓN 3D -->
+        <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:16px; margin-bottom:16px;">
+            <h3 style="color:#38BDF8; font-size:1.02rem; margin:0 0 10px 0; display:flex; align-items:center; gap:8px;">
+                <span>🌐</span> 2. Navegación en el Mapa Tridimensional (GPU WebGL)
+            </h3>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size:0.84rem; color:#D1D5DB;">
+                <div style="background:rgba(255,255,255,0.03); padding:8px 10px; border-radius:8px;">
+                    <strong style="color:#FFF;">🖱️ Clic Izquierdo + Arrastrar:</strong><br>Desplazar la cámara (paneo geográfico).
+                </div>
+                <div style="background:rgba(255,255,255,0.03); padding:8px 10px; border-radius:8px;">
+                    <strong style="color:#FFF;">🔄 Clic Derecho (o Ctrl + Clic):</strong><br>Orbitar e inclinar la perspectiva 3D (Pitch / Bearing).
+                </div>
+                <div style="background:rgba(255,255,255,0.03); padding:8px 10px; border-radius:8px;">
+                    <strong style="color:#FFF;">🔍 Rueda del Ratón / Pellizco:</strong><br>Acercar o alejar el nivel de detalle (Zoom).
+                </div>
+                <div style="background:rgba(255,255,255,0.03); padding:8px 10px; border-radius:8px;">
+                    <strong style="color:#FFF;">⌂ Botón Restablecer:</strong><br>Regresar la vista cenital a la escala completa del Chocó.
+                </div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN 3: CORTE 3D BENIOFF -->
+        <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:16px; margin-bottom:16px;">
+            <h3 style="color:#38BDF8; font-size:1.02rem; margin:0 0 10px 0; display:flex; align-items:center; gap:8px;">
+                <span>📉</span> 3. Corte Transversal 3D (Subducción de Nazca)
+            </h3>
+            <p style="color:#D1D5DB; font-size:0.86rem; line-height:1.5; margin:0 0 10px 0;">
+                Activa el botón <strong>"Corte 3D Benioff"</strong> para seccionar la litosfera del Pacífico. Permite examinar la losa oceánica que subduce a 32° hacia el Este bajo Colombia:
+            </p>
+            <ul style="color:#9CA3AF; font-size:0.83rem; line-height:1.5; margin:0; padding-left:18px;">
+                <li><strong>Exageración Vertical (0.5x a 3.0x):</strong> Realza visualmente la profundidad hipocentral en el subsuelo.</li>
+                <li><strong>Sectores Latitudinales:</strong> Inspecciona el corte Norte (Murindó), Centro (Quibdó) o Sur (San Juan).</li>
+            </ul>
+        </div>
+
+        <!-- SECCIÓN 4: SIMULADOR SHAKEMAP -->
+        <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:16px; margin-bottom:20px;">
+            <h3 style="color:#38BDF8; font-size:1.02rem; margin:0 0 10px 0; display:flex; align-items:center; gap:8px;">
+                <span>⚡</span> 4. Simulador ShakeMap de Ruptura
+            </h3>
+            <p style="color:#D1D5DB; font-size:0.86rem; line-height:1.5; margin:0;">
+                Modela escenarios históricos o potenciales de gran destructividad (Murindó Mw 7.3, Megaterremoto de Subducción Mw 8.2 o sismo cortical directo sobre Quibdó Mw 6.8), calculando en tiempo real las ondas de sacudida y la intensidad Mercalli Modificada (MMI).
+            </p>
+        </div>
+
+        <div style="display:flex; justify-content:center;">
+            <button id="btn-entendido-guia" style="background:linear-gradient(135deg, #0A84FF, #0066CC); color:#FFFFFF; border:none; border-radius:12px; padding:12px 28px; font-size:0.95rem; font-weight:600; cursor:pointer; box-shadow:0 6px 18px rgba(10,132,255,0.45); transition:all 0.2s ease;">
+                ¡Entendido, Explorar la Plataforma!
+            </button>
+        </div>
+    `,'rtd': `
         <h2 style="margin-top:0; color:#0A84FF; font-size:1.4rem; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:15px; margin-bottom:20px;">Investigación a través del Diseño (Research through Design - RtD)</h2>
         <p style="color:var(--text-secondary); font-size:0.95rem; line-height:1.6; margin-bottom:12px;">El marco metodológico de esta investigación se fundamenta en <strong>Research through Design (RtD)</strong> (Zimmerman, Forlizzi & Evenson, 2007; Gaver, 2012), donde el proceso iterativo de diseño y construcción del artefacto digital interactivo constituye el medio epistemológico primario para generar conocimiento transferible.</p>
         <div style="background: rgba(10,132,255,0.08); border-left: 3px solid #0A84FF; padding: 12px 14px; border-radius: 6px; margin: 14px 0; color: #e2e8f0; font-size: 0.9rem; line-height: 1.5;">
@@ -2234,13 +2306,39 @@ if (infoModal && closeInfoModal) {
 
     const closeModal = () => {
         infoModal.style.opacity = '0';
-        setTimeout(() => infoModal.style.display = 'none', 300);
+        setTimeout(() => { infoModal.style.display = 'none'; }, 300);
     };
 
     closeInfoModal.addEventListener('click', closeModal);
     infoModal.addEventListener('click', (e) => {
         if (e.target === infoModal) closeModal();
     });
+
+    // Delegación para botón de cierre dentro de la Guía de Uso
+    document.addEventListener('click', (e) => {
+        if (e.target && e.target.id === 'btn-entendido-guia') {
+            closeModal();
+        }
+    });
+
+    // Auto-apertura de la Guía de Uso SIEMPRE al cargar la plataforma (Requisito de Usabilidad)
+    const triggerGuiaAutoOpen = () => {
+        setTimeout(() => {
+            if (infoModal && infoContent && modalData['guia']) {
+                infoContent.innerHTML = modalData['guia'];
+                infoModal.style.display = 'flex';
+                requestAnimationFrame(() => {
+                    infoModal.style.opacity = '1';
+                });
+            }
+        }, 700);
+    };
+
+    if (document.readyState === 'complete') {
+        triggerGuiaAutoOpen();
+    } else {
+        window.addEventListener('load', triggerGuiaAutoOpen);
+    }
 }
 
 // ============================================================================

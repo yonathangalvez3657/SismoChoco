@@ -2007,6 +2007,21 @@ const modalData = {
             Bienvenido a <strong>SismoChocó</strong>, plataforma interactiva de <em>Visual Analytics</em> concebida para explorar y comprender la <strong>acumulación de tensión sísmica, la subducción de la Placa de Nazca y las fallas geológicas activas</strong> en el departamento del Chocó a partir de datos oficiales del Servicio Geológico Colombiano (SGC).
         </p>
 
+        <!-- CALLOUT DESTACADO: BOTONES DE AYUDA Y ORIENTACIÓN (?) -->
+        <div style="background: linear-gradient(135deg, rgba(10,132,255,0.16), rgba(0,113,227,0.08)); border: 1.5px solid #0A84FF; border-radius: 14px; padding: 14px 16px; margin-bottom: 18px; box-shadow: 0 4px 18px rgba(10,132,255,0.22); display: flex; align-items: flex-start; gap: 14px;">
+            <div style="flex-shrink:0; width: 34px; height: 34px; line-height: 34px; text-align: center; background: #0A84FF; color: white; border-radius: 50%; font-size: 1.15rem; font-weight: bold; box-shadow: 0 2px 10px rgba(10,132,255,0.6);">
+                ?
+            </div>
+            <div>
+                <h4 style="margin: 0 0 4px 0; color: #FFFFFF; font-size: 0.96rem; font-weight: 700; display: flex; align-items: center; gap: 6px;">
+                    <span>💡 Botones de Ayuda Contextual en Cada Sección</span>
+                </h4>
+                <p style="margin: 0; color: #E0E7FF; font-size: 0.86rem; line-height: 1.5;">
+                    Cada tarjeta, gráfico, filtro o módulo cuenta con un botón circular azul de ayuda (<span style="display:inline-block; width:18px; height:18px; line-height:18px; text-align:center; background:#0A84FF; color:white; border-radius:50%; font-size:0.75rem; font-weight:bold; vertical-align:middle;">?</span>). <strong>Púlsalo en cualquier momento</strong> para abrir una explicación detallada en palabras sencillas que te orientará sobre <em>cómo interpretar los datos técnicos y comprender a fondo su funcionamiento</em>.
+                </p>
+            </div>
+        </div>
+
         <!-- SECCIÓN 1: MODOS DE ANÁLISIS -->
         <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:16px; margin-bottom:16px;">
             <h3 style="color:#38BDF8; font-size:1.02rem; margin:0 0 10px 0; display:flex; align-items:center; gap:8px;">

@@ -578,6 +578,95 @@
 
                 </div>
             </section>
+
+            <!-- ESCENARIOS SÍSMICOS DETERMINISTAS (SHAKEMAP / MMI & PGA) -->
+            <section class="control-group">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h3>Escenario Sísmico Determinista (ShakeMap)</h3>
+                    <span class="info-btn" data-info="shakemap_info" title="Instrucciones de uso: Escenario Sísmico Determinista (ShakeMap)">?</span>
+                </div>
+                <p style="font-size: 0.78rem; color: var(--text-secondary); margin: 0; line-height: 1.4;">
+                    Modelado sismotectónico de propagación de ondas y ruptura cosísmica finita mediante relaciones GMPE y atenuación regional.
+                </p>
+                <div>
+                    <label style="font-size: 0.73rem; color: var(--text-secondary); display: block; margin-bottom: 4px; font-weight: 600;">Escenario Determinista de Ruptura:</label>
+                    <select id="select-shakemap-escenario" class="custom-select" style="font-size: 0.78rem; padding: 6px 10px; width: 100%;">
+                        <option value="palmar_74" selected>⚡ Sismo 10 de Agosto (Mw 7.4 - Losa Benioff 108 km)</option>
+                        <option value="murindo_73">💥 Falla Murindó (Mw 7.3 - Sismo Superficial 15 km)</option>
+                        <option value="subduccion_82">🌊 Megaterremoto Subducción Nazca (Mw 8.2 - Prof. 25 km)</option>
+                        <option value="atrato_68">⚡ Falla Atrato - Quibdó (Mw 6.8 - Prof. 12 km)</option>
+                        <option value="bahia_solano_70">⛰️ Falla Bahía Solano (Mw 7.0 - Costa Pacífica)</option>
+                    </select>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <button type="button" class="btn-secondary" id="btn-toggle-shakemap" style="flex: 1; background: rgba(255,59,48,0.15); color: #ff453a; border-color: rgba(255,59,48,0.35); font-size: 0.8rem; padding: 9px 12px;">
+                        <span id="btn-shakemap-text">⚡ Simular Ruptura Sísmica</span>
+                    </button>
+                    <button type="button" class="btn-secondary" id="btn-clear-shakemap" title="Cerrar y limpiar simulación de ShakeMap" style="display: none; width: auto; padding: 9px 14px; background: rgba(255,255,255,0.08); color: #ff453a; border-color: rgba(255,69,58,0.3); font-size: 0.78rem;">
+                        <span>🧹 Limpiar</span>
+                    </button>
+                </div>
+                <!-- Panel Cinemático de Frentes de Onda (P & S) y Huella Lobular Continua -->
+                <div id="shakemap-wave-controls" style="display:none; margin-top:8px; background:rgba(15,23,42,0.75); border:1px solid rgba(56,189,248,0.3); border-radius:10px; padding:10px 12px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                        <div style="display:flex; align-items:center; gap:6px;">
+                            <span style="font-size:0.85rem;">⏱️</span>
+                            <strong style="font-size:0.75rem; color:#38bdf8; text-transform:uppercase; letter-spacing:0.04em;">Cinemática Cosísmica</strong>
+                        </div>
+                        <span id="shakemap-timer-label" style="font-family:monospace; font-size:0.8rem; color:#ffd60a; font-weight:700; background:rgba(0,0,0,0.5); padding:2px 8px; border-radius:6px; border:1px solid rgba(255,214,10,0.3);">t = 0.0 s</span>
+                    </div>
+
+                    <!-- Barra de Progreso Temporal -->
+                    <div style="width:100%; height:6px; background:rgba(255,255,255,0.1); border-radius:3px; overflow:hidden; margin-bottom:8px;">
+                        <div id="shakemap-timer-progress" style="width:0%; height:100%; background:linear-gradient(90deg, #38bdf8, #ff453a); transition:width 0.1s linear;"></div>
+                    </div>
+
+                    <!-- Botones de Control de Onda -->
+                    <div style="display:flex; gap:6px; margin-bottom:8px;">
+                        <button type="button" id="btn-wave-play" class="btn-secondary" style="flex:1; padding:6px 8px; font-size:0.72rem; background:rgba(56,189,248,0.15); color:#38bdf8; border-color:rgba(56,189,248,0.35);">
+                            <span id="wave-play-icon">▶</span> <span id="wave-play-text">Propagar Ondas</span>
+                        </button>
+                        <button type="button" id="btn-wave-reset" class="btn-secondary" style="padding:6px 10px; font-size:0.72rem; background:rgba(255,255,255,0.06); color:#cbd5e1;">
+                            <span>↺ Reiniciar</span>
+                        </button>
+                    </div>
+
+                    <!-- Frentes de Onda Activos & Leyenda Cinemática -->
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:0.68rem; margin-bottom:8px;">
+                        <div style="background:rgba(56,189,248,0.1); border-left:2.5px solid #38bdf8; padding:4px 6px; border-radius:4px;">
+                            <strong style="color:#38bdf8;">Onda P (Compresional):</strong><br>
+                            <span style="color:#cbd5e1;">Vp ≈ 6.0 km/s (Alerta previa)</span>
+                        </div>
+                        <div style="background:rgba(255,69,58,0.1); border-left:2.5px solid #ff453a; padding:4px 6px; border-radius:4px;">
+                            <strong style="color:#ff453a;">Onda S (Cizallante):</strong><br>
+                            <span style="color:#cbd5e1;">Vs ≈ 3.5 km/s (Destructora)</span>
+                        </div>
+                    </div>
+
+                    <!-- Arribo Estimado a Cabeceras Principales -->
+                    <div style="border-top:1px solid rgba(255,255,255,0.08); padding-top:6px; font-size:0.68rem; color:#94a3b8;">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:2px;">
+                            <span>Impacto en Quibdó:</span>
+                            <strong id="shakemap-eta-quibdo" style="color:#fff;">Calculando...</strong>
+                        </div>
+                        <div style="display:flex; justify-content:space-between;">
+                            <span>Impacto en Istmina:</span>
+                            <strong id="shakemap-eta-istmina" style="color:#fff;">Calculando...</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="shakemap-impact-box" style="display:none; background:rgba(0,0,0,0.45); border:1px solid rgba(255,69,58,0.4); border-radius:10px; padding:10px 12px; font-size:0.72rem; color:var(--text-secondary); line-height:1.45; box-shadow:0 4px 16px rgba(0,0,0,0.3);">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                        <strong id="shakemap-epicentro-label" style="color:#ff453a; font-size:0.78rem;">Epicentro: Murindó</strong>
+                        <span id="shakemap-mmi-max" class="status-pill critico" style="font-size:0.65rem; padding:2px 7px;">MMI VIII - IX</span>
+                    </div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:0.7rem;">
+                        <div>PGA Epicentral: <strong id="shakemap-pga-max" style="color:#fff;">0.65 g</strong></div>
+                        <div>Plano Ruptura: <strong id="shakemap-radio-destr" style="color:#ffd60a;">~48 km</strong></div>
+                    </div>
+                </div>
+            </section>
             
             <!-- Acciones -->
             <section class="control-group">
@@ -599,7 +688,12 @@
                 </div>
                 <div style="display:flex; flex-direction:column; gap:10px;">
                     <div>
-                        <label style="font-size:0.75rem; color:var(--text-secondary); display:block; margin-bottom:4px; font-weight:600; text-transform:uppercase;">Municipio (Chocó, Risaralda, Caldas, Valle):</label>
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                            <label style="font-size:0.75rem; color:var(--text-secondary); margin:0; font-weight:600; text-transform:uppercase;">Municipio (Chocó, Risaralda, Caldas, Valle):</label>
+                            <button type="button" id="btn-nsr-locate" style="background:rgba(56,189,248,0.15); border:1px solid rgba(56,189,248,0.35); color:#38bdf8; border-radius:6px; font-size:0.68rem; padding:2px 8px; cursor:pointer; font-weight:600; display:inline-flex; align-items:center; gap:4px; transition:all 0.2s ease;" title="Enfocar cabecera municipal seleccionada en el mapa 3D">
+                                <span>📍 Enfocar</span>
+                            </button>
+                        </div>
                         <select id="nsr-municipio-select" class="custom-select"></select>
                     </div>
                     <div>
@@ -722,95 +816,6 @@
                     </p>
                 </div>
             </section>
-
-            <!-- ESCENARIOS SÍSMICOS DETERMINISTAS (SHAKEMAP / MMI & PGA) -->
-            <section class="control-group">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <h3>Escenario Sísmico Determinista (ShakeMap)</h3>
-                    <span class="info-btn" data-info="shakemap_info" title="Instrucciones de uso: Escenario Sísmico Determinista (ShakeMap)">?</span>
-                </div>
-                <p style="font-size: 0.78rem; color: var(--text-secondary); margin: 0; line-height: 1.4;">
-                    Evaluación de aceleración espectral y demanda sísmica ante ruptura máxima creíble mediante leyes de atenuación GMPE.
-                </p>
-                <div>
-                    <label style="font-size: 0.73rem; color: var(--text-secondary); display: block; margin-bottom: 4px; font-weight: 600;">Escenario Determinista de Ruptura:</label>
-                    <select id="select-shakemap-escenario" class="custom-select" style="font-size: 0.78rem; padding: 6px 10px; width: 100%;">
-                        <option value="palmar_74" selected>⚡ Sismo 10 de Agosto (Mw 7.4 - Losa Benioff 108 km)</option>
-                        <option value="murindo_73">💥 Falla Murindó (Mw 7.3 - Sismo Superficial 15 km)</option>
-                        <option value="subduccion_82">🌊 Megaterremoto Subducción Nazca (Mw 8.2 - Prof. 25 km)</option>
-                        <option value="atrato_68">⚡ Falla Atrato - Quibdó (Mw 6.8 - Prof. 12 km)</option>
-                        <option value="bahia_solano_70">⛰️ Falla Bahía Solano (Mw 7.0 - Costa Pacífica)</option>
-                    </select>
-                </div>
-                <div style="display: flex; gap: 8px;">
-                    <button type="button" class="btn-secondary" id="btn-toggle-shakemap" style="flex: 1; background: rgba(255,59,48,0.15); color: #ff453a; border-color: rgba(255,59,48,0.35); font-size: 0.8rem; padding: 9px 12px;">
-                        <span id="btn-shakemap-text">⚡ Simular Ruptura Sísmica</span>
-                    </button>
-                    <button type="button" class="btn-secondary" id="btn-clear-shakemap" title="Cerrar y limpiar simulación de ShakeMap" style="display: none; width: auto; padding: 9px 14px; background: rgba(255,255,255,0.08); color: #ff453a; border-color: rgba(255,69,58,0.3); font-size: 0.78rem;">
-                        <span>🧹 Limpiar</span>
-                    </button>
-                </div>
-                <!-- Panel Cinemático de Frentes de Onda (P & S) y Huella Lobular Continua -->
-                <div id="shakemap-wave-controls" style="display:none; margin-top:8px; background:rgba(15,23,42,0.75); border:1px solid rgba(56,189,248,0.3); border-radius:10px; padding:10px 12px;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                        <div style="display:flex; align-items:center; gap:6px;">
-                            <span style="font-size:0.85rem;">⏱️</span>
-                            <strong style="font-size:0.75rem; color:#38bdf8; text-transform:uppercase; letter-spacing:0.04em;">Cinemática Cosísmica</strong>
-                        </div>
-                        <span id="shakemap-timer-label" style="font-family:monospace; font-size:0.8rem; color:#ffd60a; font-weight:700; background:rgba(0,0,0,0.5); padding:2px 8px; border-radius:6px; border:1px solid rgba(255,214,10,0.3);">t = 0.0 s</span>
-                    </div>
-
-                    <!-- Barra de Progreso Temporal -->
-                    <div style="width:100%; height:6px; background:rgba(255,255,255,0.1); border-radius:3px; overflow:hidden; margin-bottom:8px;">
-                        <div id="shakemap-timer-progress" style="width:0%; height:100%; background:linear-gradient(90deg, #38bdf8, #ff453a); transition:width 0.1s linear;"></div>
-                    </div>
-
-                    <!-- Botones de Control de Onda -->
-                    <div style="display:flex; gap:6px; margin-bottom:8px;">
-                        <button type="button" id="btn-wave-play" class="btn-secondary" style="flex:1; padding:6px 8px; font-size:0.72rem; background:rgba(56,189,248,0.15); color:#38bdf8; border-color:rgba(56,189,248,0.35);">
-                            <span id="wave-play-icon">▶</span> <span id="wave-play-text">Propagar Ondas</span>
-                        </button>
-                        <button type="button" id="btn-wave-reset" class="btn-secondary" style="padding:6px 10px; font-size:0.72rem; background:rgba(255,255,255,0.06); color:#cbd5e1;">
-                            <span>↺ Reiniciar</span>
-                        </button>
-                    </div>
-
-                    <!-- Frentes de Onda Activos & Leyenda Cinemática -->
-                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:0.68rem; margin-bottom:8px;">
-                        <div style="background:rgba(56,189,248,0.1); border-left:2.5px solid #38bdf8; padding:4px 6px; border-radius:4px;">
-                            <strong style="color:#38bdf8;">Onda P (Compresional):</strong><br>
-                            <span style="color:#cbd5e1;">Vp ≈ 6.0 km/s (Alerta previa)</span>
-                        </div>
-                        <div style="background:rgba(255,69,58,0.1); border-left:2.5px solid #ff453a; padding:4px 6px; border-radius:4px;">
-                            <strong style="color:#ff453a;">Onda S (Cizallante):</strong><br>
-                            <span style="color:#cbd5e1;">Vs ≈ 3.5 km/s (Destructora)</span>
-                        </div>
-                    </div>
-
-                    <!-- Arribo Estimado a Cabeceras Principales -->
-                    <div style="border-top:1px solid rgba(255,255,255,0.08); padding-top:6px; font-size:0.68rem; color:#94a3b8;">
-                        <div style="display:flex; justify-content:space-between; margin-bottom:2px;">
-                            <span>Impacto en Quibdó:</span>
-                            <strong id="shakemap-eta-quibdo" style="color:#fff;">Calculando...</strong>
-                        </div>
-                        <div style="display:flex; justify-content:space-between;">
-                            <span>Impacto en Istmina:</span>
-                            <strong id="shakemap-eta-istmina" style="color:#fff;">Calculando...</strong>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="shakemap-impact-box" style="display:none; background:rgba(0,0,0,0.45); border:1px solid rgba(255,69,58,0.4); border-radius:10px; padding:10px 12px; font-size:0.72rem; color:var(--text-secondary); line-height:1.45; box-shadow:0 4px 16px rgba(0,0,0,0.3);">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                        <strong id="shakemap-epicentro-label" style="color:#ff453a; font-size:0.78rem;">Epicentro: Murindó</strong>
-                        <span id="shakemap-mmi-max" class="status-pill critico" style="font-size:0.65rem; padding:2px 7px;">MMI VIII - IX</span>
-                    </div>
-                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:0.7rem;">
-                        <div>PGA Epicentral: <strong id="shakemap-pga-max" style="color:#fff;">0.65 g</strong></div>
-                        <div>Plano Ruptura: <strong id="shakemap-radio-destr" style="color:#ffd60a;">~48 km</strong></div>
-                    </div>
-                </div>
-            </section>
         </div>
 
         <!-- ==================================================================
@@ -823,7 +828,12 @@
                     <span class="info-btn" data-info="pot_info" style="display:inline-block; width:18px; height:18px; line-height:18px; text-align:center; background:#0A84FF; color:white; border-radius:50%; font-size:0.75rem; font-weight:bold; cursor:pointer;" title="Instrucciones de uso: Diagnóstico Territorial POT">?</span>
                 </div>
                 <div>
-                    <label style="font-size:0.75rem; color:var(--text-secondary); display:block; margin-bottom:4px; font-weight:600; text-transform:uppercase;">Municipio (Chocó, Risaralda, Caldas, Valle):</label>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                        <label style="font-size:0.75rem; color:var(--text-secondary); margin:0; font-weight:600; text-transform:uppercase;">Municipio (Chocó, Risaralda, Caldas, Valle):</label>
+                        <button type="button" id="btn-pot-locate" style="background:rgba(50,215,75,0.15); border:1px solid rgba(50,215,75,0.35); color:#32d74b; border-radius:6px; font-size:0.68rem; padding:2px 8px; cursor:pointer; font-weight:600; display:inline-flex; align-items:center; gap:4px; transition:all 0.2s ease;" title="Enfocar cabecera municipal y radio de 30 km en el mapa 3D">
+                            <span>📍 Enfocar</span>
+                        </button>
+                    </div>
                     <select id="pot-municipio-select" class="custom-select"></select>
                 </div>
 
@@ -1114,13 +1124,13 @@
     <script src="js/core-oop.js?v=39"></script>
 
     <!-- Lógica principal con versionamiento para evitar caché persistente -->
-    <script src="js/main.js?v=60"></script>
+    <script src="js/main.js?v=61"></script>
 
     <!-- PWA -->
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js?v=40')
+                navigator.serviceWorker.register('sw.js?v=41')
                     .then(reg => {
                         reg.update();
                     })

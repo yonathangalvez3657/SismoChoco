@@ -1389,6 +1389,58 @@ function renderLayers() {
         }));
     }
 
+    // Pin y Radio de Influencia Territorial (30 km) para Perfil POT
+    if (currentProfile === 'alcaldia' && selectedPotMunicipio && selectedPotMunicipio.lat) {
+        // Halo de área de influencia directa territorial (30 km de radio de monitoreo sismotectónico)
+        layers.push(new deck.ScatterplotLayer({
+            id: 'pot-municipio-influence-radius',
+            data: [{ pos: [selectedPotMunicipio.lng, selectedPotMunicipio.lat] }],
+            getPosition: d => [d.pos[0], d.pos[1], 5],
+            radiusUnits: 'meters',
+            getRadius: 30000,
+            getFillColor: [50, 215, 75, 40],
+            stroked: true,
+            getLineColor: [50, 215, 75, 200],
+            lineWidthMinPixels: 1.5,
+            pickable: false,
+            updateTriggers: {
+                getPosition: [selectedPotMunicipio.lng, selectedPotMunicipio.lat]
+            }
+        }));
+
+        // Pin de cabecera municipal POT
+        layers.push(new deck.ScatterplotLayer({
+            id: 'pot-municipio-pin',
+            data: [{ pos: [selectedPotMunicipio.lng, selectedPotMunicipio.lat], m: selectedPotMunicipio }],
+            getPosition: d => [d.pos[0], d.pos[1], 100],
+            radiusUnits: 'pixels',
+            getRadius: 15,
+            getFillColor: [50, 215, 75, 230],
+            stroked: true,
+            getLineColor: [255, 255, 255, 255],
+            lineWidthMinPixels: 2.5,
+            pickable: true,
+            onHover: (info) => {
+                if (info.object) {
+                    const m = info.object.m;
+                    tooltip.style.display = 'block';
+                    tooltip.style.left = `${info.x}px`;
+                    tooltip.style.top = `${info.y}px`;
+                    tooltip.innerHTML = `<h4>🏛️ ${m.nombre} (${m.departamento}) — POT</h4>
+                                         <p><strong>Población Expuesta:</strong> ${(m.poblacion || 0).toLocaleString()} hab.</p>
+                                         <p><strong>Aceleración Aa:</strong> <strong style="color:#ffd60a;">${m.aa} g</strong></p>
+                                         <p><strong>Radio de Análisis:</strong> 30 km circundantes</p>
+                                         <p style="font-size:0.75rem; margin-top:4px; color:#A1A1A6;">${m.geologia || ''}</p>`;
+                } else {
+                    tooltip.style.display = 'none';
+                }
+            },
+            updateTriggers: {
+                getPosition: [selectedPotMunicipio.lng, selectedPotMunicipio.lat]
+            }
+        }));
+    }
+
     // Lógica para la Leyenda Cartográfica Dinámica
     const legend = document.getElementById('map-legend');
     if (legend) {
@@ -4053,6 +4105,25 @@ if (btnNsrLocate) {
 // Listeners de Selección POT y Ficha Ejecutiva
 const potSelect = document.getElementById('pot-municipio-select');
 if (potSelect) potSelect.addEventListener('change', () => { updatePOTMetrics(); queueRender(); });
+
+const btnPotLocate = document.getElementById('btn-pot-locate');
+if (btnPotLocate) {
+    btnPotLocate.addEventListener('click', () => {
+        if (!selectedPotMunicipio) return;
+        deckgl.setProps({
+            initialViewState: {
+                longitude: selectedPotMunicipio.lng,
+                latitude: selectedPotMunicipio.lat,
+                zoom: 10.2,
+                pitch: 45,
+                bearing: 15,
+                transitionDuration: 1500,
+                transitionInterpolator: new deck.FlyToInterpolator()
+            }
+        });
+        queueRender();
+    });
+}
 
 const btnPotPrint = document.getElementById('btn-pot-print');
 if (btnPotPrint) {

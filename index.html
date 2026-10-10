@@ -124,6 +124,40 @@
         <style>@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
     </div>
 
+    <!-- Banner Flotante de Alerta Sísmica Telemétrica en Tiempo Real -->
+    <div id="live-seismic-alert-banner" style="display:none; position:fixed; top:20px; left:50%; transform:translateX(-50%); z-index:99999; max-width:90vw; width:480px; background:rgba(15,23,42,0.92); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); border:1.5px solid #10b981; border-radius:16px; box-shadow:0 12px 36px rgba(0,0,0,0.6), 0 0 20px rgba(16,185,129,0.3); padding:14px 18px; color:#F8FAFC; font-family:'Inter',sans-serif; animation:alertSlideDown 0.4s cubic-bezier(0.16,1,0.3,1); transition:all 0.3s ease;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px;">
+            <div style="display:flex; align-items:center; gap:10px;">
+                <span id="alert-banner-icon" style="font-size:1.6rem; animation:pulseAlert 1s infinite alternate;">📡</span>
+                <div>
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#10b981; box-shadow:0 0 8px #10b981;"></span>
+                        <strong id="alert-banner-title" style="font-size:0.88rem; color:#34d399; text-transform:uppercase; letter-spacing:0.04em;">Alerta Telemétrica SGC Live</strong>
+                    </div>
+                    <div id="alert-banner-desc" style="font-size:0.82rem; margin-top:3px; color:#E2E8F0; line-height:1.4;">
+                        Sismo reciente detectado en el Chocó.
+                    </div>
+                </div>
+            </div>
+            <button id="btn-close-alert-banner" style="background:transparent; border:none; color:#94A3B8; font-size:1.2rem; cursor:pointer; padding:2px 6px; border-radius:6px; line-height:1;" aria-label="Cerrar alerta">✕</button>
+        </div>
+        <div id="alert-banner-meta" style="margin-top:8px; padding-top:8px; border-top:1px solid rgba(255,255,255,0.1); display:flex; justify-content:space-between; font-size:0.72rem; color:#94A3B8; font-family:monospace;">
+            <span id="alert-banner-time">--:--:--</span>
+            <span id="alert-banner-mag" style="color:#ffd60a; font-weight:bold;">-- Mw</span>
+            <span id="alert-banner-depth">-- km</span>
+        </div>
+    </div>
+    <style>
+        @keyframes alertSlideDown {
+            from { transform: translate(-50%, -40px); opacity: 0; }
+            to { transform: translate(-50%, 0); opacity: 1; }
+        }
+        @keyframes pulseAlert {
+            from { transform: scale(1); filter: drop-shadow(0 0 2px #10b981); }
+            to { transform: scale(1.15); filter: drop-shadow(0 0 10px #34d399); }
+        }
+    </style>
+
     <div id="map-container" role="application" aria-label="Mapa interactivo de sismicidad"></div>
     <div id="tooltip" role="tooltip" aria-live="polite"></div>
 
@@ -518,6 +552,25 @@
                             <div class="switch"><input type="checkbox" id="check-live-sgc"><span class="slider"></span></div>
                         </div>
                     </label>
+
+                    <!-- Configuración Personalizada de Alerta Telemétrica (Umbral y Notificación Sonora) -->
+                    <div id="sgc-alert-settings" style="display:none; flex-direction:column; gap:8px; margin-top:-6px; margin-bottom:8px; padding:10px 12px; background:rgba(16,185,129,0.06); border:1px solid rgba(16,185,129,0.25); border-radius:10px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <span style="font-size:0.75rem; color:#A1A1A6;">Umbral de Alerta Visual/Sonora:</span>
+                            <strong id="alert-mag-threshold-val" style="font-size:0.8rem; color:#ffd60a; font-family:monospace;">≥ 4.0 Mw</strong>
+                        </div>
+                        <input type="range" id="slider-alert-threshold" min="3.0" max="6.5" step="0.1" value="4.0" style="width:100%; height:4px; accent-color:#10b981; cursor:pointer;">
+                        
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px; padding-top:6px; border-top:1px solid rgba(255,255,255,0.06);">
+                            <span style="font-size:0.75rem; color:#A1A1A6; display:flex; align-items:center; gap:6px;">
+                                <span>🔔</span> Sonido de notificación sutil
+                            </span>
+                            <label class="switch" style="width:36px; height:20px;">
+                                <input type="checkbox" id="check-alert-sound" checked>
+                                <span class="slider" style="border-radius:20px;"></span>
+                            </label>
+                        </div>
+                    </div>
 
                     <label class="switch-container" style="display: flex; align-items: flex-start; justify-content: space-between;">
                         <span style="flex: 1; margin-right: 16px;">
@@ -971,7 +1024,7 @@
     <script src="js/core-oop.js?v=39"></script>
 
     <!-- Lógica principal con versionamiento para evitar caché persistente -->
-    <script src="js/main.js?v=48"></script>
+    <script src="js/main.js?v=49"></script>
 
     <!-- PWA -->
     <script>

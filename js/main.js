@@ -1770,17 +1770,169 @@ function updateSgcLiveBadge(count, sourceName) {
     }
 }
 
+let audioCtx = null;
+let alertMagThreshold = 4.0;
+let alertSoundEnabled = true;
+let notifiedEventIds = new Set();
+let bannerDismissTimeout = null;
+
+// Síntesis Web Audio API: Notificación sonora sutil de baja frecuencia (armónico limpio y no invasivo)
+function playSubtleSeismicChime() {
+    if (!alertSoundEnabled) return;
+    try {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass) return;
+        if (!audioCtx) audioCtx = new AudioContextClass();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+
+        const now = audioCtx.currentTime;
+        
+        // Tono principal: 520 Hz (Do5 brillante suave)
+        const osc1 = audioCtx.createOscillator();
+        const gain1 = audioCtx.createGain();
+        osc1.type = 'sine';
+        osc1.frequency.setValueAtTime(520, now);
+        osc1.frequency.exponentialRampToValueAtTime(780, now + 0.15);
+
+        gain1.gain.setValueAtTime(0, now);
+        gain1.gain.linearRampToValueAtTime(0.12, now + 0.04);
+        gain1.gain.exponentialRampToValueAtTime(0.0001, now + 0.85);
+
+        osc1.connect(gain1);
+        gain1.connect(audioCtx.destination);
+        osc1.start(now);
+        osc1.stop(now + 0.85);
+
+        // Armónico de resonancia aérea: 1040 Hz
+        const osc2 = audioCtx.createOscillator();
+        const gain2 = audioCtx.createGain();
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(1040, now + 0.08);
+
+        gain2.gain.setValueAtTime(0, now + 0.08);
+        gain2.gain.linearRampToValueAtTime(0.06, now + 0.12);
+        gain2.gain.exponentialRampToValueAtTime(0.0001, now + 0.7);
+
+        osc2.connect(gain2);
+        gain2.connect(audioCtx.destination);
+        osc2.start(now + 0.08);
+        osc2.stop(now + 0.7);
+    } catch (e) {
+        console.warn("Audio Context restringido por política de interacción del navegador:", e);
+    }
+}
+
+// Despliegue del Banner Flotante Telemétrico en Pantalla
+function triggerSeismicAlertBanner(eventFeature) {
+    const banner = document.getElementById('live-seismic-alert-banner');
+    if (!banner || !eventFeature) return;
+
+    const p = eventFeature.properties || {};
+    const mag = p.mag || p.magnitud || 0;
+    const descEl = document.getElementById('alert-banner-desc');
+    const timeEl = document.getElementById('alert-banner-time');
+    const magEl = document.getElementById('alert-banner-mag');
+    const depthEl = document.getElementById('alert-banner-depth');
+
+    if (descEl) descEl.innerHTML = `<strong>${p.municipio || 'Chocó / Pacífico'}</strong> detectado por red telemétrica oficial.`;
+    if (timeEl) timeEl.innerText = p.fecha || 'Reciente';
+    if (magEl) magEl.innerText = `${mag.toFixed(1)} Mw`;
+    if (depthEl) depthEl.innerText = `${p.profundidad} km`;
+
+    // Cambiar tonalidad si es sismo fuerte (≥ 5.0)
+    if (mag >= 5.0) {
+        banner.style.borderColor = '#ff453a';
+        banner.style.boxShadow = '0 12px 36px rgba(0,0,0,0.6), 0 0 25px rgba(255,69,58,0.4)';
+    } else {
+        banner.style.borderColor = '#10b981';
+        banner.style.boxShadow = '0 12px 36px rgba(0,0,0,0.6), 0 0 20px rgba(16,185,129,0.3)';
+    }
+
+    banner.style.display = 'block';
+    banner.style.opacity = '1';
+
+    // Disparar sonido sutil
+    playSubtleSeismicChime();
+
+    // Auto-cierre tras 9 segundos si el usuario no lo cierra manualmente
+    if (bannerDismissTimeout) clearTimeout(bannerDismissTimeout);
+    bannerDismissTimeout = setTimeout(() => {
+        banner.style.opacity = '0';
+        setTimeout(() => { banner.style.display = 'none'; }, 300);
+    }, 9000);
+}
+
+// Botón de cierre manual del banner flotante
+const btnCloseAlertBanner = document.getElementById('btn-close-alert-banner');
+if (btnCloseAlertBanner) {
+    btnCloseAlertBanner.addEventListener('click', () => {
+        const banner = document.getElementById('live-seismic-alert-banner');
+        if (banner) {
+            banner.style.opacity = '0';
+            setTimeout(() => { banner.style.display = 'none'; }, 300);
+        }
+        if (bannerDismissTimeout) clearTimeout(bannerDismissTimeout);
+    });
+}
+
+// Configuración del umbral interactivo de alerta
+const sliderAlertThreshold = document.getElementById('slider-alert-threshold');
+const alertThresholdVal = document.getElementById('alert-mag-threshold-val');
+if (sliderAlertThreshold && alertThresholdVal) {
+    sliderAlertThreshold.addEventListener('input', (e) => {
+        alertMagThreshold = parseFloat(e.target.value);
+        alertThresholdVal.innerText = `≥ ${alertMagThreshold.toFixed(1)} Mw`;
+    });
+}
+
+const checkAlertSound = document.getElementById('check-alert-sound');
+if (checkAlertSound) {
+    checkAlertSound.addEventListener('change', (e) => {
+        alertSoundEnabled = e.target.checked;
+    });
+}
+
+// Evaluación de eventos entrantes contra el umbral configurado por el usuario
+function checkIncomingEventsForAlert(features) {
+    if (!features || features.length === 0) return;
+    for (const f of features) {
+        const p = f.properties || {};
+        const id = p.id || p.fecha;
+        const mag = p.mag || p.magnitud || 0;
+
+        if (id && !notifiedEventIds.has(id)) {
+            notifiedEventIds.add(id);
+            if (mag >= alertMagThreshold) {
+                triggerSeismicAlertBanner(f);
+                break; // Disparar el evento prioritario
+            }
+        }
+    }
+}
+
 document.getElementById('check-live-sgc').addEventListener('change', e => {
     showLiveSGC = e.target.checked;
+    const settingsBox = document.getElementById('sgc-alert-settings');
+    if (settingsBox) settingsBox.style.display = showLiveSGC ? 'flex' : 'none';
     
     if (showLiveSGC) {
         // Carga inmediata de los sismos reales por telemetría
-        loadRealSgcHttp();
+        loadRealSgcHttp().then(() => {
+            if (sgcData && sgcData.features) {
+                checkIncomingEventsForAlert(sgcData.features);
+            }
+        });
 
         // Sondeo telemétrico periódico cada 45 segundos para captar nuevos pulsos en tiempo real
         if (!livePollingInterval) {
             livePollingInterval = setInterval(() => {
-                if (showLiveSGC) loadRealSgcHttp();
+                if (showLiveSGC) {
+                    loadRealSgcHttp().then(() => {
+                        if (sgcData && sgcData.features) {
+                            checkIncomingEventsForAlert(sgcData.features);
+                        }
+                    });
+                }
             }, 45000);
         }
 
@@ -1795,8 +1947,10 @@ document.getElementById('check-live-sgc').addEventListener('change', e => {
                         const brandNew = incoming.features.filter(f => !existingIds.has(f.properties.id || f.properties.fecha));
                         if (brandNew.length > 0) {
                             sgcData.features = [...brandNew, ...sgcData.features];
+                            checkIncomingEventsForAlert(brandNew);
                         } else if (sgcData.features.length === 0) {
                             sgcData.features = incoming.features;
+                            checkIncomingEventsForAlert(incoming.features);
                         }
                         updateSgcLiveBadge(sgcData.features.length, 'WebSocket SGC');
                         if (showLiveSGC) queueRender();

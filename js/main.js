@@ -2330,21 +2330,21 @@ const modalData = {
             </p>
             <div style="display:grid; grid-template-columns:1fr; gap:10px;">
                 <div style="background:rgba(10,132,255,0.08); border-left:3px solid #0A84FF; padding:10px 12px; border-radius:6px;">
-                    <strong style="color:#60A5FA; font-size:0.88rem;">🔬 Modo Científico (Geociencias):</strong>
+                    <strong style="color:#60A5FA; font-size:0.88rem;">🌋 Sismo-Geología:</strong>
                     <div style="color:#E5E7EB; font-size:0.82rem; line-height:1.4; margin-top:3px;">
-                        Análisis de recurrencia con la ley de <strong>Gutenberg-Richter</strong> (cálculo dinámico del valor <em>b</em> y periodos de retorno), corte 3D del <strong>plano de subducción de Wadati-Benioff</strong> y detección de enjambres con inteligencia artificial (DBSCAN).
+                        Análisis sismotectónico regional de recurrencia con la ley de <strong>Gutenberg-Richter</strong> (cálculo dinámico del valor <em>b</em> y periodos de retorno), corte 3D del <strong>plano de subducción de Wadati-Benioff</strong>, trazo de fallas activas y detección de enjambres con inteligencia artificial (DBSCAN).
                     </div>
                 </div>
                 <div style="background:rgba(16,185,129,0.08); border-left:3px solid #10B981; padding:10px 12px; border-radius:6px;">
-                    <strong style="color:#34D399; font-size:0.88rem;">📐 Modo NSR-10 (Ingeniería y Construcción):</strong>
+                    <strong style="color:#34D399; font-size:0.88rem;">🏗️ Diseño Estructural:</strong>
                     <div style="color:#E5E7EB; font-size:0.82rem; line-height:1.4; margin-top:3px;">
-                        Selecciona entre los 67 municipios del Chocó y el Eje Cafetero, perfil de suelo (A a F) y grupo de uso para generar el <strong>Espectro Elástico de Diseño sísmico (Sa vs. Periodo T)</strong> con exportación directa a formato CSV para software estructural (ETABS / SAP2000).
+                        Selecciona entre los 67 municipios del Chocó y el Eje Cafetero, perfil de suelo (A a F) y grupo de uso bajo la norma NSR-10 para generar el <strong>Espectro Elástico de Diseño sísmico (Sa vs. Periodo T)</strong> con exportación directa a formato CSV para software estructural (ETABS / SAP2000).
                     </div>
                 </div>
                 <div style="background:rgba(245,158,11,0.08); border-left:3px solid #F59E0B; padding:10px 12px; border-radius:6px;">
-                    <strong style="color:#FBBF24; font-size:0.88rem;">🏛️ Modo POT (Alcaldías y Planificación Territorial):</strong>
+                    <strong style="color:#FBBF24; font-size:0.88rem;">🏛️ Gestión Territorial:</strong>
                     <div style="color:#E5E7EB; font-size:0.82rem; line-height:1.4; margin-top:3px;">
-                        Semáforo de peligro sísmico municipal, análisis de población expuesta, corredores de retiro de 100 m respecto a fallas activas (Ley 388 de 1997) y descarga de la <strong>Ficha Técnica Ejecutiva en PDF</strong>.
+                        Semáforo de peligro sísmico municipal para ordenamiento territorial (POT), análisis de población expuesta, corredores de retiro de 100 m respecto a fallas activas (Ley 388 de 1997), vulnerabilidad de infraestructura crítica y descarga de la <strong>Ficha Técnica Ejecutiva en PDF</strong>.
                     </div>
                 </div>
             </div>
@@ -2450,16 +2450,14 @@ const modalData = {
                 </div>
             </div>
 
-            <!-- Navegación con Teclas de Flecha -->
+            <!-- Navegación con Teclas de Flecha y Zoom -->
             <div style="background:rgba(0,0,0,0.4); border:1px solid rgba(56,189,248,0.3); border-radius:10px; padding:10px 12px; margin-bottom:8px;">
-                <strong style="color:#38bdf8; font-size:0.82rem; display:block; margin-bottom:6px;">🧭 Navegación Espacial del Mapa y Diagnóstico UX:</strong>
+                <strong style="color:#38bdf8; font-size:0.82rem; display:block; margin-bottom:6px;">🧭 Navegación Espacial del Mapa con Teclado:</strong>
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:0.78rem; color:#cbd5e1;">
                     <div><kbd style="background:#1e293b; color:#fff; border:1px solid #64748b; border-radius:4px; padding:1px 6px;">↑</kbd> <kbd style="background:#1e293b; color:#fff; border:1px solid #64748b; border-radius:4px; padding:1px 6px;">↓</kbd> <kbd style="background:#1e293b; color:#fff; border:1px solid #64748b; border-radius:4px; padding:1px 6px;">←</kbd> <kbd style="background:#1e293b; color:#fff; border:1px solid #64748b; border-radius:4px; padding:1px 6px;">→</kbd> : Desplazar mapa (N, S, O, E)</div>
                     <div><kbd style="background:#1e293b; color:#38bdf8; border:1px solid #38bdf8; border-radius:4px; padding:1px 6px;">+</kbd> / <kbd style="background:#1e293b; color:#38bdf8; border:1px solid #38bdf8; border-radius:4px; padding:1px 6px;">-</kbd> : Acercar / Alejar Zoom directo</div>
                     <div><kbd style="background:#1e293b; color:#facc15; border:1px solid #facc15; border-radius:4px; padding:1px 6px;">⇧ Shift</kbd> + <kbd style="background:#1e293b; color:#fff; border:1px solid #64748b; border-radius:4px; padding:1px 6px;">↑</kbd> <kbd style="background:#1e293b; color:#fff; border:1px solid #64748b; border-radius:4px; padding:1px 6px;">↓</kbd> : Inclinar cámara 3D (Pitch)</div>
                     <div><kbd style="background:#1e293b; color:#facc15; border:1px solid #facc15; border-radius:4px; padding:1px 6px;">⇧ Shift</kbd> + <kbd style="background:#1e293b; color:#fff; border:1px solid #64748b; border-radius:4px; padding:1px 6px;">←</kbd> <kbd style="background:#1e293b; color:#fff; border:1px solid #64748b; border-radius:4px; padding:1px 6px;">→</kbd> : Rotar ángulo azimutal (Bearing)</div>
-                    <div><kbd style="background:#1e293b; color:#a855f7; border:1px solid #a855f7; border-radius:4px; padding:1px 6px;">D</kbd> : Conmutar Panel Oculto de Telemetría UX</div>
-                    <div style="color:#94a3b8;"><em>Tasa en vivo Teclado vs Puntero (RtD)</em></div>
                 </div>
             </div>
 
@@ -4616,13 +4614,13 @@ function initKeyboardShortcuts() {
             }
 
             // ================================================================
-            // PANEL HUD OCULTO DE TELEMETRÍA UX (ATAJO 'D')
+            // PANEL HUD OCULTO DE TELEMETRÍA UX (TECLA ESPACIO)
             // ================================================================
-            case 'd':
-            case 'D': {
+            case ' ':
+            case 'Spacebar': {
                 e.preventDefault();
                 toggleUxTelemetryHud();
-                interactionTelemetry.record('keyboard', 'Conmutar HUD Telemetría UX', { key: 'D' });
+                interactionTelemetry.record('keyboard', 'Conmutar HUD Telemetría UX', { key: 'Space' });
                 break;
             }
         }

@@ -507,8 +507,11 @@
                     
                     <label class="switch-container" style="display: flex; align-items: flex-start; justify-content: space-between;">
                         <span style="flex: 1; margin-right: 16px;">
-                            <strong style="margin-bottom: 2px;">Conexión SGC Live</strong>
-                            Alertas de sismicidad telemétrica
+                            <span style="display:flex; align-items:center; gap:6px; margin-bottom:2px;">
+                                <strong>Conexión SGC Live</strong>
+                                <span id="sgc-live-status-badge" style="display:none; font-size:0.65rem; padding:1px 6px; border-radius:8px; font-weight:600; background:rgba(52,211,153,0.15); color:#34d399; border:1px solid rgba(52,211,153,0.3); font-family:monospace;">● EN VIVO</span>
+                            </span>
+                            <span id="sgc-live-subtext" style="display:block; font-size:0.75rem; color:var(--text-secondary);">Alertas de sismicidad telemétrica</span>
                         </span>
                         <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 8px; flex-shrink: 0;">
                             <span class="info-btn" data-info="sgc" style="display:inline-block; width:18px; height:18px; line-height:18px; text-align:center; background:#0A84FF; color:white; border-radius:50%; font-size:0.75rem; font-weight:bold; cursor:pointer;" title="Más información">?</span>
@@ -968,7 +971,7 @@
     <script src="js/core-oop.js?v=39"></script>
 
     <!-- Lógica principal con versionamiento para evitar caché persistente -->
-    <script src="js/main.js?v=47"></script>
+    <script src="js/main.js?v=48"></script>
 
     <!-- PWA -->
     <script>

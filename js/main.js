@@ -2438,15 +2438,15 @@ const modalData = {
             </p>
         </div>
 
-        <!-- SECCIÓN 5: ATAJOS DE TECLADO NUMÉRICO (ACCESIBILIDAD Y OPERACIÓN RÁPIDA) -->
+        <!-- SECCIÓN 5: ATAJOS DE TECLADO (ACCESIBILIDAD Y CONTROL OPERATIVO RÁPIDO) -->
         <div style="background:linear-gradient(135deg, rgba(16,185,129,0.12), rgba(6,78,59,0.2)); border:1.5px solid #10b981; border-radius:14px; padding:16px; margin-bottom:20px; box-shadow:0 4px 18px rgba(16,185,129,0.2);">
             <h3 style="color:#34d399; font-size:1.02rem; margin:0 0 10px 0; display:flex; align-items:center; gap:8px;">
-                <span>⌨️</span> 5. Atajos de Teclado Numérico (Control Operativo Rápido)
+                <span>⌨️</span> 5. Atajos de Teclado y Control Espacial (Navegación Rápida)
             </h3>
             <p style="color:#E2E8F0; font-size:0.86rem; line-height:1.5; margin:0 0 12px 0;">
-                Puedes controlar y conmutar las principales funciones analíticas directamente con las teclas numéricas del teclado (<strong>0 al 9</strong>):
+                Puedes controlar y conmutar las principales funciones analíticas directamente con las teclas del teclado:
             </p>
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; font-size:0.82rem;">
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; font-size:0.82rem; margin-bottom:12px;">
                 <div style="background:rgba(0,0,0,0.35); padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.08); display:flex; align-items:center; gap:8px;">
                     <kbd style="background:#1e293b; color:#38bdf8; border:1px solid #38bdf8; border-radius:4px; padding:2px 7px; font-weight:700; font-size:0.85rem; font-family:monospace;">1</kbd>
                     <span>Perfil: <strong>Sismo-Geología</strong></span>
@@ -2488,6 +2488,18 @@ const modalData = {
                     <span>Acción: <strong>Restablecer Todo</strong></span>
                 </div>
             </div>
+
+            <!-- Navegación con Teclas de Flecha -->
+            <div style="background:rgba(0,0,0,0.4); border:1px solid rgba(56,189,248,0.3); border-radius:10px; padding:10px 12px; margin-bottom:8px;">
+                <strong style="color:#38bdf8; font-size:0.82rem; display:block; margin-bottom:6px;">🧭 Navegación Espacial del Mapa con Teclas de Flecha:</strong>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:0.78rem; color:#cbd5e1;">
+                    <div><kbd style="background:#1e293b; color:#fff; border:1px solid #64748b; border-radius:4px; padding:1px 6px;">↑</kbd> <kbd style="background:#1e293b; color:#fff; border:1px solid #64748b; border-radius:4px; padding:1px 6px;">↓</kbd> <kbd style="background:#1e293b; color:#fff; border:1px solid #64748b; border-radius:4px; padding:1px 6px;">←</kbd> <kbd style="background:#1e293b; color:#fff; border:1px solid #64748b; border-radius:4px; padding:1px 6px;">→</kbd> : Desplazar mapa (N, S, O, E)</div>
+                    <div><kbd style="background:#1e293b; color:#facc15; border:1px solid #facc15; border-radius:4px; padding:1px 6px;">⇧ Shift</kbd> + <kbd style="background:#1e293b; color:#fff; border:1px solid #64748b; border-radius:4px; padding:1px 6px;">↑</kbd> <kbd style="background:#1e293b; color:#fff; border:1px solid #64748b; border-radius:4px; padding:1px 6px;">↓</kbd> : Inclinar cámara 3D (Pitch)</div>
+                    <div><kbd style="background:#1e293b; color:#facc15; border:1px solid #facc15; border-radius:4px; padding:1px 6px;">⇧ Shift</kbd> + <kbd style="background:#1e293b; color:#fff; border:1px solid #64748b; border-radius:4px; padding:1px 6px;">←</kbd> <kbd style="background:#1e293b; color:#fff; border:1px solid #64748b; border-radius:4px; padding:1px 6px;">→</kbd> : Rotar ángulo azimutal (Bearing)</div>
+                    <div style="color:#94a3b8;"><em>Registrado en telemetría de pruebas UX</em></div>
+                </div>
+            </div>
+
             <p style="color:#94A3B8; font-size:0.75rem; margin:10px 0 0 0; line-height:1.4;">
                 <em>Nota: Los atajos se desactivan automáticamente al escribir dentro de cajas de búsqueda o campos de texto.</em>
             </p>
@@ -4377,6 +4389,104 @@ function showShortcutToast(keyChar, label, icon = '⌨️') {
     }, 1800);
 }
 
+// ============================================================================
+// SISTEMA DE TELEMETRÍA Y MÉTRICA DE INTERACCIÓN (TECLADO VS PUNTERO/RATÓN)
+// ============================================================================
+const interactionTelemetry = {
+    keyboardEvents: 0,
+    pointerEvents: 0,
+    eventsLog: [],
+    startTime: Date.now(),
+
+    record(mode, action, details = {}) {
+        const timestamp = Date.now();
+        if (mode === 'keyboard') {
+            this.keyboardEvents++;
+        } else if (mode === 'pointer') {
+            this.pointerEvents++;
+        }
+        this.eventsLog.push({
+            timestamp,
+            elapsedSec: parseFloat(((timestamp - this.startTime) / 1000).toFixed(2)),
+            mode, // 'keyboard' | 'pointer'
+            action,
+            details
+        });
+
+        // Mantener tope en memoria para evitar saturación de heap en sesiones extensas
+        if (this.eventsLog.length > 2500) {
+            this.eventsLog.shift();
+        }
+    },
+
+    getReport() {
+        const total = this.keyboardEvents + this.pointerEvents;
+        const keyboardRatio = total > 0 ? ((this.keyboardEvents / total) * 100).toFixed(1) : 0;
+        const pointerRatio = total > 0 ? ((this.pointerEvents / total) * 100).toFixed(1) : 0;
+        const durationMin = ((Date.now() - this.startTime) / 60000).toFixed(2);
+        return {
+            totalInteractions: total,
+            keyboardEvents: this.keyboardEvents,
+            pointerEvents: this.pointerEvents,
+            keyboardUsagePercent: parseFloat(keyboardRatio),
+            pointerUsagePercent: parseFloat(pointerRatio),
+            sessionDurationMinutes: parseFloat(durationMin),
+            eventsLog: this.eventsLog
+        };
+    },
+
+    exportReportJSON() {
+        const report = this.getReport();
+        const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `sismochoco_telemetria_ux_${Date.now()}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+};
+window.interactionTelemetry = interactionTelemetry;
+
+// Escuchador global de interacción con puntero/ratón para telemetría
+window.addEventListener('click', (e) => {
+    const target = e.target;
+    const tag = (target && target.tagName) ? target.tagName : '';
+    const id = target ? (target.id || target.className || tag) : '';
+    interactionTelemetry.record('pointer', 'click', { targetId: id, tagName: tag });
+}, { passive: true });
+
+// Desplazamiento y orientación orbital del mapa 3D con teclas de flecha
+function panMapWithArrows(dx, dy, isShift) {
+    if (!deckgl) return;
+    const vs = (deckgl.viewState && deckgl.viewState.longitude !== undefined)
+        ? { ...deckgl.viewState }
+        : { longitude: -77.0, latitude: 6.0, zoom: 6.5, pitch: 45, bearing: 15 };
+
+    if (isShift) {
+        // Shift + Flecha: Modificar Inclinación (Pitch) y Orientación Azimutal (Bearing)
+        if (dy !== 0) {
+            vs.pitch = Math.max(0, Math.min(85, (vs.pitch || 45) - dy * 5));
+        }
+        if (dx !== 0) {
+            vs.bearing = ((vs.bearing || 15) + dx * 10) % 360;
+        }
+    } else {
+        // Flecha simple: Desplazamiento geográfico cartográfico (Pan)
+        const currentZoom = vs.zoom || 6.5;
+        const latStep = Math.pow(2, 6.5 - currentZoom) * 0.25;
+        const lngStep = latStep / Math.cos(((vs.latitude || 6.0) * Math.PI) / 180);
+        vs.latitude = Math.max(-4.0, Math.min(13.0, (vs.latitude || 6.0) + dy * latStep));
+        vs.longitude = Math.max(-84.0, Math.min(-66.0, (vs.longitude || -77.0) + dx * lngStep));
+    }
+
+    vs.transitionDuration = 220;
+    vs.transitionInterpolator = new deck.LinearInterpolator(['longitude', 'latitude', 'pitch', 'bearing']);
+    deckgl.setProps({ initialViewState: vs });
+}
+
 function initKeyboardShortcuts() {
     window.addEventListener('keydown', (e) => {
         // Ignorar si el usuario está interactuando con campos de formulario editables
@@ -4387,9 +4497,38 @@ function initKeyboardShortcuts() {
         if (isEditable) return;
         if (e.ctrlKey || e.metaKey || e.altKey) return;
 
+        // ====================================================================
+        // NAVEGACIÓN Y CÁMARA 3D CON TECLAS DE FLECHA
+        // ====================================================================
+        if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+            e.preventDefault();
+            const isShift = !!e.shiftKey;
+            let actionName = '';
+            let iconToast = isShift ? '🔄' : '🧭';
+
+            if (e.key === 'ArrowUp') {
+                panMapWithArrows(0, 1, isShift);
+                actionName = isShift ? 'Inclinar Cámara (+)' : 'Mover Norte';
+            } else if (e.key === 'ArrowDown') {
+                panMapWithArrows(0, -1, isShift);
+                actionName = isShift ? 'Aplanar Cámara (-)' : 'Mover Sur';
+            } else if (e.key === 'ArrowLeft') {
+                panMapWithArrows(-1, 0, isShift);
+                actionName = isShift ? 'Rotar Órbita (Izquierda)' : 'Mover Oeste';
+            } else if (e.key === 'ArrowRight') {
+                panMapWithArrows(1, 0, isShift);
+                actionName = isShift ? 'Rotar Órbita (Derecha)' : 'Mover Este';
+            }
+
+            interactionTelemetry.record('keyboard', actionName, { key: e.key, shift: isShift });
+            showShortcutToast(isShift ? `⇧+${e.key.replace('Arrow', '')}` : e.key.replace('Arrow', ''), actionName, iconToast);
+            return;
+        }
+
         switch (e.key) {
             case '1': {
                 e.preventDefault();
+                interactionTelemetry.record('keyboard', 'Perfil: Sismo-Geología', { key: '1' });
                 const tab1 = document.querySelector('.profile-tab[data-profile="sismologia"]');
                 if (tab1) {
                     tab1.click();
@@ -4399,6 +4538,7 @@ function initKeyboardShortcuts() {
             }
             case '2': {
                 e.preventDefault();
+                interactionTelemetry.record('keyboard', 'Perfil: Diseño Estructural', { key: '2' });
                 const tab2 = document.querySelector('.profile-tab[data-profile="nsr10"]');
                 if (tab2) {
                     tab2.click();
@@ -4408,6 +4548,7 @@ function initKeyboardShortcuts() {
             }
             case '3': {
                 e.preventDefault();
+                interactionTelemetry.record('keyboard', 'Perfil: Gestión Territorial', { key: '3' });
                 const tab3 = document.querySelector('.profile-tab[data-profile="alcaldia"]');
                 if (tab3) {
                     tab3.click();
@@ -4417,6 +4558,7 @@ function initKeyboardShortcuts() {
             }
             case '4': {
                 e.preventDefault();
+                interactionTelemetry.record('keyboard', 'Visualización: Eventos 3D', { key: '4' });
                 const btnPuntos = document.getElementById('btn-puntos');
                 if (btnPuntos) {
                     btnPuntos.click();
@@ -4426,6 +4568,7 @@ function initKeyboardShortcuts() {
             }
             case '5': {
                 e.preventDefault();
+                interactionTelemetry.record('keyboard', 'Visualización: Mapa de Calor', { key: '5' });
                 const btnCalor = document.getElementById('btn-calor');
                 if (btnCalor) {
                     btnCalor.click();
@@ -4435,6 +4578,7 @@ function initKeyboardShortcuts() {
             }
             case '6': {
                 e.preventDefault();
+                interactionTelemetry.record('keyboard', 'Visualización: Hexbins 3D', { key: '6' });
                 const btnHex = document.getElementById('btn-hex');
                 if (btnHex) {
                     btnHex.click();
@@ -4444,6 +4588,7 @@ function initKeyboardShortcuts() {
             }
             case '7': {
                 e.preventDefault();
+                interactionTelemetry.record('keyboard', 'Corte Benioff 3D', { key: '7' });
                 const btnBenioff = document.getElementById('btn-benioff');
                 if (btnBenioff) {
                     btnBenioff.click();
@@ -4454,6 +4599,7 @@ function initKeyboardShortcuts() {
             }
             case '8': {
                 e.preventDefault();
+                interactionTelemetry.record('keyboard', 'SGC Live', { key: '8' });
                 const checkLive = document.getElementById('check-live-sgc');
                 if (checkLive) {
                     checkLive.checked = !checkLive.checked;
@@ -4465,6 +4611,7 @@ function initKeyboardShortcuts() {
             }
             case '9': {
                 e.preventDefault();
+                interactionTelemetry.record('keyboard', 'Fallas Geológicas', { key: '9' });
                 const checkFallas = document.getElementById('check-fallas');
                 if (checkFallas) {
                     checkFallas.checked = !checkFallas.checked;
@@ -4476,6 +4623,7 @@ function initKeyboardShortcuts() {
             }
             case '0': {
                 e.preventDefault();
+                interactionTelemetry.record('keyboard', 'Restablecer Todo', { key: '0' });
                 const btnHome = document.getElementById('btn-home');
                 if (btnHome) {
                     btnHome.click();

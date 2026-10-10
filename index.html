@@ -555,23 +555,13 @@
                         </div>
                     </label>
 
-                    <!-- Configuración Personalizada de Alerta Telemétrica (Umbral y Notificación Sonora) -->
+                    <!-- Configuración Personalizada de Alerta Telemétrica (Umbral de Alerta Visual) -->
                     <div id="sgc-alert-settings" style="display:none; flex-direction:column; gap:8px; margin-top:-6px; margin-bottom:8px; padding:10px 12px; background:rgba(16,185,129,0.06); border:1px solid rgba(16,185,129,0.25); border-radius:10px;">
                         <div style="display:flex; justify-content:space-between; align-items:center;">
-                            <span style="font-size:0.75rem; color:#A1A1A6;">Umbral de Alerta Visual/Sonora:</span>
+                            <span style="font-size:0.75rem; color:#A1A1A6;">Umbral de Alerta Visual en Vivo:</span>
                             <strong id="alert-mag-threshold-val" style="font-size:0.8rem; color:#ffd60a; font-family:monospace;">≥ 4.0 Mw</strong>
                         </div>
-                        <input type="range" id="slider-alert-threshold" min="3.0" max="6.5" step="0.1" value="4.0" style="width:100%; height:4px; accent-color:#10b981; cursor:pointer;">
-                        
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px; padding-top:6px; border-top:1px solid rgba(255,255,255,0.06);">
-                            <span style="font-size:0.75rem; color:#A1A1A6; display:flex; align-items:center; gap:6px;">
-                                <span>🔔</span> Sonido de notificación sutil
-                            </span>
-                            <label class="switch" style="width:36px; height:20px;">
-                                <input type="checkbox" id="check-alert-sound" checked>
-                                <span class="slider" style="border-radius:20px;"></span>
-                            </label>
-                        </div>
+                        <input type="range" id="slider-alert-threshold" min="3.0" max="6.5" step="0.1" value="4.0" style="width:100%; height:4px; accent-color:#10b981; cursor:pointer;" title="Ajustar magnitud mínima para despliegue de banner flotante">
                     </div>
 
                     <label class="switch-container" style="display: flex; align-items: flex-start; justify-content: space-between;">
@@ -1021,12 +1011,59 @@
         </div>
     </div>
 
+    <!-- Panel Flotante de Telemetría UX: Tasa de Uso Teclado vs Puntero (Acceso con atajo 'D') -->
+    <div id="ux-telemetry-hud" style="display: none; position: fixed; bottom: 20px; left: 20px; z-index: 99999; width: 340px; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border: 1.5px solid #38bdf8; border-radius: 16px; padding: 16px; color: #f8fafc; font-family: 'Inter', sans-serif; box-shadow: 0 20px 40px rgba(0,0,0,0.6), 0 0 20px rgba(56,189,248,0.25); animation: alertSlideDown 0.25s ease;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 1.1rem;">📊</span>
+                <div>
+                    <strong style="font-size: 0.85rem; color: #fff; display: block;">Telemetría UX — Interacción</strong>
+                    <span style="font-size: 0.68rem; color: #38bdf8; font-family: monospace;">Monitoreo en vivo (Atajo: D)</span>
+                </div>
+            </div>
+            <button id="btn-close-ux-hud" style="background: transparent; border: none; color: #94a3b8; font-size: 1.1rem; cursor: pointer; padding: 2px 6px;">✕</button>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">
+            <div style="background: rgba(2, 132, 199, 0.15); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 10px; padding: 8px 10px; text-align: center;">
+                <span style="font-size: 0.68rem; color: #93c5fd; display: block;">⌨️ Teclado / Atajos</span>
+                <strong id="hud-keyboard-pct" style="font-size: 1.25rem; color: #38bdf8;">0.0%</strong>
+                <span id="hud-keyboard-count" style="font-size: 0.68rem; color: #cbd5e1; display: block;">0 eventos</span>
+            </div>
+            <div style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 10px; padding: 8px 10px; text-align: center;">
+                <span style="font-size: 0.68rem; color: #cbd5e1; display: block;">🖱️ Puntero / Ratón</span>
+                <strong id="hud-pointer-pct" style="font-size: 1.25rem; color: #e2e8f0;">0.0%</strong>
+                <span id="hud-pointer-count" style="font-size: 0.68rem; color: #cbd5e1; display: block;">0 eventos</span>
+            </div>
+        </div>
+
+        <!-- Barra comparativa visual de ratio -->
+        <div style="width: 100%; height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden; display: flex; margin-bottom: 10px;">
+            <div id="hud-ratio-bar-keyboard" style="width: 50%; height: 100%; background: #0284c7; transition: width 0.3s ease;"></div>
+            <div id="hud-ratio-bar-pointer" style="width: 50%; height: 100%; background: #64748b; transition: width 0.3s ease;"></div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.72rem; color: #94a3b8; margin-bottom: 12px;">
+            <span>Sesión: <strong id="hud-session-duration" style="color: #fff;">0.0 min</strong></span>
+            <span>Total: <strong id="hud-total-events" style="color: #fff;">0</strong> interacciones</span>
+        </div>
+
+        <div style="display: flex; gap: 8px;">
+            <button id="btn-export-telemetry-hud" style="flex: 1; background: #0284c7; color: #fff; border: none; border-radius: 8px; padding: 6px 10px; font-size: 0.74rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;">
+                <span>📥 Descargar JSON</span>
+            </button>
+            <button id="btn-reset-telemetry-hud" style="background: rgba(255,255,255,0.08); color: #e2e8f0; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 6px 10px; font-size: 0.74rem; cursor: pointer;">
+                <span>🔄 Reiniciar</span>
+            </button>
+        </div>
+    </div>
+
 
     <!-- Arquitectura Orientada a Objetos y Patrones de Diseño (Singleton, Strategy, Factory, Observer) -->
     <script src="js/core-oop.js?v=39"></script>
 
     <!-- Lógica principal con versionamiento para evitar caché persistente -->
-    <script src="js/main.js?v=55"></script>
+    <script src="js/main.js?v=56"></script>
 
     <!-- PWA -->
     <script>

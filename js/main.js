@@ -261,9 +261,16 @@ function handleHover(info) {
         } else if (p.fuente && (p.fuente.includes('SGC') || p.fuente.includes('Telemétrica') || p.fuente.includes('USGS') || p.fuente.includes('EMSC'))) {
             const depthStr = p.profundidad < 30 ? 'Superficial' : (p.profundidad < 70 ? 'Intermedio' : 'Profundo');
             const magVal = (p.mag !== undefined ? p.mag : p.magnitud) || 0;
-            tooltip.innerHTML = `<h4 style="color:#34d399; display:flex; align-items:center; gap:6px;">
-                                    <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#10b981; box-shadow:0 0 8px #10b981;"></span>
-                                    📡 SGC Live: ${p.fecha}
+            const tiempoBadge = p.esHoy
+                ? `<span style="background:rgba(16,185,129,0.25); color:#34d399; border:1px solid #10b981; border-radius:4px; padding:1px 6px; font-size:0.68rem; font-weight:700;">● HOY (${p.diffHours || 0}h)</span>`
+                : `<span style="background:rgba(148,163,184,0.15); color:#cbd5e1; border:1px solid #64748b; border-radius:4px; padding:1px 6px; font-size:0.68rem;">Reciente (${p.diffHours ? Math.round(p.diffHours/24) + 'd atrás' : 'Telemétrico'})</span>`;
+
+            tooltip.innerHTML = `<h4 style="color:#34d399; display:flex; align-items:center; justify-content:space-between; gap:6px;">
+                                    <span style="display:flex; align-items:center; gap:6px;">
+                                        <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#10b981; box-shadow:0 0 8px #10b981;"></span>
+                                        📡 SGC Live: ${p.fecha}
+                                    </span>
+                                    ${tiempoBadge}
                                  </h4>
                                  <p><strong>Magnitud:</strong> <span style="color:#ffd60a; font-weight:bold;">${magVal} Mw</span></p>
                                  <p><strong>Profundidad Hipocentral:</strong> ${p.profundidad} km (${depthStr})</p>
@@ -846,15 +853,16 @@ function renderLayers() {
 
     if (showLiveSGC && sgcData.features.length > 0) {
         // Capa Exclusiva para SGC Live en Píxeles (Autoajustable al Zoom, Anillos Neón Telemétricos)
+        // Se diferencia cromáticamente entre sismos de hoy (<24h) y sismos recientes de días previos
         layers.push(new deck.ScatterplotLayer({
             id: 'sgc-live-layer-halo',
             data: sgcData.features,
             getPosition: d => [d.geometry.coordinates[0], d.geometry.coordinates[1], 15000],
             radiusUnits: 'pixels',
             getRadius: d => Math.max((d.properties.mag || d.properties.magnitud || 3.0) * 6, 22),
-            getFillColor: [16, 185, 129, 60], // Halo esmeralda translúcido
+            getFillColor: d => d.properties.esHoy ? [16, 185, 129, 90] : [13, 148, 136, 40], // Halo esmeralda vibrante si es hoy; cian translúcido si es anterior
             stroked: true,
-            getLineColor: [52, 211, 153, 200], // Borde esmeralda brillante
+            getLineColor: d => d.properties.esHoy ? [52, 211, 153, 230] : [20, 184, 166, 140],
             lineWidthMinPixels: 2,
             pickable: false
         }));
@@ -865,9 +873,9 @@ function renderLayers() {
             getPosition: d => [d.geometry.coordinates[0], d.geometry.coordinates[1], 16000],
             radiusUnits: 'pixels',
             getRadius: d => Math.max((d.properties.mag || d.properties.magnitud || 3.0) * 3, 10),
-            getFillColor: [16, 185, 129, 230], // Núcleo verde esmeralda intenso
+            getFillColor: d => d.properties.esHoy ? [16, 185, 129, 240] : [15, 118, 110, 190], // Núcleo esmeralda puro vs teal
             stroked: true,
-            getLineColor: [255, 255, 255, 255], // Borde blanco nítido
+            getLineColor: d => d.properties.esHoy ? [255, 255, 255, 255] : [204, 251, 241, 180],
             lineWidthMinPixels: 2,
             pickable: true,
             onHover: handleHover
@@ -1668,7 +1676,7 @@ async function loadRealSgcHttp() {
             const data = await resp.json();
             if (data.features && data.features.length > 0) {
                 sgcData.features = data.features;
-                updateSgcLiveBadge(data.features.length, 'FastAPI / SGC');
+                updateSgcLiveBadge(data.features.length, 'FastAPI / SGC Live');
                 if (showLiveSGC) queueRender();
                 return;
             }
@@ -1677,13 +1685,18 @@ async function loadRealSgcHttp() {
         console.warn("Backend local no disponible para SGC Live. Conectando directo a feed telemétrico satelital...", err);
     }
 
-    // 2. Fallback de alta resiliencia: Consulta directa a la API FDSN oficial de USGS (con CORS abierto y eventos en tiempo real)
+    // 2. Consulta directa a la API FDSN oficial de USGS (eventos telemétricos en tiempo real en la región)
     try {
-        const usgsUrl = "https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&minlatitude=3.0&maxlatitude=8.8&minlongitude=-78.5&maxlongitude=-74.5&limit=30";
+        // Ventana telemétrica: últimos 7 días con prioridad a las últimas 24-48 horas
+        const dNow = new Date();
+        const dStart = new Date(dNow.getTime() - (7 * 24 * 60 * 60 * 1000));
+        const startIso = dStart.toISOString().split('T')[0];
+        const usgsUrl = `https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&minlatitude=3.0&maxlatitude=8.8&minlongitude=-78.5&maxlongitude=-74.5&starttime=${startIso}&limit=30`;
         const usgsResp = await fetch(usgsUrl, { cache: 'no-store' });
         if (usgsResp.ok) {
             const usgsData = await usgsResp.json();
             if (usgsData.features && usgsData.features.length > 0) {
+                const nowMs = Date.now();
                 const parsedFeatures = usgsData.features.map(item => {
                     const p = item.properties || {};
                     const c = (item.geometry && item.geometry.coordinates) || [0, 0, 0];
@@ -1691,10 +1704,11 @@ async function loadRealSgcHttp() {
                     const lat = c[1];
                     const depth = Math.abs(c[2] || 10.0);
                     
-                    // Conversión precisa a Hora de Colombia (UTC-5)
+                    // Conversión precisa a Hora Legal de Colombia (UTC-5)
                     const dUtc = new Date(p.time);
                     const dCol = new Date(dUtc.getTime() - (5 * 60 * 60 * 1000));
                     const fechaStr = dCol.toISOString().replace('T', ' ').substring(0, 19);
+                    const diffHours = (nowMs - p.time) / (1000 * 60 * 60);
 
                     // Identificación de municipio más cercano si existen datos municipales
                     let nearestName = p.place || 'Chocó / Pacífico';
@@ -1721,11 +1735,14 @@ async function loadRealSgcHttp() {
                         properties: {
                             id: item.id || p.code,
                             fecha: fechaStr,
+                            timestampMs: p.time,
+                            diffHours: parseFloat(diffHours.toFixed(1)),
+                            esHoy: diffHours <= 24,
                             anio: dCol.getFullYear(),
                             magnitud: Math.round((p.mag || 0.0) * 10) / 10,
                             profundidad: Math.round(depth * 10) / 10,
                             municipio: nearestName,
-                            fuente: "SGC / USGS FDSN Live",
+                            fuente: diffHours <= 24 ? "SGC / USGS Live (Últimas 24h)" : "SGC / USGS Telemétrico",
                             rms: p.rms || 0.0,
                             gap: p.gap || 0.0
                         }
@@ -1733,7 +1750,9 @@ async function loadRealSgcHttp() {
                 });
 
                 sgcData.features = parsedFeatures;
-                updateSgcLiveBadge(parsedFeatures.length, 'USGS/SGC FDSN');
+                const rec24h = parsedFeatures.filter(f => f.properties.esHoy).length;
+                const sourceLabel = rec24h > 0 ? `USGS/SGC Live (${rec24h} de hoy)` : 'USGS/SGC Reciente';
+                updateSgcLiveBadge(parsedFeatures.length, sourceLabel);
                 if (showLiveSGC) queueRender();
                 return;
             }
@@ -1742,14 +1761,14 @@ async function loadRealSgcHttp() {
         console.warn("FDSN directo no accesible. Extrayendo sismos recientes del catálogo consolidado...", fdsnErr);
     }
 
-    // 3. Fallback de respaldo: Sismos más recientes (año 2026 / septiembre-octubre) del catálogo local si no hay internet
+    // 3. Fallback de respaldo local si no hay conexión a internet
     if (mapData && mapData.features && mapData.features.length > 0) {
         const recientes = mapData.features
             .filter(f => f.properties && f.properties.anio >= 2026)
             .slice(0, 25);
         if (recientes.length > 0) {
             sgcData.features = recientes;
-            updateSgcLiveBadge(recientes.length, 'Catálogo 2026');
+            updateSgcLiveBadge(recientes.length, 'Catálogo Local');
             if (showLiveSGC) queueRender();
         }
     }
@@ -1766,63 +1785,15 @@ function updateSgcLiveBadge(count, sourceName) {
         badge.style.background = 'rgba(52,211,153,0.15)';
     }
     if (subtext) {
-        subtext.innerHTML = `<span style="color:#34d399;">● Conectado a ${sourceName}</span> (${count} eventos recientes)`;
+        subtext.innerHTML = `<span style="color:#34d399;">● Conectado a ${sourceName}</span> (${count} eventos)`;
     }
 }
 
-let audioCtx = null;
 let alertMagThreshold = 4.0;
-let alertSoundEnabled = true;
 let notifiedEventIds = new Set();
 let bannerDismissTimeout = null;
 
-// Síntesis Web Audio API: Notificación sonora sutil de baja frecuencia (armónico limpio y no invasivo)
-function playSubtleSeismicChime() {
-    if (!alertSoundEnabled) return;
-    try {
-        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-        if (!AudioContextClass) return;
-        if (!audioCtx) audioCtx = new AudioContextClass();
-        if (audioCtx.state === 'suspended') audioCtx.resume();
-
-        const now = audioCtx.currentTime;
-        
-        // Tono principal: 520 Hz (Do5 brillante suave)
-        const osc1 = audioCtx.createOscillator();
-        const gain1 = audioCtx.createGain();
-        osc1.type = 'sine';
-        osc1.frequency.setValueAtTime(520, now);
-        osc1.frequency.exponentialRampToValueAtTime(780, now + 0.15);
-
-        gain1.gain.setValueAtTime(0, now);
-        gain1.gain.linearRampToValueAtTime(0.12, now + 0.04);
-        gain1.gain.exponentialRampToValueAtTime(0.0001, now + 0.85);
-
-        osc1.connect(gain1);
-        gain1.connect(audioCtx.destination);
-        osc1.start(now);
-        osc1.stop(now + 0.85);
-
-        // Armónico de resonancia aérea: 1040 Hz
-        const osc2 = audioCtx.createOscillator();
-        const gain2 = audioCtx.createGain();
-        osc2.type = 'sine';
-        osc2.frequency.setValueAtTime(1040, now + 0.08);
-
-        gain2.gain.setValueAtTime(0, now + 0.08);
-        gain2.gain.linearRampToValueAtTime(0.06, now + 0.12);
-        gain2.gain.exponentialRampToValueAtTime(0.0001, now + 0.7);
-
-        osc2.connect(gain2);
-        gain2.connect(audioCtx.destination);
-        osc2.start(now + 0.08);
-        osc2.stop(now + 0.7);
-    } catch (e) {
-        console.warn("Audio Context restringido por política de interacción del navegador:", e);
-    }
-}
-
-// Despliegue del Banner Flotante Telemétrico en Pantalla
+// Despliegue del Banner Flotante Telemétrico en Pantalla (Alerta estrictamente visual, sin sonido)
 function triggerSeismicAlertBanner(eventFeature) {
     const banner = document.getElementById('live-seismic-alert-banner');
     if (!banner || !eventFeature) return;
@@ -1851,9 +1822,6 @@ function triggerSeismicAlertBanner(eventFeature) {
     banner.style.display = 'block';
     banner.style.opacity = '1';
 
-    // Disparar sonido sutil
-    playSubtleSeismicChime();
-
     // Auto-cierre tras 9 segundos si el usuario no lo cierra manualmente
     if (bannerDismissTimeout) clearTimeout(bannerDismissTimeout);
     bannerDismissTimeout = setTimeout(() => {
@@ -1875,20 +1843,13 @@ if (btnCloseAlertBanner) {
     });
 }
 
-// Configuración del umbral interactivo de alerta
+// Configuración del umbral interactivo de alerta visual
 const sliderAlertThreshold = document.getElementById('slider-alert-threshold');
 const alertThresholdVal = document.getElementById('alert-mag-threshold-val');
 if (sliderAlertThreshold && alertThresholdVal) {
     sliderAlertThreshold.addEventListener('input', (e) => {
         alertMagThreshold = parseFloat(e.target.value);
         alertThresholdVal.innerText = `≥ ${alertMagThreshold.toFixed(1)} Mw`;
-    });
-}
-
-const checkAlertSound = document.getElementById('check-alert-sound');
-if (checkAlertSound) {
-    checkAlertSound.addEventListener('change', (e) => {
-        alertSoundEnabled = e.target.checked;
     });
 }
 
@@ -2491,12 +2452,14 @@ const modalData = {
 
             <!-- Navegación con Teclas de Flecha -->
             <div style="background:rgba(0,0,0,0.4); border:1px solid rgba(56,189,248,0.3); border-radius:10px; padding:10px 12px; margin-bottom:8px;">
-                <strong style="color:#38bdf8; font-size:0.82rem; display:block; margin-bottom:6px;">🧭 Navegación Espacial del Mapa con Teclas de Flecha:</strong>
+                <strong style="color:#38bdf8; font-size:0.82rem; display:block; margin-bottom:6px;">🧭 Navegación Espacial del Mapa y Diagnóstico UX:</strong>
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:0.78rem; color:#cbd5e1;">
                     <div><kbd style="background:#1e293b; color:#fff; border:1px solid #64748b; border-radius:4px; padding:1px 6px;">↑</kbd> <kbd style="background:#1e293b; color:#fff; border:1px solid #64748b; border-radius:4px; padding:1px 6px;">↓</kbd> <kbd style="background:#1e293b; color:#fff; border:1px solid #64748b; border-radius:4px; padding:1px 6px;">←</kbd> <kbd style="background:#1e293b; color:#fff; border:1px solid #64748b; border-radius:4px; padding:1px 6px;">→</kbd> : Desplazar mapa (N, S, O, E)</div>
+                    <div><kbd style="background:#1e293b; color:#38bdf8; border:1px solid #38bdf8; border-radius:4px; padding:1px 6px;">+</kbd> / <kbd style="background:#1e293b; color:#38bdf8; border:1px solid #38bdf8; border-radius:4px; padding:1px 6px;">-</kbd> : Acercar / Alejar Zoom directo</div>
                     <div><kbd style="background:#1e293b; color:#facc15; border:1px solid #facc15; border-radius:4px; padding:1px 6px;">⇧ Shift</kbd> + <kbd style="background:#1e293b; color:#fff; border:1px solid #64748b; border-radius:4px; padding:1px 6px;">↑</kbd> <kbd style="background:#1e293b; color:#fff; border:1px solid #64748b; border-radius:4px; padding:1px 6px;">↓</kbd> : Inclinar cámara 3D (Pitch)</div>
                     <div><kbd style="background:#1e293b; color:#facc15; border:1px solid #facc15; border-radius:4px; padding:1px 6px;">⇧ Shift</kbd> + <kbd style="background:#1e293b; color:#fff; border:1px solid #64748b; border-radius:4px; padding:1px 6px;">←</kbd> <kbd style="background:#1e293b; color:#fff; border:1px solid #64748b; border-radius:4px; padding:1px 6px;">→</kbd> : Rotar ángulo azimutal (Bearing)</div>
-                    <div style="color:#94a3b8;"><em>Registrado en telemetría de pruebas UX</em></div>
+                    <div><kbd style="background:#1e293b; color:#a855f7; border:1px solid #a855f7; border-radius:4px; padding:1px 6px;">D</kbd> : Conmutar Panel Oculto de Telemetría UX</div>
+                    <div style="color:#94a3b8;"><em>Tasa en vivo Teclado vs Puntero (RtD)</em></div>
                 </div>
             </div>
 
@@ -4631,9 +4594,123 @@ function initKeyboardShortcuts() {
                 }
                 break;
             }
+
+            // ================================================================
+            // CONTROL DE ZOOM CARTOGRÁFICO DIRECTO CON TECLAS + / -
+            // ================================================================
+            case '+':
+            case '=': {
+                e.preventDefault();
+                zoomMapWithKey(0.4);
+                interactionTelemetry.record('keyboard', 'Acercar Zoom (+)', { key: '+' });
+                showShortcutToast('+', 'Acercar Zoom', '🔍');
+                break;
+            }
+            case '-':
+            case '_': {
+                e.preventDefault();
+                zoomMapWithKey(-0.4);
+                interactionTelemetry.record('keyboard', 'Alejar Zoom (-)', { key: '-' });
+                showShortcutToast('-', 'Alejar Zoom', '🔎');
+                break;
+            }
+
+            // ================================================================
+            // PANEL HUD OCULTO DE TELEMETRÍA UX (ATAJO 'D')
+            // ================================================================
+            case 'd':
+            case 'D': {
+                e.preventDefault();
+                toggleUxTelemetryHud();
+                interactionTelemetry.record('keyboard', 'Conmutar HUD Telemetría UX', { key: 'D' });
+                break;
+            }
         }
     });
 }
+
+// Función para zoom cartográfico directo con teclado
+function zoomMapWithKey(deltaZoom) {
+    if (!deckgl) return;
+    const vs = (deckgl.viewState && deckgl.viewState.zoom !== undefined)
+        ? { ...deckgl.viewState }
+        : { longitude: -77.0, latitude: 6.0, zoom: 6.5, pitch: 45, bearing: 15 };
+
+    const currentZoom = vs.zoom || 6.5;
+    vs.zoom = Math.max(4.5, Math.min(12.5, currentZoom + deltaZoom));
+    vs.transitionDuration = 200;
+    vs.transitionInterpolator = new deck.LinearInterpolator(['zoom']);
+    deckgl.setProps({ initialViewState: vs });
+}
+
+// Control interactivo del Panel HUD de Telemetría UX
+function toggleUxTelemetryHud() {
+    const hud = document.getElementById('ux-telemetry-hud');
+    if (!hud) return;
+    const isHidden = (hud.style.display === 'none' || !hud.style.display);
+    if (isHidden) {
+        updateUxTelemetryHud();
+        hud.style.display = 'block';
+        if (!window._telemetryHudTimer) {
+            window._telemetryHudTimer = setInterval(updateUxTelemetryHud, 800);
+        }
+    } else {
+        hud.style.display = 'none';
+        if (window._telemetryHudTimer) {
+            clearInterval(window._telemetryHudTimer);
+            window._telemetryHudTimer = null;
+        }
+    }
+}
+
+function updateUxTelemetryHud() {
+    const hud = document.getElementById('ux-telemetry-hud');
+    if (!hud || hud.style.display === 'none') return;
+
+    const rep = interactionTelemetry.getReport();
+    const elKbPct = document.getElementById('hud-keyboard-pct');
+    const elKbCnt = document.getElementById('hud-keyboard-count');
+    const elPtPct = document.getElementById('hud-pointer-pct');
+    const elPtCnt = document.getElementById('hud-pointer-count');
+    const elBarKb = document.getElementById('hud-ratio-bar-keyboard');
+    const elBarPt = document.getElementById('hud-ratio-bar-pointer');
+    const elDuration = document.getElementById('hud-session-duration');
+    const elTotal = document.getElementById('hud-total-events');
+
+    if (elKbPct) elKbPct.innerText = `${rep.keyboardUsagePercent}%`;
+    if (elKbCnt) elKbCnt.innerText = `${rep.keyboardEvents} eventos`;
+    if (elPtPct) elPtPct.innerText = `${rep.pointerUsagePercent}%`;
+    if (elPtCnt) elPtCnt.innerText = `${rep.pointerEvents} eventos`;
+    if (elDuration) elDuration.innerText = `${rep.sessionDurationMinutes} min`;
+    if (elTotal) elTotal.innerText = rep.totalInteractions;
+
+    if (elBarKb && elBarPt) {
+        const kbP = rep.totalInteractions > 0 ? rep.keyboardUsagePercent : 50;
+        const ptP = rep.totalInteractions > 0 ? rep.pointerUsagePercent : 50;
+        elBarKb.style.width = `${kbP}%`;
+        elBarPt.style.width = `${ptP}%`;
+    }
+}
+
+// Event Listeners para botones internos del HUD
+document.addEventListener('DOMContentLoaded', () => {
+    const btnCloseHud = document.getElementById('btn-close-ux-hud');
+    if (btnCloseHud) btnCloseHud.addEventListener('click', () => toggleUxTelemetryHud());
+
+    const btnExportHud = document.getElementById('btn-export-telemetry-hud');
+    if (btnExportHud) btnExportHud.addEventListener('click', () => interactionTelemetry.exportReportJSON());
+
+    const btnResetHud = document.getElementById('btn-reset-telemetry-hud');
+    if (btnResetHud) {
+        btnResetHud.addEventListener('click', () => {
+            interactionTelemetry.keyboardEvents = 0;
+            interactionTelemetry.pointerEvents = 0;
+            interactionTelemetry.eventsLog = [];
+            interactionTelemetry.startTime = Date.now();
+            updateUxTelemetryHud();
+        });
+    }
+});
 
 initKeyboardShortcuts();
 loadData();

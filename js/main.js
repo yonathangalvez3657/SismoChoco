@@ -697,7 +697,7 @@ function renderLayers() {
     updateChart(filteredData);
     window.currentFilteredData = filteredData;
 
-    if (!showOQ) {
+    if (!showOQ && !showLiveSGC) {
         if (viewMode === 'puntos') {
             layers.push(new deck.ScatterplotLayer({
                 id: 'sismos-3d',

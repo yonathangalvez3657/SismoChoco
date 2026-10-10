@@ -2008,7 +2008,7 @@ const modalData = {
         </p>
 
         <!-- CALLOUT DESTACADO: BOTONES DE AYUDA Y ORIENTACIÓN (?) -->
-        <div style="background: linear-gradient(135deg, rgba(10,132,255,0.16), rgba(0,113,227,0.08)); border: 1.5px solid #0A84FF; border-radius: 14px; padding: 14px 16px; margin-bottom: 18px; box-shadow: 0 4px 18px rgba(10,132,255,0.22); display: flex; align-items: flex-start; gap: 14px;">
+        <div style="background: linear-gradient(135deg, rgba(10,132,255,0.16), rgba(0,113,227,0.08)); border: 1.5px solid #0A84FF; border-radius: 14px; padding: 14px 16px; margin-bottom: 14px; box-shadow: 0 4px 18px rgba(10,132,255,0.22); display: flex; align-items: flex-start; gap: 14px;">
             <div style="flex-shrink:0; width: 34px; height: 34px; line-height: 34px; text-align: center; background: #0A84FF; color: white; border-radius: 50%; font-size: 1.15rem; font-weight: bold; box-shadow: 0 2px 10px rgba(10,132,255,0.6);">
                 ?
             </div>
@@ -2019,6 +2019,28 @@ const modalData = {
                 <p style="margin: 0; color: #E0E7FF; font-size: 0.86rem; line-height: 1.5;">
                     Cada tarjeta, gráfico, filtro o módulo cuenta con un botón circular azul de ayuda (<span style="display:inline-block; width:18px; height:18px; line-height:18px; text-align:center; background:#0A84FF; color:white; border-radius:50%; font-size:0.75rem; font-weight:bold; vertical-align:middle;">?</span>). <strong>Púlsalo en cualquier momento</strong> para abrir una explicación detallada en palabras sencillas que te orientará sobre <em>cómo interpretar los datos técnicos y comprender a fondo su funcionamiento</em>.
                 </p>
+            </div>
+        </div>
+
+        <!-- CALLOUT DESTACADO: BOTONES RESTABLECER (RETIRAR CAMBIOS DE VISUALIZACIÓN) -->
+        <div style="background: linear-gradient(135deg, rgba(255,149,0,0.16), rgba(255,107,0,0.08)); border: 1.5px solid #FF9500; border-radius: 14px; padding: 14px 16px; margin-bottom: 18px; box-shadow: 0 4px 18px rgba(255,149,0,0.22); display: flex; align-items: flex-start; gap: 14px;">
+            <div style="flex-shrink:0; width: 34px; height: 34px; line-height: 34px; text-align: center; background: #FF9500; color: white; border-radius: 50%; font-size: 1.15rem; font-weight: bold; box-shadow: 0 2px 10px rgba(255,149,0,0.6);">
+                🔄
+            </div>
+            <div>
+                <h4 style="margin: 0 0 4px 0; color: #FFFFFF; font-size: 0.96rem; font-weight: 700; display: flex; align-items: center; gap: 6px;">
+                    <span>🔄 Botones Restablecer: Retirar Cambios de Visualización y Filtros</span>
+                </h4>
+                <p style="margin: 0 0 8px 0; color: #FFE8CC; font-size: 0.86rem; line-height: 1.5;">
+                    En cualquier momento puedes <strong>deshacer y retirar los cambios de visualización aplicados</strong> presionando los botones circulares de restablecimiento (<span style="display:inline-block; padding:1px 6px; background:rgba(255,255,255,0.15); border-radius:4px; font-weight:bold;">🔄</span>) situados en la cabecera de cada módulo o en la barra superior:
+                </p>
+                <ul style="margin: 0; padding-left: 18px; color: #FFF; font-size: 0.82rem; line-height: 1.45;">
+                    <li style="margin-bottom: 4px;"><strong>🔄 Restablecer Visualización Espacial:</strong> Retira de inmediato la capa visual activa (apaga Puntos 3D, Mapa de Calor o Hexbins volumétricos) y desactiva el corte Benioff para dejar el mapa completamente limpio.</li>
+                    <li style="margin-bottom: 4px;"><strong>🔄 Restablecer Filtros Paramétricos:</strong> Regresa los deslizadores a sus valores predeterminados (Magnitud $\ge 0.0$ Mw, Profundidad máxima $150$ km y Año $1993$), volviendo a mostrar el 100% de los sismos del catálogo.</li>
+                    <li style="margin-bottom: 4px;"><strong>🔄 Restablecer Capas Avanzadas:</strong> Desmarca y apaga simultáneamente todos los interruptores activos (Fallas geológicas, Sismos de alta precisión, IA enjambres DBSCAN, SGC Live, OpenQuake e Infraestructura Crítica con sus convenciones).</li>
+                    <li style="margin-bottom: 4px;"><strong>🧹 Limpiar Escenario ShakeMap:</strong> Dentro del simulador determinista de ruptura, retira las isoseistas y ondas de aceleración del mapa 3D.</li>
+                    <li><strong>⌂ Restablecer Todo (Barra Superior):</strong> Ejecuta una restauración integral del sistema en cascada y regresa la cámara 3D a la vista cenital completa del departamento del Chocó.</li>
+                </ul>
             </div>
         </div>
 
@@ -2068,7 +2090,7 @@ const modalData = {
                     <strong style="color:#FFF;">🔍 Rueda del Ratón / Pellizco:</strong><br>Acercar o alejar el nivel de detalle (Zoom).
                 </div>
                 <div style="background:rgba(255,255,255,0.03); padding:8px 10px; border-radius:8px;">
-                    <strong style="color:#FFF;">⌂ Botón Restablecer:</strong><br>Regresar la vista cenital a la escala completa del Chocó.
+                    <strong style="color:#FFF;">⌂ Botón Restablecer Todo:</strong><br>Regresar la vista cenital a la escala completa del Chocó y restaurar valores.
                 </div>
             </div>
         </div>
@@ -2084,6 +2106,7 @@ const modalData = {
             <ul style="color:#9CA3AF; font-size:0.83rem; line-height:1.5; margin:0; padding-left:18px;">
                 <li><strong>Exageración Vertical (0.5x a 3.0x):</strong> Realza visualmente la profundidad hipocentral en el subsuelo.</li>
                 <li><strong>Sectores Latitudinales:</strong> Inspecciona el corte Norte (Murindó), Centro (Quibdó) o Sur (San Juan).</li>
+                <li><strong>Retirar Corte:</strong> Presiona de nuevo el botón para apagar el modo o pulsa 🔄 Restablecer Visualización.</li>
             </ul>
         </div>
 
@@ -2092,8 +2115,11 @@ const modalData = {
             <h3 style="color:#38BDF8; font-size:1.02rem; margin:0 0 10px 0; display:flex; align-items:center; gap:8px;">
                 <span>⚡</span> 4. Simulador ShakeMap de Ruptura
             </h3>
-            <p style="color:#D1D5DB; font-size:0.86rem; line-height:1.5; margin:0;">
+            <p style="color:#D1D5DB; font-size:0.86rem; line-height:1.5; margin:0 0 8px 0;">
                 Modela escenarios históricos o potenciales de gran destructividad (Murindó Mw 7.3, Megaterremoto de Subducción Mw 8.2 o sismo cortical directo sobre Quibdó Mw 6.8), calculando en tiempo real las ondas de sacudida y la intensidad Mercalli Modificada (MMI).
+            </p>
+            <p style="color:#FFE8CC; font-size:0.82rem; margin:0; line-height:1.4;">
+                <em>🧹 Limpieza: Puedes retirar la simulación en cualquier momento usando el botón <strong>🧹 Limpiar</strong> junto al disparador de ruptura.</em>
             </p>
         </div>
 
@@ -2101,6 +2127,124 @@ const modalData = {
             <button id="btn-entendido-guia" style="background:linear-gradient(135deg, #0A84FF, #0066CC); color:#FFFFFF; border:none; border-radius:12px; padding:12px 28px; font-size:0.95rem; font-weight:600; cursor:pointer; box-shadow:0 6px 18px rgba(10,132,255,0.45); transition:all 0.2s ease;">
                 ¡Entendido, Explorar la Plataforma!
             </button>
+        </div>
+    `,
+    'vis_espacial': `
+        <div style="display:flex; align-items:center; gap:12px; border-bottom:1px solid rgba(255,255,255,0.12); padding-bottom:14px; margin-bottom:18px;">
+            <div style="width:38px; height:38px; border-radius:10px; background:linear-gradient(135deg, #0A84FF, #0056B3); display:flex; align-items:center; justify-content:center; font-size:1.25rem;">
+                🌐
+            </div>
+            <div>
+                <h2 style="margin:0; color:#FFFFFF; font-size:1.3rem; font-weight:700;">Instrucciones: Visualización Espacial</h2>
+                <span style="font-size:0.75rem; color:#38BDF8; font-weight:600; text-transform:uppercase;">Renderizado Tridimensional WebGL (Deck.gl)</span>
+            </div>
+        </div>
+
+        <p style="color:#D1D5DB; font-size:0.92rem; line-height:1.6; margin-bottom:14px;">
+            Este módulo transforma los registros tabulares del catálogo sísmico en representaciones visuales espaciales tridimensionales aceleradas por tarjeta gráfica (GPU).
+        </p>
+
+        <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:14px; margin-bottom:14px;">
+            <h3 style="color:#38BDF8; font-size:0.98rem; margin:0 0 10px 0;">🎯 Modos de Representación Disponibles:</h3>
+            <div style="display:flex; flex-direction:column; gap:10px; font-size:0.85rem; color:#E5E7EB;">
+                <div style="background:rgba(10,132,255,0.08); border-left:3px solid #0A84FF; padding:8px 12px; border-radius:6px;">
+                    <strong style="color:#60A5FA;">1. Eventos Individuales (Scatter 3D):</strong> Dibuja cada temblor como una esfera precisa. Su tamaño escala con la magnitud del sismo y su color discrimina la profundidad hipocentral (Naranja: superficial &lt;30 km, Rosa: intermedio 30-70 km, Morado: profundo &gt;70 km).
+                </div>
+                <div style="background:rgba(255,45,85,0.08); border-left:3px solid #FF2D55; padding:8px 12px; border-radius:6px;">
+                    <strong style="color:#FF6482;">2. Concentración de Energía (Heatmap):</strong> Interpola matemáticamente la densidad acumulada de energía sísmica, revelando zonas de mayor estrés tectónico y fricción en la corteza.
+                </div>
+                <div style="background:rgba(16,185,129,0.08); border-left:3px solid #10B981; padding:8px 12px; border-radius:6px;">
+                    <strong style="color:#34D399;">3. Agrupación Espacial (Hexbins 3D):</strong> Agrupa eventos en columnas hexagonales de 8 km. La altura del prisma representa la cantidad de sismos registrados y el color su intensidad.
+                </div>
+            </div>
+        </div>
+
+        <!-- REGLA EXPLICITA DE RETIRAR CAMBIOS -->
+        <div style="background:rgba(255,149,0,0.12); border:1.5px solid #FF9500; border-radius:12px; padding:12px 14px; margin-bottom:14px;">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+                <span style="font-size:1.1rem;">🔄</span>
+                <strong style="color:#FFD60A; font-size:0.9rem;">¿Cómo retirar o cambiar la visualización?</strong>
+            </div>
+            <p style="margin:0; color:#FFF; font-size:0.83rem; line-height:1.45;">
+                Para <strong>retirar la visualización activa</strong> y limpiar el mapa, presiona el botón <span style="display:inline-block; padding:1px 6px; background:rgba(255,255,255,0.2); border-radius:4px; font-weight:bold;">🔄</span> situado en la esquina derecha del título <em>Visualización Espacial</em>. Esto desactivará de inmediato el modo seleccionado y apagará el corte Benioff sin alterar tus filtros numéricos.
+            </p>
+        </div>
+
+        <p style="color:#9CA3AF; font-size:0.8rem; margin:0; line-height:1.4;">
+            <em>💡 Tip: También puedes alternar libremente entre los tres botones para comparar cómo cambia la percepción espacial de la sismicidad.</em>
+        </p>
+    `,
+    'filtros_parametricos': `
+        <div style="display:flex; align-items:center; gap:12px; border-bottom:1px solid rgba(255,255,255,0.12); padding-bottom:14px; margin-bottom:18px;">
+            <div style="width:38px; height:38px; border-radius:10px; background:linear-gradient(135deg, #0A84FF, #0056B3); display:flex; align-items:center; justify-content:center; font-size:1.25rem;">
+                ⚙️
+            </div>
+            <div>
+                <h2 style="margin:0; color:#FFFFFF; font-size:1.3rem; font-weight:700;">Instrucciones: Filtros Paramétricos</h2>
+                <span style="font-size:0.75rem; color:#38BDF8; font-weight:600; text-transform:uppercase;">Segmentación Analítica Multivariable</span>
+            </div>
+        </div>
+
+        <p style="color:#D1D5DB; font-size:0.92rem; line-height:1.6; margin-bottom:14px;">
+            Los filtros paramétricos te permiten aislar eventos sísmicos específicos y observar cómo varía la sismicidad según umbrales de energía, profundidad de falla y periodos históricos.
+        </p>
+
+        <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:14px; margin-bottom:14px;">
+            <h3 style="color:#38BDF8; font-size:0.98rem; margin:0 0 10px 0;">🎛️ Controles del Módulo:</h3>
+            <ul style="margin:0; padding-left:18px; color:#E5E7EB; font-size:0.84rem; line-height:1.5;">
+                <li style="margin-bottom:8px;"><strong>Deslizador de Magnitud (Mw):</strong> Arrastra para definir el límite inferior de magnitud. Al subir a $\ge 5.0$, se aíslan los sismos con potencial de causar daños estructurales.</li>
+                <li style="margin-bottom:8px;"><strong>Profundidad Hipocentral (km):</strong> Permite acotar el rango vertical del subsuelo (sismos superficiales $&lt;30$ km asociados a fallas activas, frente a sismos profundos de subducción en la Placa de Nazca).</li>
+                <li style="margin-bottom:8px;"><strong>Ventana de Tiempo y Time-Lapse:</strong> Modifica el año inicial de corte (1993 a 2026) o presiona <strong>▶ Reproducir</strong> para presenciar la animación histórica cronológica año por año.</li>
+                <li><strong>Interacción con el Gráfico Gutenberg-Richter:</strong> Al hacer clic en cualquier barra del histograma de magnitudes, el filtro se ajusta automáticamente a ese valor.</li>
+            </ul>
+        </div>
+
+        <!-- REGLA EXPLICITA DE RETIRAR CAMBIOS -->
+        <div style="background:rgba(255,149,0,0.12); border:1.5px solid #FF9500; border-radius:12px; padding:12px 14px; margin-bottom:14px;">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+                <span style="font-size:1.1rem;">🔄</span>
+                <strong style="color:#FFD60A; font-size:0.9rem;">¿Cómo retirar o restablecer los filtros?</strong>
+            </div>
+            <p style="margin:0; color:#FFF; font-size:0.83rem; line-height:1.45;">
+                Para <strong>retirar todos los filtros paramétricos aplicados</strong> y volver a visualizar la totalidad del catálogo histórico, presiona el botón <span style="display:inline-block; padding:1px 6px; background:rgba(255,255,255,0.2); border-radius:4px; font-weight:bold;">🔄</span> ubicado a la derecha del título <em>Filtros Paramétricos</em>. Al pulsarlo, la magnitud vuelve a 0.0 Mw, la profundidad a 150 km y el año a 1993 en un instante.
+            </p>
+        </div>
+    `,
+    'capas_avanzadas': `
+        <div style="display:flex; align-items:center; gap:12px; border-bottom:1px solid rgba(255,255,255,0.12); padding-bottom:14px; margin-bottom:18px;">
+            <div style="width:38px; height:38px; border-radius:10px; background:linear-gradient(135deg, #0A84FF, #0056B3); display:flex; align-items:center; justify-content:center; font-size:1.25rem;">
+                📚
+            </div>
+            <div>
+                <h2 style="margin:0; color:#FFFFFF; font-size:1.3rem; font-weight:700;">Instrucciones: Capas Avanzadas</h2>
+                <span style="font-size:0.75rem; color:#38BDF8; font-weight:600; text-transform:uppercase;">Superposición Geoespacial Multifuente</span>
+            </div>
+        </div>
+
+        <p style="color:#D1D5DB; font-size:0.92rem; line-height:1.6; margin-bottom:14px;">
+            Las capas avanzadas permiten cruzar el catálogo sísmico con trazas tectónicas oficiales, modelos probabilísticos de amenaza y redes de soporte vital territorial.
+        </p>
+
+        <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:14px; margin-bottom:14px;">
+            <h3 style="color:#38BDF8; font-size:0.98rem; margin:0 0 10px 0;">⚡ Interruptores Disponibles:</h3>
+            <ul style="margin:0; padding-left:18px; color:#E5E7EB; font-size:0.84rem; line-height:1.5;">
+                <li style="margin-bottom:6px;"><strong>Sismos de Alta Precisión:</strong> Filtra y oculta registros con incertidumbre geométrica instrumental (GAP &gt; 180° y RMS &gt; 1.0s).</li>
+                <li style="margin-bottom:6px;"><strong>Fallas Geológicas:</strong> Proyecta trazas activas con clasificación cinemática, ficha interactiva y zona de amortiguamiento normativo (buffer de 5 km).</li>
+                <li style="margin-bottom:6px;"><strong>Enjambres Sísmicos (IA DBSCAN):</strong> Algoritmo no supervisado que agrupa sismos con alta densidad espaciotemporal.</li>
+                <li style="margin-bottom:6px;"><strong>SGC Live:</strong> Monitoreo telemétrico continuo con pulsos de ondas en tiempo real.</li>
+                <li><strong>Amenaza OpenQuake (PGA):</strong> Proyecta la aceleración sísmica esperada para un periodo de retorno de 475 años.</li>
+            </ul>
+        </div>
+
+        <!-- REGLA EXPLICITA DE RETIRAR CAMBIOS -->
+        <div style="background:rgba(255,149,0,0.12); border:1.5px solid #FF9500; border-radius:12px; padding:12px 14px; margin-bottom:14px;">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+                <span style="font-size:1.1rem;">🔄</span>
+                <strong style="color:#FFD60A; font-size:0.9rem;">¿Cómo retirar o apagar las capas activas?</strong>
+            </div>
+            <p style="margin:0; color:#FFF; font-size:0.83rem; line-height:1.45;">
+                Para <strong>retirar y apagar todas las capas avanzadas</strong> en un solo paso, presiona el botón <span style="display:inline-block; padding:1px 6px; background:rgba(255,255,255,0.2); border-radius:4px; font-weight:bold;">🔄</span> situado a la derecha del título <em>Capas Avanzadas</em>. Se desmarcarán todos los interruptores activos, se cerrará el panel lateral de fallas y se limpiará el lienzo sin reiniciar el resto de tus preferencias.
+            </p>
         </div>
     `,'rtd': `
         <h2 style="margin-top:0; color:#0A84FF; font-size:1.4rem; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:15px; margin-bottom:20px;">Investigación a través del Diseño (Research through Design - RtD)</h2>
@@ -2220,6 +2364,19 @@ const modalData = {
             <li><strong>Bajo la Cordillera Occidental:</strong> La placa ya está muy profunda, generando sismos a más de 100 km de profundidad.</li>
         </ul>
         <p style="color:var(--text-secondary); font-size:0.95rem; line-height:1.6;"><strong>Cómo usarlo:</strong> Al pulsar el botón del perfil, la cámara se orienta de costado para que puedas ver claramente la inclinación tridimensional de la losa y cómo los sismos van haciéndose más profundos de oeste a este.</p>
+        
+        <!-- INSTRUCCIONES DE USO Y RESTABLECIMIENTO -->
+        <div style="background:rgba(255,149,0,0.12); border:1.5px solid #FF9500; border-radius:12px; padding:12px 14px; margin-top:14px;">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+                <span style="font-size:1.1rem;">🔄</span>
+                <strong style="color:#FFD60A; font-size:0.88rem;">Instrucciones de Uso y Restablecimiento:</strong>
+            </div>
+            <ul style="margin:6px 0 0 0; padding-left:18px; color:#FFF; font-size:0.82rem; line-height:1.45;">
+                <li><strong>Activar:</strong> Presiona el botón <em>📐 Activar Perfil Benioff</em>. La cámara 3D se colocará de perfil (vista Oeste → Este).</li>
+                <li><strong>Ajustar:</strong> Modifica la exageración vertical (0.5x a 3.0x) o cambia de trinchera latitudinal (Murindó, Quibdó, San Juan).</li>
+                <li><strong>Desactivar / Restablecer:</strong> Vuelve a presionar el botón <em>📐 Desactivar Perfil Benioff</em> o presiona el botón <em>🔄 Restablecer Visualización</em> para regresar a la vista cenital horizontal y retirar el corte.</li>
+            </ul>
+        </div>
     `,
     'nsr10_info': `
         <h2 style="margin-top:0; color:#0A84FF; font-size:1.4rem; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:15px; margin-bottom:20px;">Norma Colombiana de Diseño Sismorresistente (NSR-10)</h2>
@@ -2283,6 +2440,18 @@ const modalData = {
             <li style="margin-bottom:6px;"><strong style="color:#fbbf24;">Falla Atrato - Quibdó (Mw 6.8):</strong> Sismo cortical superficial directo sobre la capital departamental.</li>
             <li><strong style="color:#32d74b;">Falla Bahía Solano (Mw 7.0):</strong> Ruptura cortical costera en la serranía de Baudó.</li>
         </ul>
+
+        <!-- INSTRUCCIONES DE USO Y LIMPIEZA -->
+        <div style="background:rgba(255,149,0,0.12); border:1.5px solid #FF9500; border-radius:12px; padding:12px 14px; margin-top:14px;">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+                <span style="font-size:1.1rem;">🧹</span>
+                <strong style="color:#FFD60A; font-size:0.88rem;">Instrucciones de Simulación y Limpieza:</strong>
+            </div>
+            <ul style="margin:6px 0 0 0; padding-left:18px; color:#FFF; font-size:0.82rem; line-height:1.45;">
+                <li><strong>Simular:</strong> Elige un escenario de la lista y presiona <em>⚡ Simular Ruptura Sísmica</em>. El motor calculará las isoseistas de atenuación GMPE, el PGA máximo y volará al epicentro.</li>
+                <li><strong>Retirar Simulación:</strong> Presiona el botón <em>🧹 Limpiar</em> que aparece junto al simulador para remover de inmediato las ondas de aceleración y volver al mapa en su estado limpio previo.</li>
+            </ul>
+        </div>
     `,
     'profundidad': `
         <h2 style="margin-top:0; color:#c084fc; font-size:1.4rem; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:15px; margin-bottom:20px;">Filtro de Profundidad Hipocentral</h2>

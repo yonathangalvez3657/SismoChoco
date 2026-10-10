@@ -4577,10 +4577,14 @@ const shakemapTimerLabel = document.getElementById('shakemap-timer-label');
 const shakemapTimerProgress = document.getElementById('shakemap-timer-progress');
 const shakemapEtaQuibdo = document.getElementById('shakemap-eta-quibdo');
 const shakemapEtaIstmina = document.getElementById('shakemap-eta-istmina');
+const shakemapEtaMedellin = document.getElementById('shakemap-eta-medellin');
+const shakemapEtaSucre = document.getElementById('shakemap-eta-sucre');
 
-// Coordenadas geográficas de referencia de centros urbanos de Chocó
+// Coordenadas geográficas de referencia de centros urbanos y departamentales
 const COORDS_QUIBDO = [-76.658, 5.692];
 const COORDS_ISTMINA = [-76.683, 5.161];
+const COORDS_MEDELLIN = [-75.567, 6.247];
+const COORDS_SUCRE_SINCELEJO = [-75.397, 9.304];
 
 function calculateETA(epi, targetCoords, velKmS) {
     if (!epi || !targetCoords) return '--';
@@ -4594,7 +4598,7 @@ function calculateETA(epi, targetCoords, velKmS) {
 
 function updateWaveUI() {
     if (shakemapTimerLabel) {
-        shakemapTimerLabel.innerText = `t = ${waveAnimTimeSec.toFixed(1)} s`;
+        shakemapTimerLabel.innerText = `t = ${waveAnimTimeSec.toFixed(1)} s / ${WAVE_MAX_TIME_SEC.toFixed(0)} s`;
     }
     if (shakemapTimerProgress) {
         const pct = Math.min(100, (waveAnimTimeSec / WAVE_MAX_TIME_SEC) * 100);
@@ -4607,6 +4611,12 @@ function updateWaveUI() {
         }
         if (shakemapEtaIstmina) {
             shakemapEtaIstmina.innerText = `Onda S: ${calculateETA(epi, COORDS_ISTMINA, WAVE_VEL_S_KMS)}`;
+        }
+        if (shakemapEtaMedellin) {
+            shakemapEtaMedellin.innerText = `Onda S: ${calculateETA(epi, COORDS_MEDELLIN, WAVE_VEL_S_KMS)}`;
+        }
+        if (shakemapEtaSucre) {
+            shakemapEtaSucre.innerText = `Onda S: ${calculateETA(epi, COORDS_SUCRE_SINCELEJO, WAVE_VEL_S_KMS)}`;
         }
     }
 }

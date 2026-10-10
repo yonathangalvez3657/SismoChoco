@@ -646,15 +646,23 @@
                         </div>
                     </div>
 
-                    <!-- Arribo Estimado a Cabeceras Principales -->
+                    <!-- Arribo Estimado a Cabeceras y Departamentos -->
                     <div style="border-top:1px solid rgba(255,255,255,0.08); padding-top:6px; font-size:0.68rem; color:#94a3b8;">
                         <div style="display:flex; justify-content:space-between; margin-bottom:2px;">
                             <span>Impacto en Quibdó:</span>
                             <strong id="shakemap-eta-quibdo" style="color:#fff;">Calculando...</strong>
                         </div>
-                        <div style="display:flex; justify-content:space-between;">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:2px;">
                             <span>Impacto en Istmina:</span>
                             <strong id="shakemap-eta-istmina" style="color:#fff;">Calculando...</strong>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; margin-bottom:2px;">
+                            <span>Percepción en Medellín:</span>
+                            <strong id="shakemap-eta-medellin" style="color:#38bdf8;">Calculando...</strong>
+                        </div>
+                        <div style="display:flex; justify-content:space-between;">
+                            <span>Percepción en Sucre (Sincelejo):</span>
+                            <strong id="shakemap-eta-sucre" style="color:#60a5fa;">Calculando...</strong>
                         </div>
                     </div>
                 </div>
@@ -1130,7 +1138,7 @@
     <script src="js/core-oop.js?v=40"></script>
 
     <!-- Lógica principal con versionamiento para evitar caché persistente -->
-    <script src="js/main.js?v=62"></script>
+    <script src="js/main.js?v=63"></script>
 
     <!-- PWA & Limpieza Activa de CacheStorage -->
     <script>
@@ -1161,7 +1169,7 @@
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js?v=44')
+                navigator.serviceWorker.register('sw.js?v=45')
                     .then(reg => {
                         reg.update();
                     })

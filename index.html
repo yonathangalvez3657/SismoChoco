@@ -198,13 +198,13 @@
                 <div style="display: flex; align-items: center; gap: 8px;">
                     <span class="info-btn" data-info="rtd" style="display:inline-flex; align-items:center; justify-content:center; padding: 2px 7px; background:rgba(56,189,248,0.15); border: 1px solid rgba(56,189,248,0.4); color:#38bdf8; border-radius:12px; font-size:0.68rem; font-weight:700; cursor:pointer; letter-spacing:0.04em; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(56,189,248,0.3)'; this.style.transform='scale(1.05)'" onmouseout="this.style.background='rgba(56,189,248,0.15)'; this.style.transform='scale(1)'" title="Marco Epistemológico: Research through Design (RtD)">RtD</span>
                     <span class="info-btn" data-info="guia" style="display:inline-block; width:22px; height:22px; line-height:22px; text-align:center; background:#0A84FF; color:white; border-radius:50%; font-size:0.8rem; font-weight:bold; cursor:pointer; box-shadow: 0 2px 8px rgba(10,132,255,0.4); transition: all 0.2s ease;" onmouseover="this.style.background='#0071E3'; this.style.transform='scale(1.05)'" onmouseout="this.style.background='#0A84FF'; this.style.transform='scale(1)'" title="Guía de uso de la plataforma">?</span>
-                    <button id="btn-home" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 6px; width: 26px; height: 26px; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: all 0.2s ease; position: relative;" onmouseover="this.style.background='#0A84FF'; const tt=document.getElementById('btn-home-tooltip'); if(tt){tt.style.opacity='1'; tt.style.visibility='visible';}" onmouseout="this.style.background='rgba(255,255,255,0.1)'; const tt=document.getElementById('btn-home-tooltip'); if(tt){tt.style.opacity='0'; tt.style.visibility='hidden';}" aria-label="Restablecer Todo">
+                    <button id="btn-home" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 6px; width: 26px; height: 26px; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: all 0.2s ease; position: relative;" onmouseover="this.style.background='#0A84FF'; const tt=document.getElementById('btn-home-tooltip'); if(tt){tt.style.opacity='1'; tt.style.visibility='visible';}" onmouseout="this.style.background='rgba(255,255,255,0.1)'; const tt=document.getElementById('btn-home-tooltip'); if(tt){tt.style.opacity='0'; tt.style.visibility='hidden';}" aria-label="Restablecer Todo" title="Restablecer Todo (Atajo: 0)">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
                             <path d="M3 3v5h5"></path>
                         </svg>
                         <span id="btn-home-tooltip" style="position: absolute; top: 35px; right: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); color: white; border: 1px solid rgba(255,255,255,0.15); padding: 6px 10px; border-radius: 8px; font-size: 0.75rem; white-space: nowrap; pointer-events: none; opacity: 0; visibility: hidden; transition: opacity 0.2s ease, visibility 0.2s ease; box-shadow: 0 4px 12px rgba(0,0,0,0.4); z-index: 10000; font-family: 'Inter', sans-serif; font-weight: 500;">
-                            🔄 Restablecer Todo: Restablece vista 3D por defecto, filtros y capas
+                            🔄 Restablecer Todo (Atajo: 0): Restablece vista 3D por defecto, filtros y capas
                         </span>
                     </button>
                 </div>
@@ -224,15 +224,15 @@
         
         <!-- Selector de Especialidad Multidisciplinar (Segmented Control Estilo iOS) -->
         <div class="profile-tabs" role="tablist" aria-label="Perfiles profesionales">
-            <button class="profile-tab active" data-profile="sismologia" role="tab" aria-selected="true" title="Modo Sismo-Geología y Tectónica Regional">
+            <button class="profile-tab active" data-profile="sismologia" role="tab" aria-selected="true" title="Modo Sismo-Geología y Tectónica Regional (Atajo: 1)">
                 <span class="tab-icon">🌋</span>
                 <span>Sismo<br>Geología</span>
             </button>
-            <button class="profile-tab" data-profile="nsr10" role="tab" aria-selected="false" title="Diseño Estructural y Norma NSR-10">
+            <button class="profile-tab" data-profile="nsr10" role="tab" aria-selected="false" title="Diseño Estructural y Norma NSR-10 (Atajo: 2)">
                 <span class="tab-icon">🏗️</span>
                 <span>Diseño<br>Estructural</span>
             </button>
-            <button class="profile-tab" data-profile="alcaldia" role="tab" aria-selected="false" title="Gestión Territorial y Ordenamiento del Riesgo (POT)">
+            <button class="profile-tab" data-profile="alcaldia" role="tab" aria-selected="false" title="Gestión Territorial y Ordenamiento del Riesgo - POT (Atajo: 3)">
                 <span class="tab-icon">🏛️</span>
                 <span>Gestión<br>Territorial</span>
             </button>
@@ -275,7 +275,7 @@
                 <p style="font-size: 0.78rem; color: var(--text-secondary); margin: 0; line-height: 1.4;">
                     Visualiza la inclinación de la <strong>Placa de Nazca</strong> subduciéndose bajo Sudamérica de 0 a 140 km de profundidad.
                 </p>
-                <button type="button" class="btn-secondary" id="btn-benioff" style="width:100%;">
+                <button type="button" class="btn-secondary" id="btn-benioff" style="width:100%;" title="Activar/Desactivar perfil 3D Benioff (Atajo: 7)">
                     <span id="btn-benioff-text">📐 Activar Perfil Benioff</span>
                 </button>
 
@@ -343,21 +343,21 @@
                 </div>
                 <div class="toggle-group" style="align-items: stretch; background: transparent; padding: 0; border: none; gap: 6px; width: 100%;">
                     <div style="flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; justify-content:space-between; gap:8px; background:rgba(0,0,0,0.4); border-radius:12px; border:1px solid rgba(255,255,255,0.05); padding:6px 3px;">
-                        <button class="toggle-btn" id="btn-puntos" style="width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:6px 2px; line-height:1.2; font-size:0.73rem;">
+                        <button class="toggle-btn" id="btn-puntos" style="width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:6px 2px; line-height:1.2; font-size:0.73rem;" title="Eventos Individuales 3D (Atajo: 4)">
                             <span>Eventos</span>
                             <span>Individuales</span>
                         </button>
                         <span class="info-btn" data-info="puntos" style="display:inline-block; width:20px; height:20px; line-height:20px; text-align:center; background:#0A84FF; color:white; border-radius:50%; font-size:0.75rem; font-weight:bold; cursor:pointer; opacity: 0.8; transition: 0.2s; flex-shrink:0;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.8'" title="Más información">?</span>
                     </div>
                     <div style="flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; justify-content:space-between; gap:8px; background:rgba(0,0,0,0.4); border-radius:12px; border:1px solid rgba(255,255,255,0.05); padding:6px 3px;">
-                        <button class="toggle-btn" id="btn-calor" style="width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:6px 2px; line-height:1.2; font-size:0.73rem;">
+                        <button class="toggle-btn" id="btn-calor" style="width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:6px 2px; line-height:1.2; font-size:0.73rem;" title="Concentración de Energía / Calor (Atajo: 5)">
                             <span>Concentración</span>
                             <span>Energía</span>
                         </button>
                         <span class="info-btn" data-info="calor" style="display:inline-block; width:20px; height:20px; line-height:20px; text-align:center; background:#0A84FF; color:white; border-radius:50%; font-size:0.75rem; font-weight:bold; cursor:pointer; opacity: 0.8; transition: 0.2s; flex-shrink:0;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.8'" title="Más información">?</span>
                     </div>
                     <div style="flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; justify-content:space-between; gap:8px; background:rgba(0,0,0,0.4); border-radius:12px; border:1px solid rgba(255,255,255,0.05); padding:6px 3px;">
-                        <button class="toggle-btn" id="btn-hex" style="width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:6px 2px; line-height:1.2; font-size:0.73rem;">
+                        <button class="toggle-btn" id="btn-hex" style="width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:6px 2px; line-height:1.2; font-size:0.73rem;" title="Agrupación Espacial / Hexbins (Atajo: 6)">
                             <span>Agrupación</span>
                             <span>Espacial</span>
                         </button>
@@ -462,7 +462,7 @@
                         </div>
                     </label>
 
-                    <label class="switch-container" style="display: flex; align-items: flex-start; justify-content: space-between;">
+                    <label class="switch-container" style="display: flex; align-items: flex-start; justify-content: space-between;" title="Fallas Geológicas (Atajo: 9)">
                         <span style="flex: 1; margin-right: 16px;">
                             <strong style="margin-bottom: 2px;">Fallas Geológicas</strong>
                             Trazo oficial con potencial sismogénico Mmax
@@ -539,7 +539,7 @@
                         </div>
                     </label>
                     
-                    <label class="switch-container" style="display: flex; align-items: flex-start; justify-content: space-between;">
+                    <label class="switch-container" style="display: flex; align-items: flex-start; justify-content: space-between;" title="Conexión SGC Live (Atajo: 8)">
                         <span style="flex: 1; margin-right: 16px;">
                             <span style="display:flex; align-items:center; gap:6px; margin-bottom:2px;">
                                 <strong>Conexión SGC Live</strong>
@@ -1024,7 +1024,7 @@
     <script src="js/core-oop.js?v=39"></script>
 
     <!-- Lógica principal con versionamiento para evitar caché persistente -->
-    <script src="js/main.js?v=52"></script>
+    <script src="js/main.js?v=53"></script>
 
     <!-- PWA -->
     <script>

@@ -2438,6 +2438,61 @@ const modalData = {
             </p>
         </div>
 
+        <!-- SECCIÓN 5: ATAJOS DE TECLADO NUMÉRICO (ACCESIBILIDAD Y OPERACIÓN RÁPIDA) -->
+        <div style="background:linear-gradient(135deg, rgba(16,185,129,0.12), rgba(6,78,59,0.2)); border:1.5px solid #10b981; border-radius:14px; padding:16px; margin-bottom:20px; box-shadow:0 4px 18px rgba(16,185,129,0.2);">
+            <h3 style="color:#34d399; font-size:1.02rem; margin:0 0 10px 0; display:flex; align-items:center; gap:8px;">
+                <span>⌨️</span> 5. Atajos de Teclado Numérico (Control Operativo Rápido)
+            </h3>
+            <p style="color:#E2E8F0; font-size:0.86rem; line-height:1.5; margin:0 0 12px 0;">
+                Puedes controlar y conmutar las principales funciones analíticas directamente con las teclas numéricas del teclado (<strong>0 al 9</strong>):
+            </p>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; font-size:0.82rem;">
+                <div style="background:rgba(0,0,0,0.35); padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.08); display:flex; align-items:center; gap:8px;">
+                    <kbd style="background:#1e293b; color:#38bdf8; border:1px solid #38bdf8; border-radius:4px; padding:2px 7px; font-weight:700; font-size:0.85rem; font-family:monospace;">1</kbd>
+                    <span>Perfil: <strong>Sismo-Geología</strong></span>
+                </div>
+                <div style="background:rgba(0,0,0,0.35); padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.08); display:flex; align-items:center; gap:8px;">
+                    <kbd style="background:#1e293b; color:#38bdf8; border:1px solid #38bdf8; border-radius:4px; padding:2px 7px; font-weight:700; font-size:0.85rem; font-family:monospace;">2</kbd>
+                    <span>Perfil: <strong>Diseño Estructural</strong></span>
+                </div>
+                <div style="background:rgba(0,0,0,0.35); padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.08); display:flex; align-items:center; gap:8px;">
+                    <kbd style="background:#1e293b; color:#38bdf8; border:1px solid #38bdf8; border-radius:4px; padding:2px 7px; font-weight:700; font-size:0.85rem; font-family:monospace;">3</kbd>
+                    <span>Perfil: <strong>Gestión Territorial</strong></span>
+                </div>
+                <div style="background:rgba(0,0,0,0.35); padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.08); display:flex; align-items:center; gap:8px;">
+                    <kbd style="background:#1e293b; color:#fbbf24; border:1px solid #fbbf24; border-radius:4px; padding:2px 7px; font-weight:700; font-size:0.85rem; font-family:monospace;">4</kbd>
+                    <span>Visualización: <strong>Eventos 3D</strong></span>
+                </div>
+                <div style="background:rgba(0,0,0,0.35); padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.08); display:flex; align-items:center; gap:8px;">
+                    <kbd style="background:#1e293b; color:#fbbf24; border:1px solid #fbbf24; border-radius:4px; padding:2px 7px; font-weight:700; font-size:0.85rem; font-family:monospace;">5</kbd>
+                    <span>Visualización: <strong>Mapa de Calor</strong></span>
+                </div>
+                <div style="background:rgba(0,0,0,0.35); padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.08); display:flex; align-items:center; gap:8px;">
+                    <kbd style="background:#1e293b; color:#fbbf24; border:1px solid #fbbf24; border-radius:4px; padding:2px 7px; font-weight:700; font-size:0.85rem; font-family:monospace;">6</kbd>
+                    <span>Visualización: <strong>Hexbins 3D</strong></span>
+                </div>
+                <div style="background:rgba(0,0,0,0.35); padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.08); display:flex; align-items:center; gap:8px;">
+                    <kbd style="background:#1e293b; color:#f43f5e; border:1px solid #f43f5e; border-radius:4px; padding:2px 7px; font-weight:700; font-size:0.85rem; font-family:monospace;">7</kbd>
+                    <span>Corte: <strong>Perfil 3D Benioff</strong></span>
+                </div>
+                <div style="background:rgba(0,0,0,0.35); padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.08); display:flex; align-items:center; gap:8px;">
+                    <kbd style="background:#1e293b; color:#34d399; border:1px solid #34d399; border-radius:4px; padding:2px 7px; font-weight:700; font-size:0.85rem; font-family:monospace;">8</kbd>
+                    <span>Capa: <strong>Conexión SGC Live</strong></span>
+                </div>
+                <div style="background:rgba(0,0,0,0.35); padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.08); display:flex; align-items:center; gap:8px;">
+                    <kbd style="background:#1e293b; color:#f59e0b; border:1px solid #f59e0b; border-radius:4px; padding:2px 7px; font-weight:700; font-size:0.85rem; font-family:monospace;">9</kbd>
+                    <span>Capa: <strong>Fallas Geológicas</strong></span>
+                </div>
+                <div style="background:rgba(0,0,0,0.35); padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.08); display:flex; align-items:center; gap:8px;">
+                    <kbd style="background:#1e293b; color:#a855f7; border:1px solid #a855f7; border-radius:4px; padding:2px 7px; font-weight:700; font-size:0.85rem; font-family:monospace;">0</kbd>
+                    <span>Acción: <strong>Restablecer Todo</strong></span>
+                </div>
+            </div>
+            <p style="color:#94A3B8; font-size:0.75rem; margin:10px 0 0 0; line-height:1.4;">
+                <em>Nota: Los atajos se desactivan automáticamente al escribir dentro de cajas de búsqueda o campos de texto.</em>
+            </p>
+        </div>
+
         <div style="display:flex; justify-content:center;">
             <button id="btn-entendido-guia" style="background:linear-gradient(135deg, #0A84FF, #0066CC); color:#FFFFFF; border:none; border-radius:12px; padding:12px 28px; font-size:0.95rem; font-weight:600; cursor:pointer; box-shadow:0 6px 18px rgba(10,132,255,0.45); transition:all 0.2s ease;">
                 ¡Entendido, Explorar la Plataforma!
@@ -4273,12 +4328,166 @@ if (btnToggleShakemap && selectShakemap) {
     });
 }
 
-if (btnClearShakemap) {
-    btnClearShakemap.addEventListener('click', () => {
-        deactivateShakemap();
+// ============================================================================
+// SISTEMA GLOBAL DE ATAJOS DE TECLADO NUMÉRICO (0 - 9)
+// ============================================================================
+function showShortcutToast(keyChar, label, icon = '⌨️') {
+    let toast = document.getElementById('shortcut-quick-toast');
+    if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'shortcut-quick-toast';
+        toast.style.cssText = `
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 100000;
+            background: rgba(15, 23, 42, 0.94);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(56, 189, 248, 0.4);
+            border-radius: 12px;
+            padding: 10px 16px;
+            color: #F8FAFC;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.82rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5), 0 0 15px rgba(56,189,248,0.2);
+            pointer-events: none;
+            opacity: 0;
+            transform: translateY(12px);
+            transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+        `;
+        document.body.appendChild(toast);
+    }
+
+    toast.innerHTML = `
+        <span style="display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:6px; background:#0284c7; color:#fff; font-weight:700; font-family:monospace; font-size:0.85rem; border:1px solid #38bdf8;">${keyChar}</span>
+        <span style="font-weight:600; color:#E2E8F0;">${icon} ${label}</span>
+    `;
+
+    toast.style.opacity = '1';
+    toast.style.transform = 'translateY(0)';
+
+    if (window._shortcutToastTimer) clearTimeout(window._shortcutToastTimer);
+    window._shortcutToastTimer = setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(12px)';
+    }, 1800);
+}
+
+function initKeyboardShortcuts() {
+    window.addEventListener('keydown', (e) => {
+        // Ignorar si el usuario está interactuando con campos de formulario editables
+        const target = e.target;
+        const tag = (target && target.tagName) ? target.tagName.toUpperCase() : '';
+        const isEditable = target && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(tag));
+        
+        if (isEditable) return;
+        if (e.ctrlKey || e.metaKey || e.altKey) return;
+
+        switch (e.key) {
+            case '1': {
+                e.preventDefault();
+                const tab1 = document.querySelector('.profile-tab[data-profile="sismologia"]');
+                if (tab1) {
+                    tab1.click();
+                    showShortcutToast('1', 'Perfil: Sismo-Geología', '🌋');
+                }
+                break;
+            }
+            case '2': {
+                e.preventDefault();
+                const tab2 = document.querySelector('.profile-tab[data-profile="nsr10"]');
+                if (tab2) {
+                    tab2.click();
+                    showShortcutToast('2', 'Perfil: Diseño Estructural', '🏗️');
+                }
+                break;
+            }
+            case '3': {
+                e.preventDefault();
+                const tab3 = document.querySelector('.profile-tab[data-profile="alcaldia"]');
+                if (tab3) {
+                    tab3.click();
+                    showShortcutToast('3', 'Perfil: Gestión Territorial', '🏛️');
+                }
+                break;
+            }
+            case '4': {
+                e.preventDefault();
+                const btnPuntos = document.getElementById('btn-puntos');
+                if (btnPuntos) {
+                    btnPuntos.click();
+                    showShortcutToast('4', 'Visualización: Eventos 3D', '⚪');
+                }
+                break;
+            }
+            case '5': {
+                e.preventDefault();
+                const btnCalor = document.getElementById('btn-calor');
+                if (btnCalor) {
+                    btnCalor.click();
+                    showShortcutToast('5', 'Visualización: Mapa de Calor', '🔥');
+                }
+                break;
+            }
+            case '6': {
+                e.preventDefault();
+                const btnHex = document.getElementById('btn-hex');
+                if (btnHex) {
+                    btnHex.click();
+                    showShortcutToast('6', 'Visualización: Hexbins 3D', '🔷');
+                }
+                break;
+            }
+            case '7': {
+                e.preventDefault();
+                const btnBenioff = document.getElementById('btn-benioff');
+                if (btnBenioff) {
+                    btnBenioff.click();
+                    const estado = isBenioffMode ? 'Activado' : 'Desactivado';
+                    showShortcutToast('7', `Corte Benioff 3D: ${estado}`, '📐');
+                }
+                break;
+            }
+            case '8': {
+                e.preventDefault();
+                const checkLive = document.getElementById('check-live-sgc');
+                if (checkLive) {
+                    checkLive.checked = !checkLive.checked;
+                    checkLive.dispatchEvent(new Event('change', { bubbles: true }));
+                    const estado = checkLive.checked ? 'Conectado (En Vivo)' : 'Desconectado';
+                    showShortcutToast('8', `SGC Live: ${estado}`, '📡');
+                }
+                break;
+            }
+            case '9': {
+                e.preventDefault();
+                const checkFallas = document.getElementById('check-fallas');
+                if (checkFallas) {
+                    checkFallas.checked = !checkFallas.checked;
+                    checkFallas.dispatchEvent(new Event('change', { bubbles: true }));
+                    const estado = checkFallas.checked ? 'Visibles' : 'Ocultas';
+                    showShortcutToast('9', `Fallas Geológicas: ${estado}`, '⚡');
+                }
+                break;
+            }
+            case '0': {
+                e.preventDefault();
+                const btnHome = document.getElementById('btn-home');
+                if (btnHome) {
+                    btnHome.click();
+                    showShortcutToast('0', 'Restablecer Todo', '🔄');
+                }
+                break;
+            }
+        }
     });
 }
 
+initKeyboardShortcuts();
 loadData();
 
 

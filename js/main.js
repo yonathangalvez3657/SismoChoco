@@ -69,9 +69,9 @@ let waveAnimTimeSec = 0.0;
 let isWaveAnimPlaying = false;
 let waveAnimRafId = null;
 let waveAnimLastTimestamp = null;
-const WAVE_MAX_TIME_SEC = 50.0; // Duración máxima de propagación regional
-const WAVE_VEL_P_KMS = 6.0;     // Velocidad Onda P (6.0 km/s)
-const WAVE_VEL_S_KMS = 3.5;     // Velocidad Onda S (3.5 km/s)
+const WAVE_MAX_TIME_SEC = 120.0; // Duración máxima de propagación regional e interdepartamental (120 s)
+const WAVE_VEL_P_KMS = 6.0;      // Velocidad Onda P (6.0 km/s)
+const WAVE_VEL_S_KMS = 3.5;      // Velocidad Onda S (3.5 km/s)
 
 // Time-Lapse Dinámico
 let timelapseTimer = null;
@@ -1174,8 +1174,8 @@ function renderLayers() {
 
         // 2.4 FRENTES DE ONDA CINEMÁTICOS DINÁMICOS (Onda P Compresional y Onda S Cizallante)
         if (waveAnimTimeSec > 0.05) {
-            const distPKm = Math.min(380, waveAnimTimeSec * WAVE_VEL_P_KMS);
-            const distSKm = Math.min(380, waveAnimTimeSec * WAVE_VEL_S_KMS);
+            const distPKm = Math.min(850, waveAnimTimeSec * WAVE_VEL_P_KMS);
+            const distSKm = Math.min(850, waveAnimTimeSec * WAVE_VEL_S_KMS);
 
             // Generador de anillos de onda elípticos deformados por directividad
             const buildWaveRing = (distKm, aspectMinor = 0.85) => {
@@ -4465,7 +4465,8 @@ const SHAKEMAP_SCENARIOS = {
             { mmi: 'VII - VIII', label: 'Fuerte Epicentral / Losa Benioff', pgaRange: '0.30 - 0.42 g', radioM: 28000, color: [255, 59, 48, 170], borde: [255, 255, 255, 240] },
             { mmi: 'VI', label: 'Sentido con Alarma en Chocó y Eje Cafetero', pgaRange: '0.15 - 0.30 g', radioM: 80000, color: [255, 140, 0, 125], borde: [255, 180, 0, 200] },
             { mmi: 'V', label: 'Ampliamente Sentido en Cuenca del San Juan', pgaRange: '0.06 - 0.15 g', radioM: 160000, color: [255, 214, 10, 80], borde: [255, 230, 80, 170] },
-            { mmi: 'IV', label: 'Perceptible en Valle del Cauca y Antioquia', pgaRange: '0.02 - 0.06 g', radioM: 280000, color: [56, 189, 248, 45], borde: [56, 189, 248, 140] }
+            { mmi: 'IV', label: 'Perceptible en Valle del Cauca y Antioquia', pgaRange: '0.02 - 0.06 g', radioM: 280000, color: [56, 189, 248, 55], borde: [56, 189, 248, 160] },
+            { mmi: 'II - III', label: 'Débil / Sentido en Pisos Altos (Costa Caribe, Sucre, Córdoba, Bogotá)', pgaRange: '< 0.02 g', radioM: 580000, color: [30, 64, 175, 30], borde: [96, 165, 250, 120] }
         ]
     },
     'murindo_73': {
@@ -4487,7 +4488,8 @@ const SHAKEMAP_SCENARIOS = {
             { mmi: 'VIII - IX', label: 'Daño Severo / Ruptura Superficial', pgaRange: '≥ 0.50 g', radioM: 48000, color: [255, 59, 48, 170], borde: [255, 255, 255, 240] },
             { mmi: 'VII', label: 'Daño Moderado a Estructuras', pgaRange: '0.25 - 0.50 g', radioM: 85000, color: [255, 140, 0, 120], borde: [255, 180, 0, 200] },
             { mmi: 'VI', label: 'Fuerte / Fisuras en Mampostería', pgaRange: '0.12 - 0.25 g', radioM: 135000, color: [255, 214, 10, 80], borde: [255, 230, 80, 170] },
-            { mmi: 'IV - V', label: 'Moderado / Sentido Ampliamente', pgaRange: '0.04 - 0.12 g', radioM: 210000, color: [56, 189, 248, 45], borde: [56, 189, 248, 140] }
+            { mmi: 'IV - V', label: 'Moderado / Sentido Ampliamente', pgaRange: '0.04 - 0.12 g', radioM: 210000, color: [56, 189, 248, 55], borde: [56, 189, 248, 160] },
+            { mmi: 'II - III', label: 'Débil / Sentido en Cuenca del Magdalena y Costa Norte', pgaRange: '< 0.04 g', radioM: 420000, color: [30, 64, 175, 30], borde: [96, 165, 250, 120] }
         ]
     },
     'subduccion_82': {
@@ -4509,7 +4511,8 @@ const SHAKEMAP_SCENARIOS = {
             { mmi: 'IX - X', label: 'Devastador / Tsunami Costero', pgaRange: '≥ 0.65 g', radioM: 95000, color: [220, 38, 38, 180], borde: [255, 255, 255, 240] },
             { mmi: 'VII - VIII', label: 'Daño Severo en Litoral Pacífico', pgaRange: '0.35 - 0.65 g', radioM: 170000, color: [249, 115, 22, 130], borde: [255, 160, 0, 200] },
             { mmi: 'VI', label: 'Fuerte en Toda la Cuenca Atrato', pgaRange: '0.15 - 0.35 g', radioM: 260000, color: [250, 204, 21, 85], borde: [255, 230, 80, 170] },
-            { mmi: 'IV - V', label: 'Perceptible en Cordillera Occidental', pgaRange: '0.05 - 0.15 g', radioM: 380000, color: [56, 189, 248, 45], borde: [56, 189, 248, 140] }
+            { mmi: 'IV - V', label: 'Perceptible en Cordillera Occidental', pgaRange: '0.05 - 0.15 g', radioM: 380000, color: [56, 189, 248, 55], borde: [56, 189, 248, 160] },
+            { mmi: 'II - III', label: 'Débil a Nivel Nacional (Costa Atlántica, Altiplano y Llanos)', pgaRange: '< 0.05 g', radioM: 750000, color: [30, 64, 175, 30], borde: [96, 165, 250, 120] }
         ]
     },
     'atrato_68': {
@@ -4531,7 +4534,8 @@ const SHAKEMAP_SCENARIOS = {
             { mmi: 'VIII', label: 'Daño Severo / Licuación Atrato', pgaRange: '≥ 0.45 g', radioM: 32000, color: [255, 59, 48, 175], borde: [255, 255, 255, 240] },
             { mmi: 'VII', label: 'Daño Moderado en Cabeceras', pgaRange: '0.20 - 0.45 g', radioM: 65000, color: [255, 140, 0, 125], borde: [255, 180, 0, 200] },
             { mmi: 'V - VI', label: 'Fuerte Sacudimiento Municipal', pgaRange: '0.08 - 0.20 g', radioM: 110000, color: [255, 214, 10, 80], borde: [255, 230, 80, 170] },
-            { mmi: 'IV', label: 'Perceptible en Región Central', pgaRange: '0.03 - 0.08 g', radioM: 175000, color: [56, 189, 248, 45], borde: [56, 189, 248, 140] }
+            { mmi: 'IV', label: 'Perceptible en Región Central', pgaRange: '0.03 - 0.08 g', radioM: 175000, color: [56, 189, 248, 55], borde: [56, 189, 248, 160] },
+            { mmi: 'II - III', label: 'Débil en Eje Cafetero y Valle de Aburrá', pgaRange: '< 0.03 g', radioM: 320000, color: [30, 64, 175, 30], borde: [96, 165, 250, 120] }
         ]
     },
     'bahia_solano_70': {
@@ -4553,7 +4557,8 @@ const SHAKEMAP_SCENARIOS = {
             { mmi: 'VIII', label: 'Daño Severo en Costa y Serranía', pgaRange: '≥ 0.48 g', radioM: 38000, color: [255, 59, 48, 175], borde: [255, 255, 255, 240] },
             { mmi: 'VII', label: 'Fuerte en Bahía Solano y Nuquí', pgaRange: '0.22 - 0.48 g', radioM: 78000, color: [255, 140, 0, 125], borde: [255, 180, 0, 200] },
             { mmi: 'V - VI', label: 'Perceptible en Valle del Atrato', pgaRange: '0.09 - 0.22 g', radioM: 130000, color: [255, 214, 10, 80], borde: [255, 230, 80, 170] },
-            { mmi: 'IV', label: 'Perceptible en Cordillera', pgaRange: '0.03 - 0.09 g', radioM: 200000, color: [56, 189, 248, 45], borde: [56, 189, 248, 140] }
+            { mmi: 'IV', label: 'Perceptible en Cordillera', pgaRange: '0.03 - 0.09 g', radioM: 200000, color: [56, 189, 248, 55], borde: [56, 189, 248, 160] },
+            { mmi: 'II - III', label: 'Débil en Urabá Antioqueño y Cuenca del San Juan', pgaRange: '< 0.03 g', radioM: 360000, color: [30, 64, 175, 30], borde: [96, 165, 250, 120] }
         ]
     }
 };
@@ -4689,15 +4694,16 @@ async function activateShakemap(scenarioKey) {
 
     updateWaveUI();
 
-    // Cámara vuela suavemente hacia el epicentro y plano de falla
+    // Cámara vuela suavemente hacia el epicentro y plano de falla (encuadre optimizado para escala macrosisimica)
     if (deckgl && scenario.epicentro) {
+        const targetZoom = scenario.mw >= 8.0 ? 6.2 : (scenario.profundidad > 70 ? 6.6 : 7.2);
         deckgl.setProps({
             initialViewState: {
                 longitude: scenario.epicentro[0],
                 latitude: scenario.epicentro[1],
-                zoom: scenario.mw >= 8.0 ? 6.8 : 7.6,
-                pitch: 45,
-                bearing: 15,
+                zoom: targetZoom,
+                pitch: 42,
+                bearing: 12,
                 transitionDuration: 1400,
                 transitionInterpolator: new deck.FlyToInterpolator()
             }

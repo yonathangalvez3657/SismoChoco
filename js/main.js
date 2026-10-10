@@ -1625,7 +1625,9 @@ document.getElementById('btn-reset-capas').addEventListener('click', () => {
     const sgcBadge = document.getElementById('sgc-live-status-badge');
     const sgcSubtext = document.getElementById('sgc-live-subtext');
     if (sgcBadge) sgcBadge.style.display = 'none';
-    if (sgcSubtext) sgcSubtext.innerText = 'Alertas de sismicidad telemétrica';
+    if (isSimulatorActive) {
+        deactivateShakemap();
+    }
 
     renderLayers();
 });
@@ -4644,6 +4646,14 @@ if (btnWavePlay) {
 if (btnWaveReset) {
     btnWaveReset.addEventListener('click', () => {
         resetWaveAnimation();
+    });
+}
+
+if (btnClearShakemap) {
+    btnClearShakemap.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        deactivateShakemap();
     });
 }
 

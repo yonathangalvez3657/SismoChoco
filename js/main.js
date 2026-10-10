@@ -61,10 +61,17 @@ let benioffSector = 'all';
 let selectedNsrMunicipio = null;
 let selectedPotMunicipio = null;
 
-// ShakeMap Simulado
+// ShakeMap Simulado y Cinemática de Frentes de Onda
 let isSimulatorActive = false;
 let activeShakemapScenario = 'murindo_73';
 let currentShakemapData = null;
+let waveAnimTimeSec = 0.0;
+let isWaveAnimPlaying = false;
+let waveAnimRafId = null;
+let waveAnimLastTimestamp = null;
+const WAVE_MAX_TIME_SEC = 50.0; // Duración máxima de propagación regional
+const WAVE_VEL_P_KMS = 6.0;     // Velocidad Onda P (6.0 km/s)
+const WAVE_VEL_S_KMS = 3.5;     // Velocidad Onda S (3.5 km/s)
 
 // Time-Lapse Dinámico
 let timelapseTimer = null;
@@ -1035,26 +1042,117 @@ function renderLayers() {
         }
     }
 
-    // CAPA 2: SIMULADOR INTERACTIVO SHAKEMAP (BANDAS MMI Y EPICENTRO COSÍSMICO)
+    // CAPA 2: SIMULADOR INTERACTIVO SHAKEMAP (FALLA FINITA LOBULAR + PROPAGACIÓN CINEMÁTICA P/S)
     if (isSimulatorActive && currentShakemapData) {
-        // Ordenar de mayor a menor radio para que los discos externos no tapen los núcleos de mayor intensidad
-        const sortedIsoseistas = [...currentShakemapData.isoseistas].sort((a, b) => b.radioM - a.radioM);
+        const epi = currentShakemapData.epicentro;
+        const strikeRad = ((currentShakemapData.strikeDeg || 0) * Math.PI) / 180;
+        const faultCoords = currentShakemapData.faultCoords || [epi, epi];
 
-        // Anillos volumétricos concéntricos de atenuación GMPE
-        layers.push(new deck.ScatterplotLayer({
-            id: 'shakemap-isoseistas',
-            data: sortedIsoseistas,
-            getPosition: d => [currentShakemapData.epicentro[0], currentShakemapData.epicentro[1], 5],
-            radiusUnits: 'meters',
-            getRadius: d => d.radioM,
-            getFillColor: d => d.color,
+        // 2.1 Traza del Plano de Ruptura de Falla Finita Cosísmica (Extrusión 3D de foco hipocentral)
+        layers.push(new deck.PathLayer({
+            id: 'shakemap-fault-rupture-trace',
+            data: [{
+                path: faultCoords,
+                prof: currentShakemapData.profundidad,
+                nombre: currentShakemapData.falla
+            }],
+            getPath: d => d.path,
+            getColor: [255, 69, 58, 255],
+            getWidth: 7,
+            widthUnits: 'pixels',
+            capRounded: true,
+            jointRounded: true,
+            pickable: true,
+            onHover: (info) => {
+                if (info.object) {
+                    tooltip.style.display = 'block';
+                    tooltip.style.left = `${info.x}px`;
+                    tooltip.style.top = `${info.y}px`;
+                    tooltip.innerHTML = `<h4>⚡ Plano de Ruptura Activo</h4>
+                                         <p><strong>Estructura:</strong> ${info.object.nombre}</p>
+                                         <p><strong>Longitud de Ruptura Estimada:</strong> ${currentShakemapData.faultLengthKm || 45} km</p>
+                                         <p><strong>Profundidad Sismogénica:</strong> ${info.object.prof} km</p>`;
+                } else {
+                    tooltip.style.display = 'none';
+                }
+            }
+        }));
+
+        // 2.2 Proyección Superficial del Plano de Deslizamiento (Zona de Deformación Cosísmica Inmediata)
+        const cosLatEpi = Math.cos(epi[1] * Math.PI / 180);
+        const halfLenDegX = ((currentShakemapData.faultLengthKm || 45) / 2 / 111.32) / cosLatEpi;
+        const halfWidthDeg = (Math.min(20, (currentShakemapData.faultLengthKm || 45) * 0.4) / 110.57);
+        const cosS = Math.cos(strikeRad);
+        const sinS = Math.sin(strikeRad);
+
+        const rupturePolygon = [
+            [epi[0] - halfLenDegX * sinS - halfWidthDeg * cosS, epi[1] - halfLenDegX * cosS + halfWidthDeg * sinS],
+            [epi[0] + halfLenDegX * sinS - halfWidthDeg * cosS, epi[1] + halfLenDegX * cosS + halfWidthDeg * sinS],
+            [epi[0] + halfLenDegX * sinS + halfWidthDeg * cosS, epi[1] + halfLenDegX * cosS - halfWidthDeg * sinS],
+            [epi[0] - halfLenDegX * sinS + halfWidthDeg * cosS, epi[1] - halfLenDegX * cosS - halfWidthDeg * sinS],
+            [epi[0] - halfLenDegX * sinS - halfWidthDeg * cosS, epi[1] - halfLenDegX * cosS + halfWidthDeg * sinS]
+        ];
+
+        layers.push(new deck.PolygonLayer({
+            id: 'shakemap-fault-surface-plane',
+            data: [{ polygon: rupturePolygon }],
+            getPolygon: d => d.polygon,
+            getFillColor: [255, 59, 48, 55],
+            getLineColor: [255, 69, 58, 230],
+            getLineWidth: 2,
+            lineWidthUnits: 'pixels',
             stroked: true,
+            filled: true,
+            pickable: false
+        }));
+
+        // 2.3 Isoseistas Lobulares Orientadas de Atenuación GMPE (Geometría Elíptica Falla Finita)
+        // Se construyen polígonos elípticos de 48 vértices alineados con el strike de la falla
+        const sortedIsoseistas = [...currentShakemapData.isoseistas].sort((a, b) => b.radioM - a.radioM);
+        const lobularPolygons = sortedIsoseistas.map(iso => {
+            const radM = iso.radioM;
+            // Elongación longitudinal por directividad de falla finita: a/b = 1.35 a 1.55
+            const aMeters = radM * 1.30; // Semieje mayor paralelo al rumbo
+            const bMeters = radM * 0.90; // Semieje menor perpendicular al rumbo
+            const coords = [];
+            const steps = 48;
+            for (let i = 0; i <= steps; i++) {
+                const theta = (i / steps) * 2 * Math.PI;
+                // Coordenadas en plano local centrado en epicentro
+                const lx = aMeters * Math.sin(theta);
+                const ly = bMeters * Math.cos(theta);
+                // Rotación por rumbo de falla (strike)
+                const rx = lx * cosS + ly * sinS;
+                const ry = -lx * sinS + ly * cosS;
+                // Conversión a grados geográficos
+                const lng = epi[0] + (rx / 1000) / (111.32 * cosLatEpi);
+                const lat = epi[1] + (ry / 1000) / 110.57;
+                coords.push([lng, lat]);
+            }
+            return {
+                polygon: coords,
+                mmi: iso.mmi,
+                label: iso.label,
+                pgaRange: iso.pgaRange,
+                color: iso.color,
+                borde: iso.borde,
+                radioKm: Math.round(radM / 1000)
+            };
+        });
+
+        layers.push(new deck.PolygonLayer({
+            id: 'shakemap-isoseistas-lobulares',
+            data: lobularPolygons,
+            getPolygon: d => d.polygon,
+            getFillColor: d => d.color,
             getLineColor: d => d.borde,
-            lineWidthMinPixels: 2.5,
+            getLineWidth: 2.2,
+            lineWidthUnits: 'pixels',
+            stroked: true,
+            filled: true,
             pickable: true,
             updateTriggers: {
-                getPosition: [activeShakemapScenario],
-                getRadius: [activeShakemapScenario],
+                getPolygon: [activeShakemapScenario],
                 getFillColor: [activeShakemapScenario],
                 getLineColor: [activeShakemapScenario]
             },
@@ -1067,24 +1165,112 @@ function renderLayers() {
                     tooltip.innerHTML = `<h4>💥 ShakeMap: Intensidad ${obj.mmi}</h4>
                                          <p><strong>Nivel de Daño:</strong> ${obj.label}</p>
                                          <p><strong>Aceleración Pico Estimada:</strong> ${obj.pgaRange}</p>
-                                         <p><strong>Radio de Atenuación:</strong> ${Math.round(obj.radioM / 1000)} km del epicentro</p>`;
+                                         <p><strong>Campo Lobular GMPE:</strong> ~${obj.radioKm} km del plano de ruptura</p>`;
                 } else {
                     tooltip.style.display = 'none';
                 }
             }
         }));
 
-        // Marcador nuclear del Epicentro Cosísmico con halo de alerta
+        // 2.4 FRENTES DE ONDA CINEMÁTICOS DINÁMICOS (Onda P Compresional y Onda S Cizallante)
+        if (waveAnimTimeSec > 0.05) {
+            const distPKm = Math.min(380, waveAnimTimeSec * WAVE_VEL_P_KMS);
+            const distSKm = Math.min(380, waveAnimTimeSec * WAVE_VEL_S_KMS);
+
+            // Generador de anillos de onda elípticos deformados por directividad
+            const buildWaveRing = (distKm, aspectMinor = 0.85) => {
+                const ring = [];
+                const steps = 40;
+                const aM = distKm * 1000 * 1.15;
+                const bM = distKm * 1000 * aspectMinor;
+                for (let i = 0; i <= steps; i++) {
+                    const t = (i / steps) * 2 * Math.PI;
+                    const lx = aM * Math.sin(t);
+                    const ly = bM * Math.cos(t);
+                    const rx = lx * cosS + ly * sinS;
+                    const ry = -lx * sinS + ly * cosS;
+                    const lng = epi[0] + (rx / 1000) / (111.32 * cosLatEpi);
+                    const lat = epi[1] + (ry / 1000) / 110.57;
+                    ring.push([lng, lat]);
+                }
+                return ring;
+            };
+
+            const pathWaveP = buildWaveRing(distPKm, 0.90);
+            const pathWaveS = buildWaveRing(distSKm, 0.82);
+
+            // Frente de Onda P (Azul celeste eléctrico, rápido)
+            layers.push(new deck.PathLayer({
+                id: 'shakemap-wavefront-p',
+                data: [{
+                    path: pathWaveP,
+                    distKm: distPKm.toFixed(1),
+                    tSec: waveAnimTimeSec.toFixed(1)
+                }],
+                getPath: d => d.path,
+                getColor: [56, 189, 248, 235],
+                getWidth: 4.5,
+                widthUnits: 'pixels',
+                capRounded: true,
+                jointRounded: true,
+                pickable: true,
+                onHover: (info) => {
+                    if (info.object) {
+                        tooltip.style.display = 'block';
+                        tooltip.style.left = `${info.x}px`;
+                        tooltip.style.top = `${info.y}px`;
+                        tooltip.innerHTML = `<h4>🔵 Frente de Onda P (Compresional)</h4>
+                                             <p><strong>Velocidad Media:</strong> ${WAVE_VEL_P_KMS} km/s</p>
+                                             <p><strong>Radio de Propagación:</strong> ${info.object.distKm} km</p>
+                                             <p><strong>Tiempo Cosísmico:</strong> t = ${info.object.tSec} s</p>`;
+                    } else {
+                        tooltip.style.display = 'none';
+                    }
+                }
+            }));
+
+            // Frente de Onda S (Rojo fuego / Naranja de máxima energía destructora)
+            layers.push(new deck.PathLayer({
+                id: 'shakemap-wavefront-s',
+                data: [{
+                    path: pathWaveS,
+                    distKm: distSKm.toFixed(1),
+                    tSec: waveAnimTimeSec.toFixed(1)
+                }],
+                getPath: d => d.path,
+                getColor: [255, 69, 58, 255],
+                getWidth: 6.5,
+                widthUnits: 'pixels',
+                capRounded: true,
+                jointRounded: true,
+                pickable: true,
+                onHover: (info) => {
+                    if (info.object) {
+                        tooltip.style.display = 'block';
+                        tooltip.style.left = `${info.x}px`;
+                        tooltip.style.top = `${info.y}px`;
+                        tooltip.innerHTML = `<h4>🔴 Frente de Onda S (Cizallante)</h4>
+                                             <p><strong>Velocidad Media:</strong> ${WAVE_VEL_S_KMS} km/s</p>
+                                             <p><strong>Tren Destructor:</strong> ${info.object.distKm} km del foco</p>
+                                             <p><strong>Tiempo Cosísmico:</strong> t = ${info.object.tSec} s</p>`;
+                    } else {
+                        tooltip.style.display = 'none';
+                    }
+                }
+            }));
+        }
+
+        // 2.5 Marcador nuclear del Epicentro Cosísmico con halo pulsante
         layers.push(new deck.ScatterplotLayer({
             id: 'shakemap-epicentro-halo',
             data: [currentShakemapData],
             getPosition: d => [d.epicentro[0], d.epicentro[1], 45],
             radiusUnits: 'pixels',
-            getRadius: 36,
+            getRadius: 38,
             getFillColor: [255, 69, 58, 70],
             stroked: true,
-            getLineColor: [255, 69, 58, 200],
-            lineWidthMinPixels: 2,
+            getLineColor: [255, 69, 58, 220],
+            lineWidthMinPixels: 2.5,
             pickable: false,
             updateTriggers: {
                 getPosition: [activeShakemapScenario]
@@ -1111,11 +1297,12 @@ function renderLayers() {
                     tooltip.style.display = 'block';
                     tooltip.style.left = `${info.x}px`;
                     tooltip.style.top = `${info.y}px`;
-                    tooltip.innerHTML = `<h4>⚡ Epicentro: ${d.nombre}</h4>
-                                         <p><strong>Magnitud de Ruptura:</strong> <strong style="color:#ff453a;">${d.mw} Mw</strong></p>
+                    tooltip.innerHTML = `<h4>⚡ Epicentro de Ruptura: ${d.nombre}</h4>
+                                         <p><strong>Magnitud de Momento:</strong> <strong style="color:#ff453a;">${d.mw} Mw</strong></p>
                                          <p><strong>Profundidad Focal:</strong> ${d.profundidad} km</p>
-                                         <p><strong>Aceleración Epicentral (PGA):</strong> <strong style="color:#ffd60a;">${d.pgaMax} g</strong></p>
-                                         <p><strong>Falla Responsable:</strong> ${d.falla}</p>`;
+                                         <p><strong>Aceleración Epicentral (PGA):</strong> <strong style="color:#ffd60a;">${d.pgaMax}</strong></p>
+                                         <p><strong>Rumbo de Ruptura:</strong> N${d.strikeDeg || 0}°E (${d.faultLengthKm || 45} km)</p>
+                                         <p><strong>Falla Activa:</strong> ${d.falla}</p>`;
                 } else {
                     tooltip.style.display = 'none';
                 }
@@ -2964,16 +3151,32 @@ const modalData = {
         </div>
     `,
     'shakemap_info': `
-        <h2 style="margin-top:0; color:#ff453a; font-size:1.4rem; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:15px; margin-bottom:20px;">Simulador ShakeMap de Ruptura Cosísmica</h2>
-        <h3 style="color:#F5F5F7; font-size:1.05rem; margin-top:15px; margin-bottom:8px;">1. Propagación de Ondas y Atenuación (GMPE)</h3>
-        <p style="color:var(--text-secondary); font-size:0.95rem; line-height:1.6; margin-bottom:12px;">El simulador calcula la atenuación geométrica e inelástica de las ondas sísmicas mediante ecuaciones de predicción de movimiento fuerte (GMPE). Conforme la distancia epicentral aumenta, la energía se disipa en anillos concéntricos clasificados por la <strong>Escala Mercalli Modificada (MMI)</strong>.</p>
-        
-        <h3 style="color:#F5F5F7; font-size:1.05rem; margin-top:15px; margin-bottom:8px;">2. Escenarios Sismogénicos Modelados:</h3>
-        <ul style="color:var(--text-secondary); font-size:0.9rem; line-height:1.5; margin-bottom:15px; padding-left:20px;">
-            <li style="margin-bottom:6px;"><strong style="color:#ff453a;">Falla Murindó (Mw 7.3):</strong> Réplica del escenario de 1992 en la cuenca baja del Atrato, con aceleraciones destructivas (PGA &gt; 0.65g) e intensidades MMI VIII-IX.</li>
-            <li style="margin-bottom:6px;"><strong style="color:#38bdf8;">Subducción Nazca (Mw 8.2):</strong> Megaterremoto de contacto interplaca en la fosa del Pacífico con potencial tsunamigénico y sacudimiento de muy largo periodo.</li>
-            <li style="margin-bottom:6px;"><strong style="color:#fbbf24;">Falla Atrato - Quibdó (Mw 6.8):</strong> Sismo cortical superficial directo sobre la capital departamental.</li>
-            <li><strong style="color:#32d74b;">Falla Bahía Solano (Mw 7.0):</strong> Ruptura cortical costera en la serranía de Baudó.</li>
+        <div style="display:flex; align-items:center; gap:12px; border-bottom:1px solid rgba(255,255,255,0.12); padding-bottom:14px; margin-bottom:18px;">
+            <div style="width:38px; height:38px; border-radius:10px; background:linear-gradient(135deg, #ff453a, #b91c1c); display:flex; align-items:center; justify-content:center; font-size:1.25rem;">
+                ⚡
+            </div>
+            <div>
+                <h2 style="margin:0; color:#FFFFFF; font-size:1.3rem; font-weight:700;">Simulador ShakeMap: Ruptura Cosísmica</h2>
+                <span style="font-size:0.75rem; color:#ff453a; font-weight:600; text-transform:uppercase;">Falla Finita Lobular &amp; Propagación Cinemática P/S</span>
+            </div>
+        </div>
+
+        <h3 style="color:#F5F5F7; font-size:1.05rem; margin-top:0; margin-bottom:8px;">1. Integración de Estado del Arte: Cinemática y Falla Finita</h3>
+        <p style="color:var(--text-secondary); font-size:0.92rem; line-height:1.6; margin-bottom:12px;">
+            En sismos mayores ($M_w \ge 6.8$), la energía no se libera en un punto geométrico sino a lo largo de un <strong>plano de falla con longitud finita</strong>. Esta plataforma integra dos componentes complementarios:
+        </p>
+        <ul style="color:var(--text-secondary); font-size:0.86rem; line-height:1.5; margin-bottom:14px; padding-left:20px;">
+            <li style="margin-bottom:6px;"><strong style="color:#ff453a;">Plano de Ruptura 3D y Huella Lobular ($R_{\text{jb}}$):</strong> Proyección superficial rectangular del plano de falla y curvas de nivel elípticas orientadas según el rumbo (<em>strike</em>) tectónico regional, modelando la concentración de daño longitudinal.</li>
+            <li style="margin-bottom:6px;"><strong style="color:#38bdf8;">Frente Onda P (Compresional, $V_p \approx 6.0\text{ km/s}$):</strong> Anillo celeste rápido de primer arribo. Activa los sistemas de alerta temprana antes del impacto severo.</li>
+            <li><strong style="color:#ffd60a;">Frente Onda S (Cizallante, $V_s \approx 3.5\text{ km/s}$):</strong> Anillo anaranjado/rojo de alta energía que transporta las máximas aceleraciones destructivas y causa el daño estructural.</li>
+        </ul>
+
+        <h3 style="color:#F5F5F7; font-size:1.05rem; margin-top:14px; margin-bottom:8px;">2. Escenarios Deterministas Disponibles:</h3>
+        <ul style="color:var(--text-secondary); font-size:0.86rem; line-height:1.5; margin-bottom:14px; padding-left:20px;">
+            <li style="margin-bottom:6px;"><strong style="color:#ff453a;">Falla Murindó (Mw 7.3):</strong> Réplica del evento de 1992 con traza de 65 km, aceleraciones $PGA \ge 0.68\text{ g}$ e intensidades $MMI\text{ VIII-IX}$.</li>
+            <li style="margin-bottom:6px;"><strong style="color:#38bdf8;">Subducción Nazca (Mw 8.2):</strong> Megaterremoto de contacto interplaca de 140 km con afectación en toda la fosa pacífica.</li>
+            <li style="margin-bottom:6px;"><strong style="color:#fbbf24;">Falla Atrato - Quibdó (Mw 6.8):</strong> Sismo cortical superficial directo con arribo de onda destructora a la capital en menos de 5 segundos.</li>
+            <li><strong style="color:#32d74b;">Falla Bahía Solano (Mw 7.0):</strong> Ruptura costera en la Serranía de Baudó orientada N15W.</li>
         </ul>
 
         <!-- INSTRUCCIONES DE USO Y LIMPIEZA -->
@@ -2983,8 +3186,9 @@ const modalData = {
                 <strong style="color:#FFD60A; font-size:0.88rem;">Instrucciones de Simulación y Limpieza:</strong>
             </div>
             <ul style="margin:6px 0 0 0; padding-left:18px; color:#FFF; font-size:0.82rem; line-height:1.45;">
-                <li><strong>Simular:</strong> Elige un escenario de la lista y presiona <em>⚡ Simular Ruptura Sísmica</em>. El motor calculará las isoseistas de atenuación GMPE, el PGA máximo y volará al epicentro.</li>
-                <li><strong>Retirar Simulación:</strong> Presiona el botón <em>🧹 Limpiar</em> que aparece junto al simulador para remover de inmediato las ondas de aceleración y volver al mapa en su estado limpio previo.</li>
+                <li><strong>Simular:</strong> Elige un escenario y pulsa <em>⚡ Simular Ruptura Sísmica</em>. Las ondas $P$ y $S$ comenzarán su avance y el cronómetro medirá el tiempo de arribo a Quibdó e Istmina.</li>
+                <li><strong>Pausar / Reiniciar Ondas:</strong> Usa los controles cinemáticos (<em>▶ Propagar Ondas</em> / <em>↺ Reiniciar</em>) para estudiar en detalle el frente de onda.</li>
+                <li><strong>Limpiar Simulación:</strong> Presiona el botón <em>🧹 Limpiar</em> para retirar de inmediato las isoseistas, las ondas y el plano de ruptura.</li>
             </ul>
         </div>
     `,
@@ -4154,10 +4358,17 @@ const SHAKEMAP_SCENARIOS = {
         falla: 'Losa de Subducción Placa de Nazca (Intraplaca Profunda ~108 km)',
         pgaMax: '0.42 g',
         radioDestrKm: 28,
+        strikeDeg: 25, // Rumbo N25E
+        faultLengthKm: 42,
+        faultCoords: [
+            [-76.32, 4.82],
+            [-76.24, 4.97],
+            [-76.16, 5.14]
+        ],
         isoseistas: [
-            { mmi: 'VII - VIII', label: 'Fuerte Epicentral / Losa Benioff', pgaRange: '0.30 - 0.42 g', radioM: 28000, color: [255, 59, 48, 160], borde: [255, 255, 255, 230] },
-            { mmi: 'VI', label: 'Sentido con Alarma en Chocó y Eje Cafetero', pgaRange: '0.15 - 0.30 g', radioM: 80000, color: [255, 140, 0, 115], borde: [255, 180, 0, 200] },
-            { mmi: 'V', label: 'Ampliamente Sentido en Cuenca del San Juan', pgaRange: '0.06 - 0.15 g', radioM: 160000, color: [255, 214, 10, 75], borde: [255, 230, 80, 170] },
+            { mmi: 'VII - VIII', label: 'Fuerte Epicentral / Losa Benioff', pgaRange: '0.30 - 0.42 g', radioM: 28000, color: [255, 59, 48, 170], borde: [255, 255, 255, 240] },
+            { mmi: 'VI', label: 'Sentido con Alarma en Chocó y Eje Cafetero', pgaRange: '0.15 - 0.30 g', radioM: 80000, color: [255, 140, 0, 125], borde: [255, 180, 0, 200] },
+            { mmi: 'V', label: 'Ampliamente Sentido en Cuenca del San Juan', pgaRange: '0.06 - 0.15 g', radioM: 160000, color: [255, 214, 10, 80], borde: [255, 230, 80, 170] },
             { mmi: 'IV', label: 'Perceptible en Valle del Cauca y Antioquia', pgaRange: '0.02 - 0.06 g', radioM: 280000, color: [56, 189, 248, 45], borde: [56, 189, 248, 140] }
         ]
     },
@@ -4169,10 +4380,17 @@ const SHAKEMAP_SCENARIOS = {
         falla: 'Falla de Murindó (Rumbo Dextral)',
         pgaMax: '0.68 g',
         radioDestrKm: 48,
+        strikeDeg: 12, // Rumbo N12E paralelo al Valle del Atrato
+        faultLengthKm: 65,
+        faultCoords: [
+            [-76.85, 6.65],
+            [-76.75, 6.95],
+            [-76.65, 7.25]
+        ],
         isoseistas: [
-            { mmi: 'VIII - IX', label: 'Daño Severo / Ruptura', pgaRange: '≥ 0.50 g', radioM: 48000, color: [255, 59, 48, 160], borde: [255, 255, 255, 230] },
-            { mmi: 'VII', label: 'Daño Moderado a Estructuras', pgaRange: '0.25 - 0.50 g', radioM: 85000, color: [255, 140, 0, 110], borde: [255, 180, 0, 200] },
-            { mmi: 'VI', label: 'Fuerte / Fisuras en Mampostería', pgaRange: '0.12 - 0.25 g', radioM: 135000, color: [255, 214, 10, 75], borde: [255, 230, 80, 170] },
+            { mmi: 'VIII - IX', label: 'Daño Severo / Ruptura Superficial', pgaRange: '≥ 0.50 g', radioM: 48000, color: [255, 59, 48, 170], borde: [255, 255, 255, 240] },
+            { mmi: 'VII', label: 'Daño Moderado a Estructuras', pgaRange: '0.25 - 0.50 g', radioM: 85000, color: [255, 140, 0, 120], borde: [255, 180, 0, 200] },
+            { mmi: 'VI', label: 'Fuerte / Fisuras en Mampostería', pgaRange: '0.12 - 0.25 g', radioM: 135000, color: [255, 214, 10, 80], borde: [255, 230, 80, 170] },
             { mmi: 'IV - V', label: 'Moderado / Sentido Ampliamente', pgaRange: '0.04 - 0.12 g', radioM: 210000, color: [56, 189, 248, 45], borde: [56, 189, 248, 140] }
         ]
     },
@@ -4184,10 +4402,17 @@ const SHAKEMAP_SCENARIOS = {
         falla: 'Zona de Subducción Placa de Nazca',
         pgaMax: '0.85 g',
         radioDestrKm: 95,
+        strikeDeg: 28, // Rumbo N28E fosa oceánica
+        faultLengthKm: 140,
+        faultCoords: [
+            [-78.50, 4.90],
+            [-78.20, 5.50],
+            [-77.90, 6.15]
+        ],
         isoseistas: [
-            { mmi: 'IX - X', label: 'Devastador / Tsunami Costero', pgaRange: '≥ 0.65 g', radioM: 95000, color: [220, 38, 38, 170], borde: [255, 255, 255, 240] },
-            { mmi: 'VII - VIII', label: 'Daño Severo en Litoral Pacífico', pgaRange: '0.35 - 0.65 g', radioM: 170000, color: [249, 115, 22, 120], borde: [255, 160, 0, 200] },
-            { mmi: 'VI', label: 'Fuerte en Toda la Cuenca Atrato', pgaRange: '0.15 - 0.35 g', radioM: 260000, color: [250, 204, 21, 80], borde: [255, 230, 80, 170] },
+            { mmi: 'IX - X', label: 'Devastador / Tsunami Costero', pgaRange: '≥ 0.65 g', radioM: 95000, color: [220, 38, 38, 180], borde: [255, 255, 255, 240] },
+            { mmi: 'VII - VIII', label: 'Daño Severo en Litoral Pacífico', pgaRange: '0.35 - 0.65 g', radioM: 170000, color: [249, 115, 22, 130], borde: [255, 160, 0, 200] },
+            { mmi: 'VI', label: 'Fuerte en Toda la Cuenca Atrato', pgaRange: '0.15 - 0.35 g', radioM: 260000, color: [250, 204, 21, 85], borde: [255, 230, 80, 170] },
             { mmi: 'IV - V', label: 'Perceptible en Cordillera Occidental', pgaRange: '0.05 - 0.15 g', radioM: 380000, color: [56, 189, 248, 45], borde: [56, 189, 248, 140] }
         ]
     },
@@ -4199,10 +4424,17 @@ const SHAKEMAP_SCENARIOS = {
         falla: 'Falla Atrato - Uramita',
         pgaMax: '0.62 g',
         radioDestrKm: 32,
+        strikeDeg: 15,
+        faultLengthKm: 45,
+        faultCoords: [
+            [-76.75, 5.45],
+            [-76.66, 5.70],
+            [-76.58, 6.00]
+        ],
         isoseistas: [
-            { mmi: 'VIII', label: 'Daño Severo / Licuación Atrato', pgaRange: '≥ 0.45 g', radioM: 32000, color: [255, 59, 48, 170], borde: [255, 255, 255, 240] },
-            { mmi: 'VII', label: 'Daño Moderado en Cabeceras', pgaRange: '0.20 - 0.45 g', radioM: 65000, color: [255, 140, 0, 120], borde: [255, 180, 0, 200] },
-            { mmi: 'V - VI', label: 'Fuerte Sacudimiento Municipal', pgaRange: '0.08 - 0.20 g', radioM: 110000, color: [255, 214, 10, 75], borde: [255, 230, 80, 170] },
+            { mmi: 'VIII', label: 'Daño Severo / Licuación Atrato', pgaRange: '≥ 0.45 g', radioM: 32000, color: [255, 59, 48, 175], borde: [255, 255, 255, 240] },
+            { mmi: 'VII', label: 'Daño Moderado en Cabeceras', pgaRange: '0.20 - 0.45 g', radioM: 65000, color: [255, 140, 0, 125], borde: [255, 180, 0, 200] },
+            { mmi: 'V - VI', label: 'Fuerte Sacudimiento Municipal', pgaRange: '0.08 - 0.20 g', radioM: 110000, color: [255, 214, 10, 80], borde: [255, 230, 80, 170] },
             { mmi: 'IV', label: 'Perceptible en Región Central', pgaRange: '0.03 - 0.08 g', radioM: 175000, color: [56, 189, 248, 45], borde: [56, 189, 248, 140] }
         ]
     },
@@ -4214,10 +4446,17 @@ const SHAKEMAP_SCENARIOS = {
         falla: 'Falla de Bahía Solano',
         pgaMax: '0.64 g',
         radioDestrKm: 38,
+        strikeDeg: 345, // Rumbo N15W línea costera
+        faultLengthKm: 52,
+        faultCoords: [
+            [-77.34, 5.95],
+            [-77.40, 6.22],
+            [-77.46, 6.50]
+        ],
         isoseistas: [
-            { mmi: 'VIII', label: 'Daño Severo en Costa y Serranía', pgaRange: '≥ 0.48 g', radioM: 38000, color: [255, 59, 48, 170], borde: [255, 255, 255, 240] },
-            { mmi: 'VII', label: 'Fuerte en Bahía Solano y Nuquí', pgaRange: '0.22 - 0.48 g', radioM: 78000, color: [255, 140, 0, 120], borde: [255, 180, 0, 200] },
-            { mmi: 'V - VI', label: 'Perceptible en Valle del Atrato', pgaRange: '0.09 - 0.22 g', radioM: 130000, color: [255, 214, 10, 75], borde: [255, 230, 80, 170] },
+            { mmi: 'VIII', label: 'Daño Severo en Costa y Serranía', pgaRange: '≥ 0.48 g', radioM: 38000, color: [255, 59, 48, 175], borde: [255, 255, 255, 240] },
+            { mmi: 'VII', label: 'Fuerte en Bahía Solano y Nuquí', pgaRange: '0.22 - 0.48 g', radioM: 78000, color: [255, 140, 0, 125], borde: [255, 180, 0, 200] },
+            { mmi: 'V - VI', label: 'Perceptible en Valle del Atrato', pgaRange: '0.09 - 0.22 g', radioM: 130000, color: [255, 214, 10, 80], borde: [255, 230, 80, 170] },
             { mmi: 'IV', label: 'Perceptible en Cordillera', pgaRange: '0.03 - 0.09 g', radioM: 200000, color: [56, 189, 248, 45], borde: [56, 189, 248, 140] }
         ]
     }
@@ -4228,6 +4467,99 @@ const btnToggleShakemap = document.getElementById('btn-toggle-shakemap');
 const btnClearShakemap = document.getElementById('btn-clear-shakemap');
 const shakemapText = document.getElementById('btn-shakemap-text');
 const shakemapImpactBox = document.getElementById('shakemap-impact-box');
+const shakemapWaveControls = document.getElementById('shakemap-wave-controls');
+const btnWavePlay = document.getElementById('btn-wave-play');
+const btnWaveReset = document.getElementById('btn-wave-reset');
+const wavePlayIcon = document.getElementById('wave-play-icon');
+const wavePlayText = document.getElementById('wave-play-text');
+const shakemapTimerLabel = document.getElementById('shakemap-timer-label');
+const shakemapTimerProgress = document.getElementById('shakemap-timer-progress');
+const shakemapEtaQuibdo = document.getElementById('shakemap-eta-quibdo');
+const shakemapEtaIstmina = document.getElementById('shakemap-eta-istmina');
+
+// Coordenadas geográficas de referencia de centros urbanos de Chocó
+const COORDS_QUIBDO = [-76.658, 5.692];
+const COORDS_ISTMINA = [-76.683, 5.161];
+
+function calculateETA(epi, targetCoords, velKmS) {
+    if (!epi || !targetCoords) return '--';
+    const cosLat = Math.cos(((epi[1] + targetCoords[1]) / 2) * Math.PI / 180);
+    const dx = (targetCoords[0] - epi[0]) * 111.32 * cosLat;
+    const dy = (targetCoords[1] - epi[1]) * 110.57;
+    const distKm = Math.hypot(dx, dy);
+    const etaSec = distKm / velKmS;
+    return `${etaSec.toFixed(1)} s (${Math.round(distKm)} km)`;
+}
+
+function updateWaveUI() {
+    if (shakemapTimerLabel) {
+        shakemapTimerLabel.innerText = `t = ${waveAnimTimeSec.toFixed(1)} s`;
+    }
+    if (shakemapTimerProgress) {
+        const pct = Math.min(100, (waveAnimTimeSec / WAVE_MAX_TIME_SEC) * 100);
+        shakemapTimerProgress.style.width = `${pct}%`;
+    }
+    if (currentShakemapData && currentShakemapData.epicentro) {
+        const epi = currentShakemapData.epicentro;
+        if (shakemapEtaQuibdo) {
+            shakemapEtaQuibdo.innerText = `Onda S: ${calculateETA(epi, COORDS_QUIBDO, WAVE_VEL_S_KMS)}`;
+        }
+        if (shakemapEtaIstmina) {
+            shakemapEtaIstmina.innerText = `Onda S: ${calculateETA(epi, COORDS_ISTMINA, WAVE_VEL_S_KMS)}`;
+        }
+    }
+}
+
+function stepWaveAnimation(timestamp) {
+    if (!isWaveAnimPlaying) return;
+    if (!waveAnimLastTimestamp) waveAnimLastTimestamp = timestamp;
+    const dtSec = (timestamp - waveAnimLastTimestamp) / 1000;
+    waveAnimLastTimestamp = timestamp;
+
+    // Avance temporal a escala 1x
+    waveAnimTimeSec += dtSec;
+    if (waveAnimTimeSec >= WAVE_MAX_TIME_SEC) {
+        waveAnimTimeSec = WAVE_MAX_TIME_SEC;
+        stopWaveAnimation();
+    }
+
+    updateWaveUI();
+    renderLayers();
+
+    if (isWaveAnimPlaying) {
+        waveAnimRafId = requestAnimationFrame(stepWaveAnimation);
+    }
+}
+
+function startWaveAnimation() {
+    if (isWaveAnimPlaying) return;
+    if (waveAnimTimeSec >= WAVE_MAX_TIME_SEC) {
+        waveAnimTimeSec = 0.0;
+    }
+    isWaveAnimPlaying = true;
+    waveAnimLastTimestamp = null;
+    if (wavePlayIcon) wavePlayIcon.innerText = '⏸';
+    if (wavePlayText) wavePlayText.innerText = 'Pausar Ondas';
+    waveAnimRafId = requestAnimationFrame(stepWaveAnimation);
+}
+
+function stopWaveAnimation() {
+    isWaveAnimPlaying = false;
+    if (waveAnimRafId) {
+        cancelAnimationFrame(waveAnimRafId);
+        waveAnimRafId = null;
+    }
+    waveAnimLastTimestamp = null;
+    if (wavePlayIcon) wavePlayIcon.innerText = '▶';
+    if (wavePlayText) wavePlayText.innerText = 'Propagar Ondas';
+}
+
+function resetWaveAnimation() {
+    stopWaveAnimation();
+    waveAnimTimeSec = 0.0;
+    updateWaveUI();
+    renderLayers();
+}
 
 async function activateShakemap(scenarioKey) {
     const scenario = SHAKEMAP_SCENARIOS[scenarioKey];
@@ -4236,6 +4568,7 @@ async function activateShakemap(scenarioKey) {
     activeShakemapScenario = scenarioKey;
     isSimulatorActive = true;
     currentShakemapData = scenario;
+    waveAnimTimeSec = 0.0;
 
     if (shakemapText) shakemapText.innerHTML = '🔄 Recalcular Ruptura';
     if (btnClearShakemap) btnClearShakemap.style.display = 'inline-flex';
@@ -4244,6 +4577,7 @@ async function activateShakemap(scenarioKey) {
         btnToggleShakemap.style.color = '#fff';
     }
 
+    if (shakemapWaveControls) shakemapWaveControls.style.display = 'block';
     if (shakemapImpactBox) {
         shakemapImpactBox.style.display = 'block';
         const lblEpi = document.getElementById('shakemap-epicentro-label');
@@ -4253,11 +4587,13 @@ async function activateShakemap(scenarioKey) {
 
         if (lblEpi) lblEpi.innerText = `Epicentro: ${scenario.nombre.split('(')[0].trim()}`;
         if (lblPga) lblPga.innerText = scenario.pgaMax;
-        if (lblRad) lblRad.innerText = `~${scenario.radioDestrKm} km`;
+        if (lblRad) lblRad.innerText = `~${scenario.faultLengthKm || 48} km (${scenario.falla.split('(')[0].trim()})`;
         if (badgeMmi) badgeMmi.innerText = scenario.isoseistas[0].mmi;
     }
 
-    // Cámara vuela hacia el epicentro simulado
+    updateWaveUI();
+
+    // Cámara vuela suavemente hacia el epicentro y plano de falla
     if (deckgl && scenario.epicentro) {
         deckgl.setProps({
             initialViewState: {
@@ -4272,12 +4608,16 @@ async function activateShakemap(scenarioKey) {
         });
     }
 
+    // Iniciar automáticamente la cinemática de ondas P y S
+    startWaveAnimation();
     renderLayers();
 }
 
 function deactivateShakemap() {
+    stopWaveAnimation();
     isSimulatorActive = false;
     currentShakemapData = null;
+    waveAnimTimeSec = 0.0;
 
     if (shakemapText) shakemapText.innerHTML = '⚡ Simular Ruptura Sísmica';
     if (btnClearShakemap) btnClearShakemap.style.display = 'none';
@@ -4285,9 +4625,26 @@ function deactivateShakemap() {
         btnToggleShakemap.style.background = 'rgba(255,59,48,0.15)';
         btnToggleShakemap.style.color = '#ff453a';
     }
+    if (shakemapWaveControls) shakemapWaveControls.style.display = 'none';
     if (shakemapImpactBox) shakemapImpactBox.style.display = 'none';
 
     renderLayers();
+}
+
+if (btnWavePlay) {
+    btnWavePlay.addEventListener('click', () => {
+        if (isWaveAnimPlaying) {
+            stopWaveAnimation();
+        } else {
+            startWaveAnimation();
+        }
+    });
+}
+
+if (btnWaveReset) {
+    btnWaveReset.addEventListener('click', () => {
+        resetWaveAnimation();
+    });
 }
 
 if (btnToggleShakemap && selectShakemap) {

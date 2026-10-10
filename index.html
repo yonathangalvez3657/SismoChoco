@@ -750,6 +750,56 @@
                         <span>🧹 Limpiar</span>
                     </button>
                 </div>
+                <!-- Panel Cinemático de Frentes de Onda (P & S) y Huella Lobular Continua -->
+                <div id="shakemap-wave-controls" style="display:none; margin-top:8px; background:rgba(15,23,42,0.75); border:1px solid rgba(56,189,248,0.3); border-radius:10px; padding:10px 12px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                        <div style="display:flex; align-items:center; gap:6px;">
+                            <span style="font-size:0.85rem;">⏱️</span>
+                            <strong style="font-size:0.75rem; color:#38bdf8; text-transform:uppercase; letter-spacing:0.04em;">Cinemática Cosísmica</strong>
+                        </div>
+                        <span id="shakemap-timer-label" style="font-family:monospace; font-size:0.8rem; color:#ffd60a; font-weight:700; background:rgba(0,0,0,0.5); padding:2px 8px; border-radius:6px; border:1px solid rgba(255,214,10,0.3);">t = 0.0 s</span>
+                    </div>
+
+                    <!-- Barra de Progreso Temporal -->
+                    <div style="width:100%; height:6px; background:rgba(255,255,255,0.1); border-radius:3px; overflow:hidden; margin-bottom:8px;">
+                        <div id="shakemap-timer-progress" style="width:0%; height:100%; background:linear-gradient(90deg, #38bdf8, #ff453a); transition:width 0.1s linear;"></div>
+                    </div>
+
+                    <!-- Botones de Control de Onda -->
+                    <div style="display:flex; gap:6px; margin-bottom:8px;">
+                        <button type="button" id="btn-wave-play" class="btn-secondary" style="flex:1; padding:6px 8px; font-size:0.72rem; background:rgba(56,189,248,0.15); color:#38bdf8; border-color:rgba(56,189,248,0.35);">
+                            <span id="wave-play-icon">▶</span> <span id="wave-play-text">Propagar Ondas</span>
+                        </button>
+                        <button type="button" id="btn-wave-reset" class="btn-secondary" style="padding:6px 10px; font-size:0.72rem; background:rgba(255,255,255,0.06); color:#cbd5e1;">
+                            <span>↺ Reiniciar</span>
+                        </button>
+                    </div>
+
+                    <!-- Frentes de Onda Activos & Leyenda Cinemática -->
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:0.68rem; margin-bottom:8px;">
+                        <div style="background:rgba(56,189,248,0.1); border-left:2.5px solid #38bdf8; padding:4px 6px; border-radius:4px;">
+                            <strong style="color:#38bdf8;">Onda P (Compresional):</strong><br>
+                            <span style="color:#cbd5e1;">Vp ≈ 6.0 km/s (Alerta previa)</span>
+                        </div>
+                        <div style="background:rgba(255,69,58,0.1); border-left:2.5px solid #ff453a; padding:4px 6px; border-radius:4px;">
+                            <strong style="color:#ff453a;">Onda S (Cizallante):</strong><br>
+                            <span style="color:#cbd5e1;">Vs ≈ 3.5 km/s (Destructora)</span>
+                        </div>
+                    </div>
+
+                    <!-- Arribo Estimado a Cabeceras Principales -->
+                    <div style="border-top:1px solid rgba(255,255,255,0.08); padding-top:6px; font-size:0.68rem; color:#94a3b8;">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:2px;">
+                            <span>Impacto en Quibdó:</span>
+                            <strong id="shakemap-eta-quibdo" style="color:#fff;">Calculando...</strong>
+                        </div>
+                        <div style="display:flex; justify-content:space-between;">
+                            <span>Impacto en Istmina:</span>
+                            <strong id="shakemap-eta-istmina" style="color:#fff;">Calculando...</strong>
+                        </div>
+                    </div>
+                </div>
+
                 <div id="shakemap-impact-box" style="display:none; background:rgba(0,0,0,0.45); border:1px solid rgba(255,69,58,0.4); border-radius:10px; padding:10px 12px; font-size:0.72rem; color:var(--text-secondary); line-height:1.45; box-shadow:0 4px 16px rgba(0,0,0,0.3);">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
                         <strong id="shakemap-epicentro-label" style="color:#ff453a; font-size:0.78rem;">Epicentro: Murindó</strong>
@@ -757,7 +807,7 @@
                     </div>
                     <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:0.7rem;">
                         <div>PGA Epicentral: <strong id="shakemap-pga-max" style="color:#fff;">0.65 g</strong></div>
-                        <div>Radio Destructivo: <strong id="shakemap-radio-destr" style="color:#ffd60a;">~48 km</strong></div>
+                        <div>Plano Ruptura: <strong id="shakemap-radio-destr" style="color:#ffd60a;">~48 km</strong></div>
                     </div>
                 </div>
             </section>
@@ -1064,7 +1114,7 @@
     <script src="js/core-oop.js?v=39"></script>
 
     <!-- Lógica principal con versionamiento para evitar caché persistente -->
-    <script src="js/main.js?v=58"></script>
+    <script src="js/main.js?v=59"></script>
 
     <!-- PWA -->
     <script>

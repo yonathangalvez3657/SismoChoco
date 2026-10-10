@@ -2246,7 +2246,7 @@ const modalData = {
                 Para <strong>retirar y apagar todas las capas avanzadas</strong> en un solo paso, presiona el botón <span style="display:inline-block; padding:1px 6px; background:rgba(255,255,255,0.2); border-radius:4px; font-weight:bold;">🔄</span> situado a la derecha del título <em>Capas Avanzadas</em>. Se desmarcarán todos los interruptores activos, se cerrará el panel lateral de fallas y se limpiará el lienzo sin reiniciar el resto de tus preferencias.
             </p>
         </div>
-    `,'rtd': `
+    `,    'rtd': `
         <h2 style="margin-top:0; color:#0A84FF; font-size:1.4rem; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:15px; margin-bottom:20px;">Investigación a través del Diseño (Research through Design - RtD)</h2>
         <p style="color:var(--text-secondary); font-size:0.95rem; line-height:1.6; margin-bottom:12px;">El marco metodológico de esta investigación se fundamenta en <strong>Research through Design (RtD)</strong> (Zimmerman, Forlizzi & Evenson, 2007; Gaver, 2012), donde el proceso iterativo de diseño y construcción del artefacto digital interactivo constituye el medio epistemológico primario para generar conocimiento transferible.</p>
         <div style="background: rgba(10,132,255,0.08); border-left: 3px solid #0A84FF; padding: 12px 14px; border-radius: 6px; margin: 14px 0; color: #e2e8f0; font-size: 0.9rem; line-height: 1.5;">
@@ -2256,16 +2256,52 @@ const modalData = {
         </div>
         <h3 style="color:#F5F5F7; font-size:1.05rem; margin-top:15px; margin-bottom:8px;">Triangulación Visual Analytics:</h3>
         <p style="color:var(--text-secondary); font-size:0.9rem; line-height:1.5;">Siguiendo el mantra de Thomas & Cook (2005) y Shneiderman (1996), la plataforma articula el razonamiento analítico asistido por interfaces interactivas: <em>"Overview first, zoom and filter, then details-on-demand"</em>, reduciendo la carga cognitiva intrínseca ante volúmenes masivos de datos sismotectónicos.</p>
+
+        <!-- INSTRUCCIONES DE USO Y RESTABLECIMIENTO -->
+        <div style="background:rgba(255,149,0,0.12); border:1.5px solid #FF9500; border-radius:12px; padding:12px 14px; margin-top:14px;">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+                <span style="font-size:1.1rem;">🔄</span>
+                <strong style="color:#FFD60A; font-size:0.88rem;">Instrucciones de Uso y Restablecimiento:</strong>
+            </div>
+            <ul style="margin:6px 0 0 0; padding-left:18px; color:#FFF; font-size:0.82rem; line-height:1.45;">
+                <li><strong>Uso:</strong> Este panel es de consulta epistemológica y metodológica del proyecto de maestría. Puedes cerrar la ventana con el botón de la esquina superior derecha o haciendo clic fuera del diálogo.</li>
+                <li><strong>Restablecimiento:</strong> Para regresar cualquier visualización activa o filtro al estado de referencia inicial del sistema, puedes presionar el botón <em>⌂ Restablecer Todo</em> en la barra de herramientas superior.</li>
+            </ul>
+        </div>
     `,
     'magnitud': `
         <h2 style="margin-top:0; color:#0A84FF; font-size:1.4rem; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:15px; margin-bottom:20px;">Magnitud (Mw)</h2>
         <p style="color:var(--text-secondary); font-size:0.95rem; line-height:1.5; margin-bottom:10px;">Filtra los sismos según la energía total liberada en su hipocentro.</p>
         <p style="color:var(--text-secondary); font-size:0.95rem; line-height:1.5;">En sismología moderna se usa la <strong>Escala de Magnitud de Momento (Mw)</strong>, que es mucho más precisa que la antigua escala de Richter. Es una escala logarítmica: un sismo de Mw 5.0 no es un 20% más fuerte que uno de 4.0... en realidad libera <strong>32 veces más energía destructiva</strong>.</p>
+
+        <!-- INSTRUCCIONES DE USO Y RESTABLECIMIENTO -->
+        <div style="background:rgba(255,149,0,0.12); border:1.5px solid #FF9500; border-radius:12px; padding:12px 14px; margin-top:14px;">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+                <span style="font-size:1.1rem;">🔄</span>
+                <strong style="color:#FFD60A; font-size:0.88rem;">Instrucciones de Uso y Restablecimiento:</strong>
+            </div>
+            <ul style="margin:6px 0 0 0; padding-left:18px; color:#FFF; font-size:0.82rem; line-height:1.45;">
+                <li><strong>Uso:</strong> Arrastra el deslizador horizontal para definir el umbral mínimo de energía sísmica (de 2.0 a 7.5 Mw). El mapa 3D y las métricas se filtrarán en tiempo real.</li>
+                <li><strong>Restablecer:</strong> Presiona el botón <em>🔄 Restablecer Filtros</em> ubicado inmediatamente en la cabecera de la sección de filtros para regresar la magnitud al valor base (2.0 Mw).</li>
+            </ul>
+        </div>
     `,
     'anio': `
         <h2 style="margin-top:0; color:#0A84FF; font-size:1.4rem; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:15px; margin-bottom:20px;">Ventana de Tiempo</h2>
         <p style="color:var(--text-secondary); font-size:0.95rem; line-height:1.5; margin-bottom:10px;">Permite analizar la sismicidad partiendo desde un año en específico (de 1993 a 2026).</p>
         <p style="color:var(--text-secondary); font-size:0.95rem; line-height:1.5;">Al mover el deslizador, tanto el mapa 3D como las estadísticas se actualizarán instantáneamente para revelar cómo se ha comportado, acumulado y migrado la tensión tectónica a lo largo de las últimas décadas en el Chocó.</p>
+
+        <!-- INSTRUCCIONES DE USO Y RESTABLECIMIENTO -->
+        <div style="background:rgba(255,149,0,0.12); border:1.5px solid #FF9500; border-radius:12px; padding:12px 14px; margin-top:14px;">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+                <span style="font-size:1.1rem;">🔄</span>
+                <strong style="color:#FFD60A; font-size:0.88rem;">Instrucciones de Uso y Restablecimiento:</strong>
+            </div>
+            <ul style="margin:6px 0 0 0; padding-left:18px; color:#FFF; font-size:0.82rem; line-height:1.45;">
+                <li><strong>Uso:</strong> Desplaza el cursor de la barra para fijar el año de inicio del catálogo histórico analizado.</li>
+                <li><strong>Restablecer:</strong> Presiona el botón <em>🔄 Restablecer Filtros</em> en la sección de filtros para reiniciar la ventana temporal al registro histórico completo (año 1993).</li>
+            </ul>
+        </div>
     `,
     'puntos': `
         <h2 style="margin-top:0; color:#0A84FF; font-size:1.4rem; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:15px; margin-bottom:20px;">Eventos Individuales (Scatter)</h2>
@@ -2274,11 +2310,35 @@ const modalData = {
             <li style="margin-bottom:6px;"><strong>El tamaño y color:</strong> Son directamente proporcionales a la Magnitud (Mw) del sismo.</li>
             <li><strong>La altura:</strong> Indica su profundidad bajo tierra (hipocentro), permitiendo ver perfiles de subducción (zonas de Benioff).</li>
         </ul>
+
+        <!-- INSTRUCCIONES DE USO Y RESTABLECIMIENTO -->
+        <div style="background:rgba(255,149,0,0.12); border:1.5px solid #FF9500; border-radius:12px; padding:12px 14px; margin-top:14px;">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+                <span style="font-size:1.1rem;">🔄</span>
+                <strong style="color:#FFD60A; font-size:0.88rem;">Instrucciones de Uso y Restablecimiento:</strong>
+            </div>
+            <ul style="margin:6px 0 0 0; padding-left:18px; color:#FFF; font-size:0.82rem; line-height:1.45;">
+                <li><strong>Uso:</strong> Presiona el botón <em>⚪ Puntos</em> para visualizar cada sismo como una esfera tridimensional georreferenciada.</li>
+                <li><strong>Restablecer:</strong> Presiona el botón <em>🔄 Restablecer Visualización</em> en la cabecera de Modos de Visualización para regresar la vista al modo predeterminado de eventos individuales con vista cenital.</li>
+            </ul>
+        </div>
     `,
     'calor': `
         <h2 style="margin-top:0; color:#0A84FF; font-size:1.4rem; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:15px; margin-bottom:20px;">Concentración de Energía (Heatmap)</h2>
         <p style="color:var(--text-secondary); font-size:0.95rem; line-height:1.5; margin-bottom:10px;">Difumina matemáticamente los puntos individuales para formar un mapa térmico continuo sobre la superficie.</p>
         <p style="color:var(--text-secondary); font-size:0.95rem; line-height:1.5;">Muestra visualmente de rojo a amarillo las zonas donde la corteza terrestre está sometida a mayor estrés sísmico acumulado a lo largo de los años. Es una herramienta fundamental para identificar zonas de alto riesgo inminente de ruptura o fallas ciegas.</p>
+
+        <!-- INSTRUCCIONES DE USO Y RESTABLECIMIENTO -->
+        <div style="background:rgba(255,149,0,0.12); border:1.5px solid #FF9500; border-radius:12px; padding:12px 14px; margin-top:14px;">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+                <span style="font-size:1.1rem;">🔄</span>
+                <strong style="color:#FFD60A; font-size:0.88rem;">Instrucciones de Uso y Restablecimiento:</strong>
+            </div>
+            <ul style="margin:6px 0 0 0; padding-left:18px; color:#FFF; font-size:0.82rem; line-height:1.45;">
+                <li><strong>Uso:</strong> Presiona el botón <em>🔥 Calor</em> para renderizar la densidad e intensidad de energía liberada como una superficie continua de calor.</li>
+                <li><strong>Restablecer:</strong> Presiona el botón <em>🔄 Restablecer Visualización</em> para desactivar el mapa de calor y retornar a la vista de esferas individuales.</li>
+            </ul>
+        </div>
     `,
     'hex': `
         <h2 style="margin-top:0; color:#0A84FF; font-size:1.4rem; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:15px; margin-bottom:20px;">Agrupación Espacial (Hexbins 3D)</h2>
@@ -2287,6 +2347,18 @@ const modalData = {
             <li style="margin-bottom:6px;"><strong>La altura del hexágono:</strong> Indica la cantidad de sismos (frecuencia estadística) que han ocurrido dentro de ese polígono de 5km cuadrados.</li>
             <li><strong>El color:</strong> Indica la magnitud de la energía en esa celda.</li>
         </ul>
+
+        <!-- INSTRUCCIONES DE USO Y RESTABLECIMIENTO -->
+        <div style="background:rgba(255,149,0,0.12); border:1.5px solid #FF9500; border-radius:12px; padding:12px 14px; margin-top:14px;">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+                <span style="font-size:1.1rem;">🔄</span>
+                <strong style="color:#FFD60A; font-size:0.88rem;">Instrucciones de Uso y Restablecimiento:</strong>
+            </div>
+            <ul style="margin:6px 0 0 0; padding-left:18px; color:#FFF; font-size:0.82rem; line-height:1.45;">
+                <li><strong>Uso:</strong> Presiona el botón <em>🔷 Hexbins</em> para proyectar la agregación hexagonal volumétrica sobre el mapa.</li>
+                <li><strong>Restablecer:</strong> Presiona el botón <em>🔄 Restablecer Visualización</em> para remover los prismas hexagonales y restablecer la capa base.</li>
+            </ul>
+        </div>
     `,
     'grafico': `
         <h2 style="margin-top:0; color:#0A84FF; font-size:1.4rem; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:15px; margin-bottom:20px;">Frecuencia y Tamaño de los Sismos (Ley Gutenberg-Richter)</h2>
@@ -2301,6 +2373,18 @@ const modalData = {
             <li><strong>Tiempo de retorno estimado:</strong> Abajo de la gráfica puedes consultar cada cuántos años se repite estadísticamente un sismo de magnitud 5, 6 o 7 en la región.</li>
         </ul>
         <p style="color:var(--text-secondary); font-size:0.9rem; line-height:1.5;"><strong>Consejo de uso:</strong> Puedes hacer clic sobre cualquier punto de la curva para filtrar de inmediato el mapa 3D y ver solo los sismos a partir de esa magnitud.</p>
+
+        <!-- INSTRUCCIONES DE USO Y RESTABLECIMIENTO -->
+        <div style="background:rgba(255,149,0,0.12); border:1.5px solid #FF9500; border-radius:12px; padding:12px 14px; margin-top:14px;">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+                <span style="font-size:1.1rem;">🔄</span>
+                <strong style="color:#FFD60A; font-size:0.88rem;">Instrucciones de Uso y Restablecimiento:</strong>
+            </div>
+            <ul style="margin:6px 0 0 0; padding-left:18px; color:#FFF; font-size:0.82rem; line-height:1.45;">
+                <li><strong>Uso:</strong> Haz clic en cualquier punto o segmento de la gráfica para aplicar un filtro de magnitud rápido sobre la escena 3D.</li>
+                <li><strong>Restablecer:</strong> Presiona el botón <em>🔄 Restablecer Filtros</em> en la sección superior para restablecer el rango completo de magnitud en el gráfico y en el mapa.</li>
+            </ul>
+        </div>
     `,
     'calidad': `
         <h2 style="margin-top:0; color:#0A84FF; font-size:1.4rem; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:15px; margin-bottom:20px;">Filtro de Sismos con Máxima Confiabilidad</h2>
@@ -2309,6 +2393,18 @@ const modalData = {
         <p style="color:var(--text-secondary); font-size:0.95rem; line-height:1.5; margin-bottom:10px;">Al activar este interruptor, el sistema <strong>oculta los registros con incertidumbre</strong> y deja visibles únicamente los sismos que fueron verificados por múltiples sismógrafos con precisión milimétrica en su epicentro y profundidad.</p>
         <div style="background: rgba(255,255,255,0.05); padding: 10px 14px; border-radius: 8px; color: var(--text-secondary); font-size: 0.85rem; line-height: 1.4;">
             Ideal para ingenieros, investigadores y tomadores de decisiones que requieran datos rigurosamente certificados para estudios de suelo o diseño estructural.
+        </div>
+
+        <!-- INSTRUCCIONES DE USO Y RESTABLECIMIENTO -->
+        <div style="background:rgba(255,149,0,0.12); border:1.5px solid #FF9500; border-radius:12px; padding:12px 14px; margin-top:14px;">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+                <span style="font-size:1.1rem;">🔄</span>
+                <strong style="color:#FFD60A; font-size:0.88rem;">Instrucciones de Uso y Restablecimiento:</strong>
+            </div>
+            <ul style="margin:6px 0 0 0; padding-left:18px; color:#FFF; font-size:0.82rem; line-height:1.45;">
+                <li><strong>Uso:</strong> Activa el interruptor para discriminar eventos con alta calidad instrumental (Gap azimuthal &lt; 180° y RMS &lt; 0.5s).</li>
+                <li><strong>Restablecer:</strong> Apaga el interruptor directamente o presiona el botón <em>🔄 Restablecer Capas</em> en la sección de Capas Avanzadas para reintegrar todos los registros sismológicos.</li>
+            </ul>
         </div>
     `,
     'fallas': `
@@ -2329,12 +2425,36 @@ const modalData = {
             <li><strong>Ficha lateral en vivo:</strong> Consulta al instante la tasa anual de desplazamiento, el terremoto más fuerte que podría generar y cuántos sismos reales han ocurrido cerca de ella.</li>
             <li><strong>Zona de Retiro (5 km):</strong> Activa el switch para ver el corredor de seguridad donde la norma exige cuidados especiales en construcción.</li>
         </ul>
+
+        <!-- INSTRUCCIONES DE USO Y RESTABLECIMIENTO -->
+        <div style="background:rgba(255,149,0,0.12); border:1.5px solid #FF9500; border-radius:12px; padding:12px 14px; margin-top:14px;">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+                <span style="font-size:1.1rem;">🔄</span>
+                <strong style="color:#FFD60A; font-size:0.88rem;">Instrucciones de Uso y Restablecimiento:</strong>
+            </div>
+            <ul style="margin:6px 0 0 0; padding-left:18px; color:#FFF; font-size:0.82rem; line-height:1.45;">
+                <li><strong>Uso:</strong> Activa el interruptor <em>Trazas de Fallas SGC</em> o selecciona una falla del listado para resaltar su geometría en 3D.</li>
+                <li><strong>Restablecer:</strong> Presiona el botón <em>🔄 Restablecer Capas</em> en la sección de Capas Avanzadas para desactivar las fallas, ocultar el corredor de retiro y cerrar el panel lateral de detalles.</li>
+            </ul>
+        </div>
     `,
     'ml': `
         <h2 style="margin-top:0; color:#0A84FF; font-size:1.4rem; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:15px; margin-bottom:20px;">Detección Inteligente de Enjambres Sísmicos (IA)</h2>
         <h3 style="color:#F5F5F7; font-size:1.1rem; margin-bottom:8px;">¿Qué hace este análisis automatizado?</h3>
         <p style="color:var(--text-secondary); font-size:0.95rem; line-height:1.5; margin-bottom:10px;">La plataforma analiza miles de registros con un algoritmo de Inteligencia Artificial para encontrar agrupaciones atípicas de temblores que el ojo humano no detecta fácilmente a simple vista.</p>
         <p style="color:var(--text-secondary); font-size:0.95rem; line-height:1.5; margin-bottom:10px;"><strong>¿Por qué es importante?</strong> Cuando varios sismos ocurren muy juntos en poco tiempo y en el mismo sector, forman un "enjambre sísmico". Esto suele indicar reacomodos de fallas activas o secuencias de réplicas tras un temblor principal.</p>
+
+        <!-- INSTRUCCIONES DE USO Y RESTABLECIMIENTO -->
+        <div style="background:rgba(255,149,0,0.12); border:1.5px solid #FF9500; border-radius:12px; padding:12px 14px; margin-top:14px;">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+                <span style="font-size:1.1rem;">🔄</span>
+                <strong style="color:#FFD60A; font-size:0.88rem;">Instrucciones de Uso y Restablecimiento:</strong>
+            </div>
+            <ul style="margin:6px 0 0 0; padding-left:18px; color:#FFF; font-size:0.82rem; line-height:1.45;">
+                <li><strong>Uso:</strong> Activa el interruptor <em>Clusters DBSCAN (IA)</em> para calcular y colorear agrupaciones espacio-temporales densas.</li>
+                <li><strong>Restablecer:</strong> Apaga el interruptor o presiona el botón <em>🔄 Restablecer Capas</em> en Capas Avanzadas para retirar la clasificación por enjambres.</li>
+            </ul>
+        </div>
     `,
     'sgc': `
         <h2 style="margin-top:0; color:#0A84FF; font-size:1.4rem; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:15px; margin-bottom:20px;">Conexión SGC Live (Monitoreo en Tiempo Real)</h2>
@@ -2344,6 +2464,18 @@ const modalData = {
         <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; padding: 12px; margin-top: 12px; color: #a7f3d0; font-size: 0.85rem; line-height: 1.4;">
             <strong>Nota para el usuario:</strong> Para garantizar que siempre puedas observar el funcionamiento interactivo de la plataforma aún en momentos de calma sísmica o mantenimientos de red, el sistema emite señales telemétricas de demostración basadas en el comportamiento histórico del departamento.
         </div>
+
+        <!-- INSTRUCCIONES DE USO Y RESTABLECIMIENTO -->
+        <div style="background:rgba(255,149,0,0.12); border:1.5px solid #FF9500; border-radius:12px; padding:12px 14px; margin-top:14px;">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+                <span style="font-size:1.1rem;">🔄</span>
+                <strong style="color:#FFD60A; font-size:0.88rem;">Instrucciones de Uso y Restablecimiento:</strong>
+            </div>
+            <ul style="margin:6px 0 0 0; padding-left:18px; color:#FFF; font-size:0.82rem; line-height:1.45;">
+                <li><strong>Uso:</strong> Activa el interruptor <em>Alertas SGC (En Vivo)</em> para iniciar la simulación de pulsos telemétricos en tiempo real.</li>
+                <li><strong>Restablecer:</strong> Apaga el interruptor o presiona el botón <em>🔄 Restablecer Capas</em> para detener la emisión de pulsos y remover las animaciones.</li>
+            </ul>
+        </div>
     `,
     'oq': `
         <h2 style="margin-top: 0; color: #0A84FF; font-size: 1.4rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px; margin-bottom: 20px;">Evaluación Probabilística de Amenaza Sísmica</h2>
@@ -2351,6 +2483,18 @@ const modalData = {
         <p style="color: var(--text-secondary); font-size: 0.95rem; line-height: 1.5; margin-bottom: 15px;">A diferencia de la magnitud (que mide la energía en el foco del sismo), la aceleración mide con qué fuerza y violencia se sacude el terreno bajo nuestros pies. Es el dato fundamental que usan los ingenieros para saber qué tan resistentes deben ser las columnas y vigas de una edificación.</p>
         <h3 style="color: #F5F5F7; font-size: 1.1rem; margin-bottom: 8px;">2. ¿Qué significa el período de 475 años?</h3>
         <p style="color: var(--text-secondary); font-size: 0.95rem; line-height: 1.5; margin-bottom: 15px;">Es el estándar de seguridad exigido por las normas de construcción. No significa que un terremoto ocurra exactamente cada 475 años, sino que los edificios deben diseñarse con la fuerza suficiente para soportar el sismo más severo que tiene probabilidad de presentarse durante los 50 años de vida útil de la edificación.</p>
+
+        <!-- INSTRUCCIONES DE USO Y RESTABLECIMIENTO -->
+        <div style="background:rgba(255,149,0,0.12); border:1.5px solid #FF9500; border-radius:12px; padding:12px 14px; margin-top:14px;">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+                <span style="font-size:1.1rem;">🔄</span>
+                <strong style="color:#FFD60A; font-size:0.88rem;">Instrucciones de Uso y Restablecimiento:</strong>
+            </div>
+            <ul style="margin:6px 0 0 0; padding-left:18px; color:#FFF; font-size:0.82rem; line-height:1.45;">
+                <li><strong>Uso:</strong> Activa el interruptor <em>Amenaza SGC (PGA 475a)</em> para proyectar la malla continua de isolíneas y aceleración esperada en roca.</li>
+                <li><strong>Restablecer:</strong> Apaga el interruptor o presiona el botón <em>🔄 Restablecer Capas</em> para ocultar la malla de amenaza sísmica.</li>
+            </ul>
+        </div>
     `,
     'benioff': `
         <h2 style="margin-top:0; color:#0A84FF; font-size:1.4rem; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:15px; margin-bottom:20px;">Perfil 3D de la Placa Subducida (Zona de Benioff)</h2>
@@ -2389,6 +2533,18 @@ const modalData = {
             <li style="margin-bottom:8px;"><strong>Factores de suelo:</strong> Si el suelo es blando o aluvial (como junto a los ríos), actúa como una gelatina y amplifica la sacudida, exigiendo cimientos más profundos y vigas más robustas.</li>
             <li><strong>Grupo de Uso (Importancia):</strong> A las edificaciones esenciales como hospitales, estaciones de bomberos y colegios se les exige un margen extra de resistencia para que sigan funcionando después de una emergencia.</li>
         </ul>
+
+        <!-- INSTRUCCIONES DE USO Y RESTABLECIMIENTO -->
+        <div style="background:rgba(255,149,0,0.12); border:1.5px solid #FF9500; border-radius:12px; padding:12px 14px; margin-top:14px;">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+                <span style="font-size:1.1rem;">🔄</span>
+                <strong style="color:#FFD60A; font-size:0.88rem;">Instrucciones de Uso y Restablecimiento:</strong>
+            </div>
+            <ul style="margin:6px 0 0 0; padding-left:18px; color:#FFF; font-size:0.82rem; line-height:1.45;">
+                <li><strong>Uso:</strong> Selecciona un municipio del departamento para consultar sus coeficientes sismorresistentes ($A_a$, $A_v$, $A_e$, $A_d$).</li>
+                <li><strong>Restablecer:</strong> Para regresar a la selección por defecto (Quibdó), vuelve a seleccionarlo en el menú desplegable o presiona el botón general <em>⌂ Restablecer Todo</em>.</li>
+            </ul>
+        </div>
     `,
     'geotecnia_info': `
         <h2 style="margin-top:0; color:#0A84FF; font-size:1.4rem; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:15px; margin-bottom:20px;">Geotecnia Local y Fenómeno de Licuación</h2>
@@ -2402,6 +2558,18 @@ const modalData = {
             <li style="margin-bottom:8px;">Ocurrió de forma generalizada en el terremoto de Murindó en 1992 en toda la cuenca del Río Atrato.</li>
             <li><strong>Prevención:</strong> En zonas de amenaza alta se deben realizar estudios geotécnicos con perforaciones previas y emplear cimentaciones con pilotes que alcancen estratos firmes.</li>
         </ul>
+
+        <!-- INSTRUCCIONES DE USO Y RESTABLECIMIENTO -->
+        <div style="background:rgba(255,149,0,0.12); border:1.5px solid #FF9500; border-radius:12px; padding:12px 14px; margin-top:14px;">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+                <span style="font-size:1.1rem;">🔄</span>
+                <strong style="color:#FFD60A; font-size:0.88rem;">Instrucciones de Uso y Restablecimiento:</strong>
+            </div>
+            <ul style="margin:6px 0 0 0; padding-left:18px; color:#FFF; font-size:0.82rem; line-height:1.45;">
+                <li><strong>Uso:</strong> Cambia el tipo de perfil de suelo (Tipo A: Roca competente hasta Tipo E: Arcillas blandas/aluvión) para verificar su factor de amplificación sísmica.</li>
+                <li><strong>Restablecer:</strong> Para regresar al suelo de referencia estándar (Suelo Tipo D), cámbialo en la lista desplegable o pulsa <em>⌂ Restablecer Todo</em>.</li>
+            </ul>
+        </div>
     `,
     'pot_info': `
         <h2 style="margin-top:0; color:#0A84FF; font-size:1.4rem; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:15px; margin-bottom:20px;">Planes de Ordenamiento Territorial (POT) y Gestión del Riesgo</h2>
@@ -2413,6 +2581,18 @@ const modalData = {
             <li style="margin-bottom:8px;"><strong>Suelo firme para equipamiento comunitario:</strong> Los colegios, hospitales y alcaldías deben ubicarse en terrenos estables y fuera de zonas inundables o licuables.</li>
             <li><strong>Ficha Municipal en PDF:</strong> Puedes generar e imprimir un diagnóstico técnico completo de tu municipio listo para sustentar decisiones de planeación.</li>
         </ul>
+
+        <!-- INSTRUCCIONES DE USO Y RESTABLECIMIENTO -->
+        <div style="background:rgba(255,149,0,0.12); border:1.5px solid #FF9500; border-radius:12px; padding:12px 14px; margin-top:14px;">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+                <span style="font-size:1.1rem;">🔄</span>
+                <strong style="color:#FFD60A; font-size:0.88rem;">Instrucciones de Uso y Restablecimiento:</strong>
+            </div>
+            <ul style="margin:6px 0 0 0; padding-left:18px; color:#FFF; font-size:0.82rem; line-height:1.45;">
+                <li><strong>Uso:</strong> Selecciona el municipio objetivo y presiona <em>📄 Generar Ficha Municipal POT (PDF)</em> para compilar el reporte oficial de ordenamiento territorial.</li>
+                <li><strong>Restablecer:</strong> Las descargas de reportes no alteran los parámetros visuales del mapa; para restablecer la selección municipal inicial, presiona <em>⌂ Restablecer Todo</em>.</li>
+            </ul>
+        </div>
     `,
     'espectro_info': `
         <h2 style="margin-top:0; color:#0A84FF; font-size:1.4rem; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:15px; margin-bottom:20px;">Curva de Demanda Sísmica para Construcción (Espectro NSR-10)</h2>
@@ -2427,6 +2607,18 @@ const modalData = {
             <li style="margin-bottom:8px;"><strong>Curva de color con relleno:</strong> Muestra la fuerza real sobre el suelo seleccionado (si el suelo es blando, la curva sube considerablemente).</li>
             <li><strong>Exportar CSV:</strong> Permite a los calculistas estructurales descargar la tabla de datos numéricos para ingresarla directamente a programas de diseño como ETABS o SAP2000.</li>
         </ul>
+
+        <!-- INSTRUCCIONES DE USO Y RESTABLECIMIENTO -->
+        <div style="background:rgba(255,149,0,0.12); border:1.5px solid #FF9500; border-radius:12px; padding:12px 14px; margin-top:14px;">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+                <span style="font-size:1.1rem;">🔄</span>
+                <strong style="color:#FFD60A; font-size:0.88rem;">Instrucciones de Uso y Restablecimiento:</strong>
+            </div>
+            <ul style="margin:6px 0 0 0; padding-left:18px; color:#FFF; font-size:0.82rem; line-height:1.45;">
+                <li><strong>Uso:</strong> Cambia el municipio, tipo de suelo o grupo de uso para recalcular el espectro elástico de diseño en tiempo real.</li>
+                <li><strong>Restablecer:</strong> Para volver al espectro basal (Quibdó, Suelo D, Grupo I), puedes reajustar los selectores o utilizar el botón maestro <em>⌂ Restablecer Todo</em>.</li>
+            </ul>
+        </div>
     `,
     'shakemap_info': `
         <h2 style="margin-top:0; color:#ff453a; font-size:1.4rem; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:15px; margin-bottom:20px;">Simulador ShakeMap de Ruptura Cosísmica</h2>
@@ -2461,6 +2653,18 @@ const modalData = {
             <li style="margin-bottom:8px;"><strong style="color:#ff375f;">30 a 70 km (Intermedio):</strong> Interfase de subducción interplaca entre Nazca y el bloque Panamá-Chocó.</li>
             <li><strong style="color:#bf5af2;">&gt; 70 km (Profundo / Wadati-Benioff):</strong> Deformación intraplaca en el interior de la losa fría descendente bajo la cordillera.</li>
         </ul>
+
+        <!-- INSTRUCCIONES DE USO Y RESTABLECIMIENTO -->
+        <div style="background:rgba(255,149,0,0.12); border:1.5px solid #FF9500; border-radius:12px; padding:12px 14px; margin-top:14px;">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+                <span style="font-size:1.1rem;">🔄</span>
+                <strong style="color:#FFD60A; font-size:0.88rem;">Instrucciones de Uso y Restablecimiento:</strong>
+            </div>
+            <ul style="margin:6px 0 0 0; padding-left:18px; color:#FFF; font-size:0.82rem; line-height:1.45;">
+                <li><strong>Uso:</strong> Ajusta el control deslizante para aislar sismos según su profundidad focal en kilómetros (de 0 a 150 km).</li>
+                <li><strong>Restablecer:</strong> Presiona el botón <em>🔄 Restablecer Filtros</em> en la sección de Filtros Paramétricos para reincorporar todas las profundidades focales en la vista 3D.</li>
+            </ul>
+        </div>
     `,
     'infra_info': `
         <h2 style="margin-top:0; color:#38bdf8; font-size:1.4rem; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:15px; margin-bottom:20px;">Red de Infraestructura Crítica y Vulnerabilidad</h2>
@@ -2471,6 +2675,18 @@ const modalData = {
             <li style="margin-bottom:8px;"><strong style="color:#0A84FF;">Aeropuertos Estratégicos:</strong> Bases indispensables para ayuda humanitaria y puentes aéreos (Quibdó, Bahía Solano, Nuquí, Condoto).</li>
             <li><strong style="color:#ff453a;">Hospitales de Referencia (NSR-10 Grupo IV):</strong> Centros asistenciales que deben permanecer 100% operativos tras un terremoto severo.</li>
         </ul>
+
+        <!-- INSTRUCCIONES DE USO Y RESTABLECIMIENTO -->
+        <div style="background:rgba(255,149,0,0.12); border:1.5px solid #FF9500; border-radius:12px; padding:12px 14px; margin-top:14px;">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+                <span style="font-size:1.1rem;">🔄</span>
+                <strong style="color:#FFD60A; font-size:0.88rem;">Instrucciones de Uso y Restablecimiento:</strong>
+            </div>
+            <ul style="margin:6px 0 0 0; padding-left:18px; color:#FFF; font-size:0.82rem; line-height:1.45;">
+                <li><strong>Uso:</strong> Activa el interruptor <em>Visualizar Red de Infraestructura Crítica</em> para proyectar las capas vectoriales y la tabla de convenciones de soporte vital.</li>
+                <li><strong>Restablecer:</strong> Apaga el interruptor o presiona el botón <em>🔄 Restablecer Capas</em> en Capas Avanzadas para retirar completamente las líneas viales, corredores fluviales, aeropuertos y hospitales del lienzo 3D.</li>
+            </ul>
+        </div>
     `
 };
 

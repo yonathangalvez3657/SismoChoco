@@ -2403,6 +2403,29 @@ if (mobileToggleBtn && uiPanel) {
                 sessionStorage.setItem('sismochoco_device_modal_seen', 'true');
             });
         }
+
+        const btnClearCacheModal = document.getElementById('btn-clear-cache-mobile-modal');
+        if (btnClearCacheModal) {
+            btnClearCacheModal.addEventListener('click', () => {
+                if (window.limpiarCacheStorageTotal) {
+                    window.limpiarCacheStorageTotal();
+                } else {
+                    window.location.reload(true);
+                }
+            });
+        }
+    }
+
+    const btnClearCacheBanner = document.getElementById('btn-clear-cache-banner');
+    if (btnClearCacheBanner) {
+        btnClearCacheBanner.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (window.limpiarCacheStorageTotal) {
+                window.limpiarCacheStorageTotal();
+            } else {
+                window.location.reload(true);
+            }
+        });
     }
 
     // Función para detectar si el dispositivo actual es una tablet
@@ -4720,21 +4743,37 @@ if (btnWaveReset) {
     });
 }
 
+// Funciones globales expuestas para activación directa y a prueba de fallos
+window.triggerShakemapToggle = function() {
+    const sel = document.getElementById('select-shakemap-escenario');
+    const scenarioKey = sel ? sel.value : (activeShakemapScenario || 'palmar_74');
+    activateShakemap(scenarioKey);
+};
+
+window.triggerShakemapClear = function() {
+    deactivateShakemap();
+};
+
 if (btnClearShakemap) {
     btnClearShakemap.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
-        deactivateShakemap();
+        window.triggerShakemapClear();
     });
 }
 
-if (btnToggleShakemap && selectShakemap) {
-    btnToggleShakemap.addEventListener('click', () => {
-        activateShakemap(selectShakemap.value);
+if (btnToggleShakemap) {
+    btnToggleShakemap.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        window.triggerShakemapToggle();
     });
+}
+
+if (selectShakemap) {
     selectShakemap.addEventListener('change', () => {
         if (isSimulatorActive) {
-            activateShakemap(selectShakemap.value);
+            window.triggerShakemapToggle();
         }
     });
 }

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sismo-choco-v41';
+const CACHE_NAME = 'sismo-choco-v42';
 const ASSETS_TO_CACHE = [
   './index.html',
   './css/styles.css',
@@ -22,7 +22,7 @@ self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
-        console.log('Archivos en caché para modo offline (v40)');
+        console.log('Archivos en caché para modo offline (v42)');
         return cache.addAll(ASSETS_TO_CACHE);
       })
   );
@@ -42,6 +42,20 @@ self.addEventListener('activate', event => {
       );
     }).then(() => self.clients.claim())
   );
+});
+
+// Mensaje para forzar purga total de CacheStorage a petición del cliente
+self.addEventListener('message', event => {
+  if (event.data && event.data.action === 'PURGE_ALL_CACHES') {
+    event.waitUntil(
+      caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k))))
+        .then(() => {
+          if (event.ports && event.ports[0]) {
+            event.ports[0].postMessage({ status: 'PURGED' });
+          }
+        })
+    );
+  }
 });
 
 // Estrategia Network-First con fallback a Caché para evitar discrepancias de versión

@@ -325,13 +325,14 @@
 
 
             <!-- Controles Visuales -->
+            <!-- Controles Visuales -->
             <section class="control-group">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <h3 style="margin: 0;">Visualización Espacial</h3>
-                        <span class="info-btn" data-info="vis_espacial" style="display:inline-block; width:18px; height:18px; line-height:18px; text-align:center; background:#0A84FF; color:white; border-radius:50%; font-size:0.75rem; font-weight:bold; cursor:pointer;" title="Instrucciones de uso: Visualización Espacial">?</span>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 10px;">
+                    <div style="display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1;">
+                        <h3 style="margin: 0; font-size: 0.84rem; letter-spacing: 0.05em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-bottom: none; padding-bottom: 0;">Visualización Espacial</h3>
+                        <span class="info-btn" data-info="vis_espacial" style="display:inline-block; width:18px; height:18px; line-height:18px; text-align:center; background:#0A84FF; color:white; border-radius:50%; font-size:0.75rem; font-weight:bold; cursor:pointer; flex-shrink: 0;" title="Instrucciones de uso: Visualización Espacial">?</span>
                     </div>
-                    <div style="display: flex; align-items: center; gap: 8px;">
+                    <div style="display: flex; align-items: center; flex-shrink: 0;">
                         <button id="btn-reset-vis" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 6px; width: 26px; height: 26px; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: all 0.2s ease; position: relative;" onmouseover="this.style.background='#0A84FF'; const tt=document.getElementById('btn-reset-vis-tt'); if(tt){tt.style.opacity='1'; tt.style.visibility='visible';}" onmouseout="this.style.background='rgba(255,255,255,0.1)'; const tt=document.getElementById('btn-reset-vis-tt'); if(tt){tt.style.opacity='0'; tt.style.visibility='hidden';}" aria-label="Restablecer visualización espacial" title="Restablecer visualización espacial">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
@@ -1063,7 +1064,7 @@
     <script src="js/core-oop.js?v=39"></script>
 
     <!-- Lógica principal con versionamiento para evitar caché persistente -->
-    <script src="js/main.js?v=57"></script>
+    <script src="js/main.js?v=58"></script>
 
     <!-- PWA -->
     <script>

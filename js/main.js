@@ -4443,11 +4443,11 @@ const SHAKEMAP_SCENARIOS = {
             [-76.16, 5.14]
         ],
         isoseistas: [
-            { mmi: 'VII - VIII', label: 'Fuerte Epicentral / Losa Benioff', pgaRange: '0.30 - 0.42 g', radioM: 28000, color: [255, 59, 48, 170], borde: [255, 255, 255, 240] },
-            { mmi: 'VI', label: 'Sentido con Alarma en Chocó y Eje Cafetero', pgaRange: '0.15 - 0.30 g', radioM: 80000, color: [255, 140, 0, 125], borde: [255, 180, 0, 200] },
-            { mmi: 'V', label: 'Ampliamente Sentido en Cuenca del San Juan', pgaRange: '0.06 - 0.15 g', radioM: 160000, color: [255, 214, 10, 80], borde: [255, 230, 80, 170] },
-            { mmi: 'IV', label: 'Perceptible en Valle del Cauca y Antioquia', pgaRange: '0.02 - 0.06 g', radioM: 280000, color: [56, 189, 248, 55], borde: [56, 189, 248, 160] },
-            { mmi: 'II - III', label: 'Débil / Sentido en Pisos Altos (Costa Caribe, Sucre, Córdoba, Bogotá)', pgaRange: '< 0.02 g', radioM: 580000, color: [30, 64, 175, 30], borde: [96, 165, 250, 120] }
+            { mmi: 'VIII', label: 'Destructivo Epicentral (San José del Palmar / Ansermanuevo)', pgaRange: '≥ 0.38 g', radioM: 35000, color: [255, 59, 48, 175], borde: [255, 255, 255, 240] },
+            { mmi: 'VII', label: 'Daño Severo y Colapsos Estructurales (Eje Cafetero: Pereira, Manizales, Armenia, Cartago)', pgaRange: '0.22 - 0.38 g', radioM: 115000, color: [255, 140, 0, 130], borde: [255, 180, 0, 210] },
+            { mmi: 'VI', label: 'Fuerte Sacudimiento en Chocó (Cuenca San Juan e Istmina) y Valle', pgaRange: '0.10 - 0.22 g', radioM: 210000, color: [255, 214, 10, 85], borde: [255, 230, 80, 175] },
+            { mmi: 'IV - V', label: 'Perceptible Amplio en Antioquia, Tolima y Cundinamarca', pgaRange: '0.03 - 0.10 g', radioM: 340000, color: [56, 189, 248, 55], borde: [56, 189, 248, 160] },
+            { mmi: 'II - III', label: 'Débil / Sentido en Pisos Altos (Costa Caribe, Sucre, Córdoba, Bogotá)', pgaRange: '< 0.03 g', radioM: 580000, color: [30, 64, 175, 30], borde: [96, 165, 250, 120] }
         ]
     },
     'murindo_73': {
@@ -4720,15 +4720,17 @@ function formatShakemapIsoseistaTooltip(obj) {
     const safePgaRange = escapeHtml(obj.pgaRange || '0.10 - 0.25 g');
     const radioKm = Number(obj.radioKm || 0);
 
-    let efectoDesc = 'Perceptible por la población, oscilación de lámparas y líquidos sin afectación estructural primaria.';
+    let efectoDesc = 'Perceptible por la población; oscilación de lámparas y líquidos en reposo.';
     if (safeMmi.includes('VIII') || safeMmi.includes('IX') || safeMmi.includes('X')) {
-        efectoDesc = 'Daño severo en construcciones de mampostería simple y madera; desprendimiento de muros, agrietamiento del terreno y licuación en riberas fluviales.';
+        efectoDesc = 'Destrucción severa y colapso generalizado en edificaciones de mampostería no reforzada, bahareque y palafitos; fallas en puentes, deslizamientos en masa cosísmicos y licuación severa en valles aluviales.';
     } else if (safeMmi.includes('VII')) {
-        efectoDesc = 'Daño moderado a considerable en edificaciones ordinarias; caída de cornisas, chimeneas y fisuras visibles en mampostería.';
-    } else if (safeMmi.includes('V') || safeMmi.includes('VI')) {
-        efectoDesc = 'Sentido fuertemente por todas las personas; pánico general, caída de vajillas, desprendimiento de enlucidos sin colapso estructural.';
+        efectoDesc = 'Daño severo con colapsos estructurales parciales y totales comprobados en edificaciones antiguas, tapia pisada, mampostería no confinada y muros de carga (vulnerabilidad observada en Pereira, Manizales, Armenia y Cartago); agrietamiento de columnas y caída de fachadas.';
+    } else if (safeMmi.includes('VI') || safeMmi.includes('V - VI')) {
+        efectoDesc = 'Sacudimiento violento generalizado; colapsos parciales de muros divisorios, fisuración de pórticos estructurales, caída de mampostería en voladizos y daños moderados a graves en viviendas vulnerables y laderas inestables.';
+    } else if (safeMmi.includes('IV') || safeMmi.includes('V')) {
+        efectoDesc = 'Sentido ampliamente con alarma general; fisuración leve en acabados, caída de cornisas, oscilación fuerte en estructuras elevadas sin compromiso del sistema estructural sismorresistente.';
     } else if (safeMmi.includes('II') || safeMmi.includes('III')) {
-        efectoDesc = 'Perceptible principalmente por personas en reposo o en pisos altos de edificios; ondas de periodo largo en cuencas sedimentarias lejanas (ej. Sucre / Caribe).';
+        efectoDesc = 'Perceptible por personas en reposo y pisos altos; amplificación dinámica de ondas de periodo largo en cuencas sedimentarias profundas (Costa Caribe: Sucre, Córdoba, y sabana de Bogotá).';
     }
 
     return `
@@ -4959,7 +4961,6 @@ async function activateShakemap(scenarioKey) {
     isSimulatorActive = true;
     currentShakemapData = scenario;
     waveAnimTimeSec = 0.0;
-    updateShakemapNewsLink(scenarioKey);
 
     if (shakemapText) shakemapText.innerHTML = '🔄 Recalcular Ruptura';
     if (btnClearShakemap) btnClearShakemap.style.display = 'inline-flex';
@@ -5066,26 +5067,12 @@ if (btnToggleShakemap) {
     });
 }
 
-function updateShakemapNewsLink(scenarioKey) {
-    const scenario = SHAKEMAP_SCENARIOS[scenarioKey];
-    const newsLink = document.getElementById('shakemap-news-link');
-    const newsText = document.getElementById('shakemap-news-text');
-    if (scenario && newsLink && newsText) {
-        newsLink.href = scenario.noticiaUrl || 'https://www.sgc.gov.co/';
-        newsText.innerText = scenario.noticiaTexto || 'Boletín Oficial SGC';
-        newsLink.title = `Abrir en nueva pestaña: ${scenario.noticiaTexto}`;
-    }
-}
-
 if (selectShakemap) {
     selectShakemap.addEventListener('change', () => {
-        updateShakemapNewsLink(selectShakemap.value);
         if (isSimulatorActive) {
             window.triggerShakemapToggle();
         }
     });
-    // Inicializar enlace del escenario seleccionado al cargar
-    updateShakemapNewsLink(selectShakemap.value || 'palmar_74');
 }
 
 // ============================================================================

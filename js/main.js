@@ -1066,12 +1066,8 @@ function renderLayers() {
             onHover: (info) => {
                 if (info.object) {
                     tooltip.style.display = 'block';
-                    tooltip.style.left = `${info.x}px`;
-                    tooltip.style.top = `${info.y}px`;
-                    tooltip.innerHTML = `<h4>⚡ Plano de Ruptura Activo</h4>
-                                         <p><strong>Estructura:</strong> ${info.object.nombre}</p>
-                                         <p><strong>Longitud de Ruptura Estimada:</strong> ${currentShakemapData.faultLengthKm || 45} km</p>
-                                         <p><strong>Profundidad Sismogénica:</strong> ${info.object.prof} km</p>`;
+                    tooltip.innerHTML = formatShakemapFaultTraceTooltip(info.object, currentShakemapData);
+                    positionTooltip(tooltip, info.x, info.y);
                 } else {
                     tooltip.style.display = 'none';
                 }
@@ -1158,14 +1154,9 @@ function renderLayers() {
             },
             onHover: (info) => {
                 if (info.object) {
-                    const obj = info.object;
                     tooltip.style.display = 'block';
-                    tooltip.style.left = `${info.x}px`;
-                    tooltip.style.top = `${info.y}px`;
-                    tooltip.innerHTML = `<h4>💥 ShakeMap: Intensidad ${obj.mmi}</h4>
-                                         <p><strong>Nivel de Daño:</strong> ${obj.label}</p>
-                                         <p><strong>Aceleración Pico Estimada:</strong> ${obj.pgaRange}</p>
-                                         <p><strong>Campo Lobular GMPE:</strong> ~${obj.radioKm} km del plano de ruptura</p>`;
+                    tooltip.innerHTML = formatShakemapIsoseistaTooltip(info.object);
+                    positionTooltip(tooltip, info.x, info.y);
                 } else {
                     tooltip.style.display = 'none';
                 }
@@ -1217,12 +1208,8 @@ function renderLayers() {
                 onHover: (info) => {
                     if (info.object) {
                         tooltip.style.display = 'block';
-                        tooltip.style.left = `${info.x}px`;
-                        tooltip.style.top = `${info.y}px`;
-                        tooltip.innerHTML = `<h4>🔵 Frente de Onda P (Compresional)</h4>
-                                             <p><strong>Velocidad Media:</strong> ${WAVE_VEL_P_KMS} km/s</p>
-                                             <p><strong>Radio de Propagación:</strong> ${info.object.distKm} km</p>
-                                             <p><strong>Tiempo Cosísmico:</strong> t = ${info.object.tSec} s</p>`;
+                        tooltip.innerHTML = formatShakemapWavePTooltip(info.object, WAVE_VEL_P_KMS);
+                        positionTooltip(tooltip, info.x, info.y);
                     } else {
                         tooltip.style.display = 'none';
                     }
@@ -1247,12 +1234,8 @@ function renderLayers() {
                 onHover: (info) => {
                     if (info.object) {
                         tooltip.style.display = 'block';
-                        tooltip.style.left = `${info.x}px`;
-                        tooltip.style.top = `${info.y}px`;
-                        tooltip.innerHTML = `<h4>🔴 Frente de Onda S (Cizallante)</h4>
-                                             <p><strong>Velocidad Media:</strong> ${WAVE_VEL_S_KMS} km/s</p>
-                                             <p><strong>Tren Destructor:</strong> ${info.object.distKm} km del foco</p>
-                                             <p><strong>Tiempo Cosísmico:</strong> t = ${info.object.tSec} s</p>`;
+                        tooltip.innerHTML = formatShakemapWaveSTooltip(info.object, WAVE_VEL_S_KMS);
+                        positionTooltip(tooltip, info.x, info.y);
                     } else {
                         tooltip.style.display = 'none';
                     }
@@ -1293,16 +1276,9 @@ function renderLayers() {
             },
             onHover: (info) => {
                 if (info.object) {
-                    const d = info.object;
                     tooltip.style.display = 'block';
-                    tooltip.style.left = `${info.x}px`;
-                    tooltip.style.top = `${info.y}px`;
-                    tooltip.innerHTML = `<h4>⚡ Epicentro de Ruptura: ${d.nombre}</h4>
-                                         <p><strong>Magnitud de Momento:</strong> <strong style="color:#ff453a;">${d.mw} Mw</strong></p>
-                                         <p><strong>Profundidad Focal:</strong> ${d.profundidad} km</p>
-                                         <p><strong>Aceleración Epicentral (PGA):</strong> <strong style="color:#ffd60a;">${d.pgaMax}</strong></p>
-                                         <p><strong>Rumbo de Ruptura:</strong> N${d.strikeDeg || 0}°E (${d.faultLengthKm || 45} km)</p>
-                                         <p><strong>Falla Activa:</strong> ${d.falla}</p>`;
+                    tooltip.innerHTML = formatShakemapEpicentroTooltip(info.object);
+                    positionTooltip(tooltip, info.x, info.y);
                 } else {
                     tooltip.style.display = 'none';
                 }
@@ -4448,6 +4424,11 @@ if (timeSlider) {
 const SHAKEMAP_SCENARIOS = {
     'palmar_74': {
         nombre: 'Sismo 10 de Agosto (San José del Palmar - Losa Benioff)',
+        anio: 2026,
+        fechaCompleta: '10 de Agosto de 2026',
+        tipoEvento: 'Instrumental Profundo',
+        noticiaUrl: 'https://www.sgc.gov.co/',
+        noticiaTexto: 'Boletín SGC - Sismo San José del Palmar',
         mw: 7.4,
         profundidad: 108,
         epicentro: [-76.24, 4.97], // [lng, lat] San José del Palmar
@@ -4471,6 +4452,11 @@ const SHAKEMAP_SCENARIOS = {
     },
     'murindo_73': {
         nombre: 'Falla Murindó (Sismo Histórico 1992)',
+        anio: 1992,
+        fechaCompleta: '17 y 18 de Octubre de 1992',
+        tipoEvento: 'Terremoto Histórico Cortical',
+        noticiaUrl: 'https://historiasismica.sgc.gov.co/',
+        noticiaTexto: 'Archivo SGC / El Tiempo - Terremoto Murindó 1992',
         mw: 7.3,
         profundidad: 15,
         epicentro: [-76.75, 6.95], // [lng, lat]
@@ -4494,6 +4480,11 @@ const SHAKEMAP_SCENARIOS = {
     },
     'subduccion_82': {
         nombre: 'Megaterremoto de Subducción Nazca (Fosa del Pacífico)',
+        anio: 1906,
+        fechaCompleta: '1906 / 1979 (Megathrust Pacífico)',
+        tipoEvento: 'Megaterremoto & Tsunami',
+        noticiaUrl: 'https://historiasismica.sgc.gov.co/',
+        noticiaTexto: 'Catálogo SGC / OSSO - Megaterremoto Pacífico',
         mw: 8.2,
         profundidad: 25,
         epicentro: [-78.20, 5.50],
@@ -4517,6 +4508,11 @@ const SHAKEMAP_SCENARIOS = {
     },
     'atrato_68': {
         nombre: 'Falla Atrato - Quibdó (Sismo Cortical Urbano)',
+        anio: 'MCE',
+        fechaCompleta: 'Modelo Máximo Creíble (SGC / NSR-10)',
+        tipoEvento: 'Escenario Determinista / Paleosísmico',
+        noticiaUrl: 'https://amenazasismica.sgc.gov.co/',
+        noticiaTexto: 'Modelo General de Amenaza Sísmica SGC',
         mw: 6.8,
         profundidad: 12,
         epicentro: [-76.66, 5.70],
@@ -4540,6 +4536,11 @@ const SHAKEMAP_SCENARIOS = {
     },
     'bahia_solano_70': {
         nombre: 'Falla Bahía Solano (Costa Pacífica)',
+        anio: 1970,
+        fechaCompleta: '26 de Septiembre de 1970',
+        tipoEvento: 'Terremoto Histórico de Costa',
+        noticiaUrl: 'https://historiasismica.sgc.gov.co/',
+        noticiaTexto: 'Catálogo SGC - Terremoto Bahía Solano 1970',
         mw: 7.0,
         profundidad: 18,
         epicentro: [-77.40, 6.22],
@@ -4562,6 +4563,284 @@ const SHAKEMAP_SCENARIOS = {
         ]
     }
 };
+
+// ============================================================================
+// HELPERS DE SEGURIDAD, VIEWPORT CLAMPING Y FORMATO DE TOOLTIPS SHAKEMAP
+// ============================================================================
+function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function positionTooltip(tooltipEl, x, y, offsetX = 14, offsetY = 14) {
+    if (!tooltipEl) return;
+    const rect = tooltipEl.getBoundingClientRect();
+    const w = rect.width || 280;
+    const h = rect.height || 180;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+
+    let posX = x + offsetX;
+    let posY = y - h - offsetY;
+
+    if (posX + w > vw - 14) posX = x - w - offsetX;
+    if (posX < 14) posX = 14;
+    if (posY < 14) posY = y + offsetY + 18;
+    if (posY + h > vh - 14) posY = vh - h - 14;
+
+    tooltipEl.style.transform = 'none';
+    tooltipEl.style.left = `${posX}px`;
+    tooltipEl.style.top = `${posY}px`;
+}
+
+const MMI_PALETTE_DECK = {
+    'I':    { bg: '#38bdf8', text: '#082f49' },
+    'II':   { bg: '#38bdf8', text: '#082f49' },
+    'III':  { bg: '#22d3ee', text: '#083344' },
+    'IV':   { bg: '#4ade80', text: '#052e16' },
+    'V':    { bg: '#a3e635', text: '#1a2e05' },
+    'VI':   { bg: '#facc15', text: '#422006' },
+    'VII':  { bg: '#fb923c', text: '#431407' },
+    'VIII': { bg: '#f87171', text: '#450a0a' },
+    'IX':   { bg: '#ef4444', text: '#ffffff' },
+    'X':    { bg: '#dc2626', text: '#ffffff' }
+};
+
+function getMmiBadgeStyle(mmiStr) {
+    const raw = String(mmiStr || '').trim().toUpperCase();
+    let entry = MMI_PALETTE_DECK['VI'];
+    for (const key of Object.keys(MMI_PALETTE_DECK)) {
+        if (raw.includes(key)) entry = MMI_PALETTE_DECK[key];
+    }
+    return `background:${entry.bg}; color:${entry.text}; font-weight:700; padding:2px 7px; border-radius:6px; font-size:0.68rem; letter-spacing:0.04em; text-transform:uppercase;`;
+}
+
+function formatShakemapEpicentroTooltip(d) {
+    const safeNombre = escapeHtml(d.nombre || 'Escenario Cosísmico');
+    const safeFalla = escapeHtml(d.falla || 'Falla Geológica Activa');
+    const safePga = escapeHtml(d.pgaMax || '0.50 g');
+    const mw = Number(d.mw || 7.0).toFixed(1);
+    const prof = Number(d.profundidad || 15);
+    const strike = Number(d.strikeDeg || 0);
+    const lengthKm = Number(d.faultLengthKm || 45);
+    const anio = escapeHtml(d.anio || '');
+
+    const profTipo = prof < 30 ? 'Superficial (Corteza Superior)' : (prof < 70 ? 'Intermedio (Losa Subducente)' : 'Profundo (Intralosa Nazca)');
+    const pgaVal = parseFloat(safePga) || 0.5;
+    const pgaPct = Math.round(pgaVal * 100);
+
+    return `
+        <div style="font-family:'Inter',system-ui,sans-serif; max-width:320px; line-height:1.4; color:#f8fafc;">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.12); padding-bottom:7px; margin-bottom:8px;">
+                <div style="display:flex; align-items:center; gap:6px;">
+                    <span style="font-size:1.1rem;">⚡</span>
+                    <strong style="font-size:0.86rem; color:#fff;">Foco Epicentral (${anio})</strong>
+                </div>
+                <span style="background:rgba(255,69,58,0.22); color:#ff6961; border:1px solid #ff453a; border-radius:6px; padding:1px 6px; font-size:0.7rem; font-weight:700;">
+                    ${mw} Mw
+                </span>
+            </div>
+
+            <div style="font-size:0.78rem; font-weight:600; color:#cbd5e1; margin-bottom:8px;">
+                ${safeNombre}
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:8px;">
+                <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:5px 8px;">
+                    <span style="display:block; font-size:0.65rem; color:#94a3b8; text-transform:uppercase;">Profundidad Focal</span>
+                    <strong style="font-size:0.85rem; color:#38bdf8;">${prof} km</strong>
+                </div>
+                <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:5px 8px;">
+                    <span style="display:block; font-size:0.65rem; color:#94a3b8; text-transform:uppercase;">PGA Epicentral</span>
+                    <strong style="font-size:0.85rem; color:#ffd60a;">${safePga}</strong>
+                    <span style="font-size:0.65rem; color:#94a3b8;">(~${pgaPct}% g)</span>
+                </div>
+                <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:5px 8px;">
+                    <span style="display:block; font-size:0.65rem; color:#94a3b8; text-transform:uppercase;">Rumbo (Strike)</span>
+                    <strong style="font-size:0.82rem; color:#e2e8f0;">N${strike}°E</strong>
+                </div>
+                <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:5px 8px;">
+                    <span style="display:block; font-size:0.65rem; color:#94a3b8; text-transform:uppercase;">Longitud Plano</span>
+                    <strong style="font-size:0.82rem; color:#e2e8f0;">${lengthKm} km</strong>
+                </div>
+            </div>
+
+            <div style="background:rgba(239,68,68,0.1); border-left:3px solid #ef4444; padding:6px 8px; border-radius:4px; font-size:0.71rem; color:#fca5a5;">
+                <strong>Estructura:</strong> ${safeFalla} (${profTipo}). Aceleración severa con potencial de daño directo en mampostería no confinada y palafitos.
+            </div>
+        </div>
+    `;
+}
+
+function formatShakemapFaultTraceTooltip(infoObj, currentData) {
+    const safeNombre = escapeHtml(infoObj.nombre || currentData.falla || 'Falla Geológica Activa');
+    const lengthKm = Number(currentData.faultLengthKm || 45);
+    const prof = Number(infoObj.prof || currentData.profundidad || 15);
+
+    return `
+        <div style="font-family:'Inter',system-ui,sans-serif; max-width:300px; line-height:1.4; color:#f8fafc;">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.12); padding-bottom:6px; margin-bottom:8px;">
+                <div style="display:flex; align-items:center; gap:6px;">
+                    <span style="display:inline-block; width:10px; height:10px; background:#ef4444; border-radius:2px; box-shadow:0 0 6px #ef4444;"></span>
+                    <strong style="font-size:0.86rem; color:#fff;">Plano de Ruptura Cosísmico</strong>
+                </div>
+                <span style="font-size:0.66rem; color:#94a3b8; font-family:monospace;">Falla Finita</span>
+            </div>
+
+            <div style="font-size:0.78rem; font-weight:600; color:#38bdf8; margin-bottom:8px;">
+                ${safeNombre}
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:8px;">
+                <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:6px; padding:5px 7px;">
+                    <span style="font-size:0.65rem; color:#94a3b8; display:block;">Longitud Estimada</span>
+                    <strong style="font-size:0.82rem; color:#fff;">${lengthKm} km</strong>
+                </div>
+                <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:6px; padding:5px 7px;">
+                    <span style="font-size:0.65rem; color:#94a3b8; display:block;">Profundidad de Foco</span>
+                    <strong style="font-size:0.82rem; color:#fff;">${prof} km</strong>
+                </div>
+            </div>
+
+            <p style="font-size:0.71rem; color:#cbd5e1; margin:0; line-height:1.35;">
+                Traza de dislocación tectónica y liberación de energía elástica. En el campo cercano rige directividad cosísmica e incremento de frecuencias destructivas.
+            </p>
+        </div>
+    `;
+}
+
+function formatShakemapIsoseistaTooltip(obj) {
+    const safeMmi = escapeHtml(obj.mmi || 'VI');
+    const safeLabel = escapeHtml(obj.label || 'Sacudimiento Fuerte');
+    const safePgaRange = escapeHtml(obj.pgaRange || '0.10 - 0.25 g');
+    const radioKm = Number(obj.radioKm || 0);
+
+    let efectoDesc = 'Perceptible por la población, oscilación de lámparas y líquidos sin afectación estructural primaria.';
+    if (safeMmi.includes('VIII') || safeMmi.includes('IX') || safeMmi.includes('X')) {
+        efectoDesc = 'Daño severo en construcciones de mampostería simple y madera; desprendimiento de muros, agrietamiento del terreno y licuación en riberas fluviales.';
+    } else if (safeMmi.includes('VII')) {
+        efectoDesc = 'Daño moderado a considerable en edificaciones ordinarias; caída de cornisas, chimeneas y fisuras visibles en mampostería.';
+    } else if (safeMmi.includes('V') || safeMmi.includes('VI')) {
+        efectoDesc = 'Sentido fuertemente por todas las personas; pánico general, caída de vajillas, desprendimiento de enlucidos sin colapso estructural.';
+    } else if (safeMmi.includes('II') || safeMmi.includes('III')) {
+        efectoDesc = 'Perceptible principalmente por personas en reposo o en pisos altos de edificios; ondas de periodo largo en cuencas sedimentarias lejanas (ej. Sucre / Caribe).';
+    }
+
+    return `
+        <div style="font-family:'Inter',system-ui,sans-serif; max-width:310px; line-height:1.4; color:#f8fafc;">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.12); padding-bottom:6px; margin-bottom:8px;">
+                <div style="display:flex; align-items:center; gap:6px;">
+                    <span style="font-size:1rem;">💥</span>
+                    <strong style="font-size:0.86rem; color:#fff;">ShakeMap: Isoseista</strong>
+                </div>
+                <span style="${getMmiBadgeStyle(safeMmi)}">
+                    MMI ${safeMmi}
+                </span>
+            </div>
+
+            <div style="font-size:0.8rem; font-weight:600; color:#ffd60a; margin-bottom:6px;">
+                ${safeLabel}
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:8px;">
+                <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:6px; padding:5px 7px;">
+                    <span style="font-size:0.65rem; color:#94a3b8; display:block;">Aceleración Pico (PGA)</span>
+                    <strong style="font-size:0.82rem; color:#38bdf8;">${safePgaRange}</strong>
+                </div>
+                <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:6px; padding:5px 7px;">
+                    <span style="font-size:0.65rem; color:#94a3b8; display:block;">Radio Atenuación</span>
+                    <strong style="font-size:0.82rem; color:#fff;">~${radioKm} km</strong>
+                </div>
+            </div>
+
+            <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); border-radius:6px; padding:6px 8px; font-size:0.71rem; color:#cbd5e1; line-height:1.35;">
+                <strong style="color:#e2e8f0; display:block; margin-bottom:2px;">Efectos Físicos Estimados:</strong>
+                ${efectoDesc}
+            </div>
+        </div>
+    `;
+}
+
+function formatShakemapWavePTooltip(infoObj, velKmS) {
+    const distKm = escapeHtml(infoObj.distKm || '0.0');
+    const tSec = escapeHtml(infoObj.tSec || '0.0');
+    const vel = Number(velKmS || 6.0).toFixed(1);
+
+    return `
+        <div style="font-family:'Inter',system-ui,sans-serif; max-width:290px; line-height:1.4; color:#f8fafc;">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.12); padding-bottom:6px; margin-bottom:8px;">
+                <div style="display:flex; align-items:center; gap:6px;">
+                    <span style="display:inline-block; width:9px; height:9px; border-radius:50%; background:#38bdf8; box-shadow:0 0 8px #38bdf8;"></span>
+                    <strong style="font-size:0.85rem; color:#38bdf8;">Frente de Onda P</strong>
+                </div>
+                <span style="background:rgba(56,189,248,0.2); color:#38bdf8; border:1px solid rgba(56,189,248,0.4); border-radius:4px; padding:1px 6px; font-size:0.65rem; font-weight:700;">
+                    Compresional
+                </span>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:8px;">
+                <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:6px; padding:5px 7px;">
+                    <span style="font-size:0.65rem; color:#94a3b8; display:block;">Velocidad Media</span>
+                    <strong style="font-size:0.82rem; color:#fff;">${vel} km/s</strong>
+                </div>
+                <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:6px; padding:5px 7px;">
+                    <span style="font-size:0.65rem; color:#94a3b8; display:block;">Radio Frontal</span>
+                    <strong style="font-size:0.82rem; color:#fff;">${distKm} km</strong>
+                </div>
+            </div>
+
+            <div style="font-size:0.71rem; color:#cbd5e1; line-height:1.35;">
+                <p style="margin:0 0 4px 0;"><strong>Tiempo Cosísmico:</strong> <span style="font-family:monospace; color:#38bdf8;">t = ${tSec} s</span></p>
+                <p style="margin:0; font-size:0.69rem; color:#94a3b8;">
+                    Fase inicial de alerta previa. Produce vibración longitudinal leve y sirve como base técnica para sistemas de alerta temprana (EEW).
+                </p>
+            </div>
+        </div>
+    `;
+}
+
+function formatShakemapWaveSTooltip(infoObj, velKmS) {
+    const distKm = escapeHtml(infoObj.distKm || '0.0');
+    const tSec = escapeHtml(infoObj.tSec || '0.0');
+    const vel = Number(velKmS || 3.5).toFixed(1);
+
+    return `
+        <div style="font-family:'Inter',system-ui,sans-serif; max-width:295px; line-height:1.4; color:#f8fafc;">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.12); padding-bottom:6px; margin-bottom:8px;">
+                <div style="display:flex; align-items:center; gap:6px;">
+                    <span style="display:inline-block; width:9px; height:9px; border-radius:50%; background:#ef4444; box-shadow:0 0 8px #ef4444;"></span>
+                    <strong style="font-size:0.85rem; color:#ef4444;">Frente de Onda S</strong>
+                </div>
+                <span style="background:rgba(239,68,68,0.2); color:#fca5a5; border:1px solid #ef4444; border-radius:4px; padding:1px 6px; font-size:0.65rem; font-weight:700;">
+                    Tren Destructor
+                </span>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:8px;">
+                <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:6px; padding:5px 7px;">
+                    <span style="font-size:0.65rem; color:#94a3b8; display:block;">Velocidad Media</span>
+                    <strong style="font-size:0.82rem; color:#fff;">${vel} km/s</strong>
+                </div>
+                <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:6px; padding:5px 7px;">
+                    <span style="font-size:0.65rem; color:#94a3b8; display:block;">Alcance Cizallante</span>
+                    <strong style="font-size:0.82rem; color:#fff;">${distKm} km</strong>
+                </div>
+            </div>
+
+            <div style="font-size:0.71rem; color:#cbd5e1; line-height:1.35;">
+                <p style="margin:0 0 4px 0;"><strong>Tiempo Cosísmico:</strong> <span style="font-family:monospace; color:#ef4444;">t = ${tSec} s</span></p>
+                <p style="margin:0; font-size:0.69rem; color:#fca5a5;">
+                    Onda secundaria de corte transversal. Concentra la mayor energía destructiva y deformación dinámica, excitando estructuras y entrepisos.
+                </p>
+            </div>
+        </div>
+    `;
+}
 
 const selectShakemap = document.getElementById('select-shakemap-escenario');
 const btnToggleShakemap = document.getElementById('btn-toggle-shakemap');
@@ -4680,6 +4959,7 @@ async function activateShakemap(scenarioKey) {
     isSimulatorActive = true;
     currentShakemapData = scenario;
     waveAnimTimeSec = 0.0;
+    updateShakemapNewsLink(scenarioKey);
 
     if (shakemapText) shakemapText.innerHTML = '🔄 Recalcular Ruptura';
     if (btnClearShakemap) btnClearShakemap.style.display = 'inline-flex';
@@ -4786,12 +5066,26 @@ if (btnToggleShakemap) {
     });
 }
 
+function updateShakemapNewsLink(scenarioKey) {
+    const scenario = SHAKEMAP_SCENARIOS[scenarioKey];
+    const newsLink = document.getElementById('shakemap-news-link');
+    const newsText = document.getElementById('shakemap-news-text');
+    if (scenario && newsLink && newsText) {
+        newsLink.href = scenario.noticiaUrl || 'https://www.sgc.gov.co/';
+        newsText.innerText = scenario.noticiaTexto || 'Boletín Oficial SGC';
+        newsLink.title = `Abrir en nueva pestaña: ${scenario.noticiaTexto}`;
+    }
+}
+
 if (selectShakemap) {
     selectShakemap.addEventListener('change', () => {
+        updateShakemapNewsLink(selectShakemap.value);
         if (isSimulatorActive) {
             window.triggerShakemapToggle();
         }
     });
+    // Inicializar enlace del escenario seleccionado al cargar
+    updateShakemapNewsLink(selectShakemap.value || 'palmar_74');
 }
 
 // ============================================================================

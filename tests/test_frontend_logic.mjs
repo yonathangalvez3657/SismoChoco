@@ -20,7 +20,7 @@ function extractTopLevelFunction(source, fnName) {
     return rest.slice(0, endMatch.index + 2);
 }
 
-const context = vm.createContext({ Math, Number, String, Array, Object, Infinity, parseFloat, isNaN });
+const context = vm.createContext({ Math, Number, String, Array, Object, Set, Infinity, parseFloat, isNaN });
 const fns = [
     'getFactoresSitioNSR10',
     'calcularEspectroNSR10',
@@ -31,11 +31,16 @@ const fns = [
     'distToSegment',
     'haversineDistanceKm',
     'tileToMercatorBbox',
+    'lngLatToTilePixel',
+    'classifySgcRasterColor',
 ];
 const infraMatch = /const INFRA_COLORS = \{[\s\S]*?\n\};/.exec(mainJs);
 assert.ok(infraMatch, 'No se encontró INFRA_COLORS en main.js');
+const sgcRampMatch = /const SGC_PGA_COLOR_RAMP = \[[\s\S]*?\n\];/.exec(mainJs);
+assert.ok(sgcRampMatch, 'No se encontró SGC_PGA_COLOR_RAMP en main.js');
 vm.runInContext(
     `${infraMatch[0].replace(/^const /, 'var ')}\n\n` +
+    `${sgcRampMatch[0].replace(/^const /, 'var ')}\n\n` +
     fns.map(name => extractTopLevelFunction(mainJs, name)).join('\n\n'),
     context
 );
@@ -129,5 +134,38 @@ test('SGC OGC tileToMercatorBbox y 6 colores distintos en convenciones INFRA_COL
     const html = fs.readFileSync(path.join(APP_DIR, 'index.html'), 'utf8');
     for (const h of hexes) {
         assert.ok(html.includes(h), `Falta color ${h} en convenciones de index.html`);
+    }
+});
+
+test('SGC OGC raster hover: lngLatToTilePixel y classifySgcRasterColor interpretan los 15 tonos oficiales', () => {
+    const pxQuibdo = context.lngLatToTilePixel(-76.6611, 5.6947, 8);
+    assert.equal(pxQuibdo.z, 8);
+    assert.ok(Number.isInteger(pxQuibdo.x) && Number.isInteger(pxQuibdo.y));
+    assert.ok(pxQuibdo.px >= 0 && pxQuibdo.px <= 255);
+    assert.ok(pxQuibdo.py >= 0 && pxQuibdo.py <= 255);
+
+    const low = context.classifySgcRasterColor(26, 150, 65);
+    assert.ok(low.pgaEst <= 0.01);
+    assert.ok(low.bandLabel.includes('Baja'));
+
+    const mid = context.classifySgcRasterColor(255, 255, 192);
+    assert.ok(Math.abs(mid.pgaEst - 0.10) < 0.015);
+
+    const high = context.classifySgcRasterColor(254, 209, 138);
+    assert.ok(Math.abs(high.pgaEst - 0.30) < 0.02);
+    assert.ok(high.bandLabel.includes('Alta'));
+
+    const veryHigh = context.classifySgcRasterColor(215, 25, 28);
+    assert.ok(veryHigh.pgaEst > 0.40);
+    assert.ok(veryHigh.bandLabel.includes('Muy Alta'));
+});
+
+test('Todos los botones de ayuda (data-info) cuentan con explicación en modalData', () => {
+    const html = fs.readFileSync(path.join(APP_DIR, 'index.html'), 'utf8');
+    const keys = [...html.matchAll(/data-info="([^"]+)"/g)].map(m => m[1]);
+    assert.ok(keys.length >= 25);
+    for (const key of keys) {
+        const pattern = new RegExp(`'${key}'\\s*:\\s*\``);
+        assert.ok(pattern.test(mainJs), `Falta modalData['${key}'] en js/main.js`);
     }
 });

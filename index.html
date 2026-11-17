@@ -189,14 +189,9 @@
         </button>
         
         <section class="header-section">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <div style="display: flex; align-items: center; gap: 8px;">
-                    <h2 style="margin: 0;">Sismicidad Chocó</h2>
-                    <span id="server-status-badge" style="display:inline-flex; align-items:center; gap:4px; font-size:var(--fs-2xs); color:#32D74B; background:rgba(50,215,75,0.12); padding:2px 6px; border-radius:10px; border:1px solid rgba(50,215,75,0.25);" title="Servidor Backend Conectado">
-                        <span style="width:6px; height:6px; border-radius:50%; background:#32D74B; box-shadow:0 0 6px #32D74B;"></span> Online
-                    </span>
-                </div>
-                <div style="display: flex; align-items: center; gap: 8px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+                <h2 style="margin: 0;">Sismicidad Chocó</h2>
+                <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
                     <button type="button" class="info-btn rtd-pill-btn" data-info="rtd" aria-label="Marco Epistemológico: Research through Design" title="Marco Epistemológico: Research through Design (RtD)">RtD</button>
                     <button type="button" class="info-btn" data-info="guia" aria-label="Guía de uso de la plataforma" title="Guía de uso de la plataforma">?</button>
                     <button type="button" id="btn-home" class="reset-icon-btn" aria-label="Restablecer Todo" title="Restablecer Todo (Atajo: 0)">
@@ -210,10 +205,13 @@
                     </button>
                 </div>
             </div>
-            <span class="subtitle">Research through Design en sismicidad (1993-2026).<br>Catálogo estructurado: <strong id="count" style="color:var(--text-primary)">0</strong> eventos.</span>
             <div class="panel-theme-row">
                 <button type="button" id="btn-theme-toggle" class="panel-theme-btn" aria-pressed="false" title="Conmutar tema claro de alto contraste del panel para lectura en campo u oficina">☀️ Claro</button>
+                <span id="server-status-badge" style="display:inline-flex; align-items:center; gap:5px; font-size:var(--fs-xs); color:#32D74B; background:rgba(50,215,75,0.12); padding:4px 10px; border-radius:8px; border:1px solid rgba(50,215,75,0.25); line-height:1; box-sizing:border-box;" title="Servidor Backend Conectado">
+                    <span style="width:6px; height:6px; border-radius:50%; background:#32D74B; box-shadow:0 0 6px #32D74B;"></span> Online
+                </span>
             </div>
+            <span class="subtitle">Research through Design en sismicidad (1993-2026).<br>Catálogo estructurado: <strong id="count" style="color:var(--text-primary)">0</strong> eventos.</span>
             
             <!-- Banner contextual Mobile/Tablet: Sugerencia de visualización en PC -->
             <div id="mobile-device-advice" class="mobile-device-banner" role="note" aria-label="Sugerencia de visualización">
@@ -1062,7 +1060,7 @@
                     <li style="margin-bottom:5px;"><strong>Territorios Colectivos y Étnicos (Ley 70/1993):</strong> Toda restricción urbanística requiere cartografía predial IGAC/ANT y consulta previa vinculante (Convenio 169 OIT).</li>
                     <li><strong>Geoservicios Oficiales:</strong> Contraste datos con <a href="https://amenazasismica.sgc.gov.co/" target="_blank" rel="noopener noreferrer" style="color:var(--accent-ui);">SGC Amenaza</a>, <a href="https://www.colombiaenmapas.gov.co/" target="_blank" rel="noopener noreferrer" style="color:var(--accent-ui);">Colombia en Mapas (IGAC/ANT)</a> y <a href="https://portal.gestiondelriesgo.gov.co/" target="_blank" rel="noopener noreferrer" style="color:var(--accent-ui);">SNGRD/UNGRD</a>.</li>
                 </ul>
-                <div style="display:flex; flex-direction:column; gap:6px;">
+                <div style="display:flex; flex-direction:column; gap:10px;">
                     <button type="button" class="btn-secondary" id="btn-pot-summary-toggle" style="background:rgba(56,189,248,0.14); color:#38bdf8; border-color:rgba(56,189,248,0.35); font-size:var(--fs-xs);">
                         <span>📊 Ver Tablero Municipal Simplificado</span>
                     </button>
@@ -1252,7 +1250,7 @@
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js?v=53')
+                navigator.serviceWorker.register('sw.js?v=54')
                     .then(reg => {
                         reg.update();
                     })

@@ -2169,9 +2169,23 @@ if (btnHome) {
         }
         selectedNsrMunicipio = null;
 
+        // Restablecer mapa base a Relieve y desactivar tema claro del panel
+        currentMapStyle = BASEMAP_STYLES['voy'];
+        document.querySelectorAll('.basemap-btn[data-style]').forEach(b => {
+            b.classList.toggle('active', b.getAttribute('data-style') === 'voy');
+        });
+        document.body.classList.remove('theme-light');
+        const tBtnHome = document.getElementById('btn-theme-toggle');
+        if (tBtnHome) {
+            tBtnHome.classList.remove('active');
+            tBtnHome.setAttribute('aria-pressed', 'false');
+        }
+        applyThemeToCharts(false);
+
         // Restablecer la cámara 3D a la vista original por defecto
         if (deckgl) {
             deckgl.setProps({
+                mapStyle: currentMapStyle,
                 initialViewState: {
                     longitude: -77.0,
                     latitude: 6.0,
@@ -3869,8 +3883,6 @@ function haversineDistanceKm(lat1, lon1, lat2, lon2) {
 function savePreferences() {
     try {
         const prefs = {
-            themeLight: document.body.classList.contains('theme-light'),
-            mapStyleKey: Object.keys(BASEMAP_STYLES).find(k => BASEMAP_STYLES[k] === currentMapStyle) || 'voy',
             profile: currentProfile,
             mag: currentMag,
             time: currentTime,
@@ -3881,29 +3893,23 @@ function savePreferences() {
 }
 
 function restoreSavedPreferences() {
+    // Al cargar, iniciar siempre con mapa en Relieve y botón Claro desactivado
+    currentMapStyle = BASEMAP_STYLES['voy'];
+    document.querySelectorAll('.basemap-btn[data-style]').forEach(b => {
+        b.classList.toggle('active', b.getAttribute('data-style') === 'voy');
+    });
+    document.body.classList.remove('theme-light');
+    const tBtnInit = document.getElementById('btn-theme-toggle');
+    if (tBtnInit) {
+        tBtnInit.classList.remove('active');
+        tBtnInit.setAttribute('aria-pressed', 'false');
+    }
+    applyThemeToCharts(false);
+
     try {
         const raw = localStorage.getItem('sismochoco_prefs_v1');
-        if (!raw) {
-            const voyBtn = document.querySelector('.basemap-btn[data-style="voy"]');
-            if (voyBtn) {
-                document.querySelectorAll('.basemap-btn[data-style]').forEach(b => b.classList.remove('active'));
-                voyBtn.classList.add('active');
-            }
-            return;
-        }
+        if (!raw) return;
         const prefs = JSON.parse(raw);
-        if (prefs.themeLight) {
-            document.body.classList.add('theme-light');
-            const tBtn = document.getElementById('btn-theme-toggle');
-            if (tBtn) { tBtn.classList.add('active'); tBtn.setAttribute('aria-pressed', 'true'); }
-            applyThemeToCharts(true);
-        }
-        if (prefs.mapStyleKey && BASEMAP_STYLES[prefs.mapStyleKey]) {
-            currentMapStyle = BASEMAP_STYLES[prefs.mapStyleKey];
-            document.querySelectorAll('.basemap-btn[data-style]').forEach(b => {
-                b.classList.toggle('active', b.getAttribute('data-style') === prefs.mapStyleKey);
-            });
-        }
         if (typeof prefs.mag === 'number') {
             currentMag = prefs.mag;
             const el = document.getElementById('mag-slider');

@@ -13,7 +13,11 @@
     "costero_pacifico": false,
     "poblacion": 132000,
     "ultimo_destructor": "1992 / 2024 (Mw 5.6 sentido V-VI MM)",
-    "departamento": "Chocó"
+    "departamento": "Chocó",
+    "categoria_ley617": "Categoría 4 (CGN Res. 429/2024; vig. 2025; prev. Cat. 3)",
+    "aislamiento_modal": false,
+    "acceso_principal": "Multimodal (Vía nacional, Aeropuerto El Caraño y Río Atrato)",
+    "entorno_geografico": "Valle Fluvial Atrato (Capital)"
   },
   {
     "id": "bahia_solano",
@@ -29,7 +33,11 @@
     "costero_pacifico": true,
     "poblacion": 11500,
     "ultimo_destructor": "1970 (Mw 6.5 Terremoto de Bahía Solano con licuación costera)",
-    "departamento": "Chocó"
+    "departamento": "Chocó",
+    "categoria_ley617": "Categoría 6 (Ley 617/2000)",
+    "aislamiento_modal": true,
+    "acceso_principal": "Marítimo / Fluvial + Aéreo local (Sin carretera nacional)",
+    "entorno_geografico": "Litoral Pacífico"
   },
   {
     "id": "nuqui",
@@ -45,7 +53,11 @@
     "costero_pacifico": true,
     "poblacion": 9200,
     "ultimo_destructor": "2004 (Mw 6.7 Enjambre de subducción Fosa de Nazca)",
-    "departamento": "Chocó"
+    "departamento": "Chocó",
+    "categoria_ley617": "Categoría 6 (Ley 617/2000)",
+    "aislamiento_modal": true,
+    "acceso_principal": "Marítimo / Fluvial + Aéreo local (Sin carretera nacional)",
+    "entorno_geografico": "Litoral Pacífico"
   },
   {
     "id": "jurado",
@@ -61,7 +73,11 @@
     "costero_pacifico": true,
     "poblacion": 5800,
     "ultimo_destructor": "1992 (Mw 6.8 Secuencia de subducción)",
-    "departamento": "Chocó"
+    "departamento": "Chocó",
+    "categoria_ley617": "Categoría 6 (Ley 617/2000)",
+    "aislamiento_modal": true,
+    "acceso_principal": "Marítimo / Fluvial + Aéreo local (Sin carretera nacional)",
+    "entorno_geografico": "Litoral Pacífico"
   },
   {
     "id": "bajo_baudo",
@@ -77,7 +93,11 @@
     "costero_pacifico": true,
     "poblacion": 18500,
     "ultimo_destructor": "2012 (Mw 5.9 Epicentro costero)",
-    "departamento": "Chocó"
+    "departamento": "Chocó",
+    "categoria_ley617": "Categoría 6 (Ley 617/2000)",
+    "aislamiento_modal": true,
+    "acceso_principal": "Marítimo / Fluvial + Aéreo local (Sin carretera nacional)",
+    "entorno_geografico": "Litoral Pacífico"
   },
   {
     "id": "litoral_san_juan",
@@ -93,7 +113,11 @@
     "costero_pacifico": true,
     "poblacion": 16500,
     "ultimo_destructor": "1979 (Mw 8.2 Terremoto y Tsunami de Tumaco/Pacífico Sur)",
-    "departamento": "Chocó"
+    "departamento": "Chocó",
+    "categoria_ley617": "Categoría 6 (Ley 617/2000)",
+    "aislamiento_modal": true,
+    "acceso_principal": "Marítimo / Fluvial + Aéreo local (Sin carretera nacional)",
+    "entorno_geografico": "Litoral Pacífico"
   },
   {
     "id": "bojaya",
@@ -109,7 +133,11 @@
     "costero_pacifico": false,
     "poblacion": 12500,
     "ultimo_destructor": "1992 (Mw 7.1 Terremoto de Murindó, colapso de viviendas palafíticas)",
-    "departamento": "Chocó"
+    "departamento": "Chocó",
+    "categoria_ley617": "Categoría 6 (Ley 617/2000)",
+    "aislamiento_modal": true,
+    "acceso_principal": "Fluvial predominante / Vía terciaria intermitente",
+    "entorno_geografico": "Valle Fluvial Atrato"
   },
   {
     "id": "riosucio",
@@ -125,7 +153,11 @@
     "costero_pacifico": false,
     "poblacion": 29000,
     "ultimo_destructor": "1992 (Mw 7.1 Falla Murindó)",
-    "departamento": "Chocó"
+    "departamento": "Chocó",
+    "categoria_ley617": "Categoría 6 (Ley 617/2000)",
+    "aislamiento_modal": true,
+    "acceso_principal": "Fluvial predominante / Vía terciaria intermitente",
+    "entorno_geografico": "Valle Fluvial Atrato"
   },
   {
     "id": "istmina",
@@ -141,7 +173,11 @@
     "costero_pacifico": false,
     "poblacion": 26500,
     "ultimo_destructor": "1992 (Mw 5.9 Daños estructurales moderados)",
-    "departamento": "Chocó"
+    "departamento": "Chocó",
+    "categoria_ley617": "Categoría 6 (Ley 617/2000)",
+    "aislamiento_modal": false,
+    "acceso_principal": "Terrestre (Corredor vial regional / nacional)",
+    "entorno_geografico": "Cordillera / Eje Troncal San Juan–Atrato"
   },
   {
     "id": "tado",
@@ -157,7 +193,11 @@
     "costero_pacifico": false,
     "poblacion": 19000,
     "ultimo_destructor": "1992 (Mw 5.8 Falla San Juan)",
-    "departamento": "Chocó"
+    "departamento": "Chocó",
+    "categoria_ley617": "Categoría 6 (Ley 617/2000)",
+    "aislamiento_modal": false,
+    "acceso_principal": "Terrestre (Corredor vial regional / nacional)",
+    "entorno_geografico": "Cordillera / Eje Troncal San Juan–Atrato"
   },
   {
     "id": "condoto",
@@ -173,7 +213,11 @@
     "costero_pacifico": false,
     "poblacion": 15000,
     "ultimo_destructor": "1992 (Mw 5.7)",
-    "departamento": "Chocó"
+    "departamento": "Chocó",
+    "categoria_ley617": "Categoría 6 (Ley 617/2000)",
+    "aislamiento_modal": false,
+    "acceso_principal": "Terrestre (Corredor vial regional / nacional)",
+    "entorno_geografico": "Cordillera / Eje Troncal San Juan–Atrato"
   },
   {
     "id": "el_carmen_de_atrato",
@@ -189,7 +233,11 @@
     "costero_pacifico": false,
     "poblacion": 14200,
     "ultimo_destructor": "1992 (Mw 6.6 Afectación vial severa Quibdó-Medellín)",
-    "departamento": "Chocó"
+    "departamento": "Chocó",
+    "categoria_ley617": "Categoría 6 (Ley 617/2000)",
+    "aislamiento_modal": false,
+    "acceso_principal": "Terrestre (Corredor vial regional / nacional)",
+    "entorno_geografico": "Cordillera / Eje Troncal San Juan–Atrato"
   },
   {
     "id": "san_jose_del_palmar",
@@ -205,7 +253,11 @@
     "costero_pacifico": false,
     "poblacion": 5100,
     "ultimo_destructor": "2026 (Mw 7.4 Terremoto del 10 de Agosto - Epicentro)",
-    "departamento": "Chocó"
+    "departamento": "Chocó",
+    "categoria_ley617": "Categoría 6 (Ley 617/2000)",
+    "aislamiento_modal": false,
+    "acceso_principal": "Terrestre (Corredor vial regional / nacional)",
+    "entorno_geografico": "Cordillera / Eje Troncal San Juan–Atrato"
   },
   {
     "id": "alto_baudo",
@@ -221,7 +273,11 @@
     "costero_pacifico": false,
     "poblacion": 28500,
     "ultimo_destructor": "2004 (Mw 6.0 Falla Baudó)",
-    "departamento": "Chocó"
+    "departamento": "Chocó",
+    "categoria_ley617": "Categoría 6 (Ley 617/2000)",
+    "aislamiento_modal": true,
+    "acceso_principal": "Fluvial predominante / Vía terciaria intermitente",
+    "entorno_geografico": "Serranía del Baudó"
   },
   {
     "id": "medio_baudo",
@@ -237,7 +293,11 @@
     "costero_pacifico": false,
     "poblacion": 14000,
     "ultimo_destructor": "2004 (Mw 5.8)",
-    "departamento": "Chocó"
+    "departamento": "Chocó",
+    "categoria_ley617": "Categoría 6 (Ley 617/2000)",
+    "aislamiento_modal": true,
+    "acceso_principal": "Fluvial predominante / Vía terciaria intermitente",
+    "entorno_geografico": "Serranía del Baudó"
   },
   {
     "id": "acandi",
@@ -253,7 +313,11 @@
     "costero_pacifico": false,
     "poblacion": 15500,
     "ultimo_destructor": "1992 (Mw 6.2 Falla Atrato Norte)",
-    "departamento": "Chocó"
+    "departamento": "Chocó",
+    "categoria_ley617": "Categoría 6 (Ley 617/2000)",
+    "aislamiento_modal": true,
+    "acceso_principal": "Marítimo Caribe / Fluvial + Aéreo (Sin vía nacional continua)",
+    "entorno_geografico": "Litoral Caribe / Darién"
   },
   {
     "id": "unguia",
@@ -269,7 +333,11 @@
     "costero_pacifico": false,
     "poblacion": 15000,
     "ultimo_destructor": "1992 (Mw 6.5)",
-    "departamento": "Chocó"
+    "departamento": "Chocó",
+    "categoria_ley617": "Categoría 6 (Ley 617/2000)",
+    "aislamiento_modal": true,
+    "acceso_principal": "Marítimo Caribe / Fluvial + Aéreo (Sin vía nacional continua)",
+    "entorno_geografico": "Litoral Caribe / Darién"
   },
   {
     "id": "atrato",
@@ -285,7 +353,11 @@
     "costero_pacifico": false,
     "poblacion": 10500,
     "ultimo_destructor": "2024 (Mw 5.4 Sentido fuerte)",
-    "departamento": "Chocó"
+    "departamento": "Chocó",
+    "categoria_ley617": "Categoría 6 (Ley 617/2000)",
+    "aislamiento_modal": false,
+    "acceso_principal": "Terrestre (Corredor vial regional / nacional)",
+    "entorno_geografico": "Cordillera / Eje Troncal San Juan–Atrato"
   },
   {
     "id": "bagado",
@@ -301,7 +373,11 @@
     "costero_pacifico": false,
     "poblacion": 14000,
     "ultimo_destructor": "1992 (Mw 5.8)",
-    "departamento": "Chocó"
+    "departamento": "Chocó",
+    "categoria_ley617": "Categoría 6 (Ley 617/2000)",
+    "aislamiento_modal": true,
+    "acceso_principal": "Fluvial predominante / Vía terciaria intermitente",
+    "entorno_geografico": "Valle Fluvial Atrato"
   },
   {
     "id": "certegui",
@@ -317,7 +393,11 @@
     "costero_pacifico": false,
     "poblacion": 10200,
     "ultimo_destructor": "2004 (Mw 5.3)",
-    "departamento": "Chocó"
+    "departamento": "Chocó",
+    "categoria_ley617": "Categoría 6 (Ley 617/2000)",
+    "aislamiento_modal": false,
+    "acceso_principal": "Terrestre (Corredor vial regional / nacional)",
+    "entorno_geografico": "Cordillera / Eje Troncal San Juan–Atrato"
   },
   {
     "id": "el_canton_del_san_pablo",
@@ -333,7 +413,11 @@
     "costero_pacifico": false,
     "poblacion": 8200,
     "ultimo_destructor": "2015 (Mw 5.2)",
-    "departamento": "Chocó"
+    "departamento": "Chocó",
+    "categoria_ley617": "Categoría 6 (Ley 617/2000)",
+    "aislamiento_modal": true,
+    "acceso_principal": "Fluvial predominante / Vía terciaria intermitente",
+    "entorno_geografico": "Valle Fluvial Atrato"
   },
   {
     "id": "lloro",
@@ -349,7 +433,11 @@
     "costero_pacifico": false,
     "poblacion": 12100,
     "ultimo_destructor": "2024 (Mw 5.5 Daños en mampostería)",
-    "departamento": "Chocó"
+    "departamento": "Chocó",
+    "categoria_ley617": "Categoría 6 (Ley 617/2000)",
+    "aislamiento_modal": true,
+    "acceso_principal": "Fluvial predominante / Vía terciaria intermitente",
+    "entorno_geografico": "Valle Fluvial Atrato"
   },
   {
     "id": "medio_atrato",
@@ -365,7 +453,11 @@
     "costero_pacifico": false,
     "poblacion": 13500,
     "ultimo_destructor": "1992 (Mw 6.9 Murindó)",
-    "departamento": "Chocó"
+    "departamento": "Chocó",
+    "categoria_ley617": "Categoría 6 (Ley 617/2000)",
+    "aislamiento_modal": true,
+    "acceso_principal": "Fluvial predominante / Vía terciaria intermitente",
+    "entorno_geografico": "Valle Fluvial Atrato"
   },
   {
     "id": "medio_san_juan",
@@ -381,7 +473,11 @@
     "costero_pacifico": false,
     "poblacion": 11000,
     "ultimo_destructor": "1992 (Mw 5.6)",
-    "departamento": "Chocó"
+    "departamento": "Chocó",
+    "categoria_ley617": "Categoría 6 (Ley 617/2000)",
+    "aislamiento_modal": true,
+    "acceso_principal": "Fluvial predominante / Vía terciaria intermitente",
+    "entorno_geografico": "Subregión San Juan"
   },
   {
     "id": "novita",
@@ -397,7 +493,11 @@
     "costero_pacifico": false,
     "poblacion": 11300,
     "ultimo_destructor": "1992 (Mw 5.5)",
-    "departamento": "Chocó"
+    "departamento": "Chocó",
+    "categoria_ley617": "Categoría 6 (Ley 617/2000)",
+    "aislamiento_modal": true,
+    "acceso_principal": "Fluvial predominante / Vía terciaria intermitente",
+    "entorno_geografico": "Subregión San Juan"
   },
   {
     "id": "rio_iro",
@@ -413,7 +513,11 @@
     "costero_pacifico": false,
     "poblacion": 10100,
     "ultimo_destructor": "1992 (Mw 5.4)",
-    "departamento": "Chocó"
+    "departamento": "Chocó",
+    "categoria_ley617": "Categoría 6 (Ley 617/2000)",
+    "aislamiento_modal": true,
+    "acceso_principal": "Fluvial predominante / Vía terciaria intermitente",
+    "entorno_geografico": "Subregión San Juan"
   },
   {
     "id": "rio_quito",
@@ -429,7 +533,11 @@
     "costero_pacifico": false,
     "poblacion": 9500,
     "ultimo_destructor": "2024 (Mw 5.4)",
-    "departamento": "Chocó"
+    "departamento": "Chocó",
+    "categoria_ley617": "Categoría 6 (Ley 617/2000)",
+    "aislamiento_modal": true,
+    "acceso_principal": "Fluvial predominante / Vía terciaria intermitente",
+    "entorno_geografico": "Valle Fluvial Atrato"
   },
   {
     "id": "sipi",
@@ -445,7 +553,11 @@
     "costero_pacifico": false,
     "poblacion": 4200,
     "ultimo_destructor": "1992 (Mw 5.6)",
-    "departamento": "Chocó"
+    "departamento": "Chocó",
+    "categoria_ley617": "Categoría 6 (Ley 617/2000)",
+    "aislamiento_modal": true,
+    "acceso_principal": "Fluvial predominante / Vía terciaria intermitente",
+    "entorno_geografico": "Subregión San Juan"
   },
   {
     "id": "union_panamericana",
@@ -461,7 +573,11 @@
     "costero_pacifico": false,
     "poblacion": 10500,
     "ultimo_destructor": "2024 (Mw 5.3)",
-    "departamento": "Chocó"
+    "departamento": "Chocó",
+    "categoria_ley617": "Categoría 6 (Ley 617/2000)",
+    "aislamiento_modal": false,
+    "acceso_principal": "Terrestre (Corredor vial regional / nacional)",
+    "entorno_geografico": "Cordillera / Eje Troncal San Juan–Atrato"
   },
   {
     "id": "carmen_del_darien",
@@ -477,7 +593,11 @@
     "costero_pacifico": false,
     "poblacion": 6200,
     "ultimo_destructor": "1992 (Mw 7.1 Murindó)",
-    "departamento": "Chocó"
+    "departamento": "Chocó",
+    "categoria_ley617": "Categoría 6 (Ley 617/2000)",
+    "aislamiento_modal": true,
+    "acceso_principal": "Fluvial predominante / Vía terciaria intermitente",
+    "entorno_geografico": "Valle Fluvial Atrato"
   },
   {
     "id": "belen_de_bajira",
@@ -493,7 +613,11 @@
     "costero_pacifico": false,
     "poblacion": 16500,
     "ultimo_destructor": "1992 (Mw 7.1 Murindó)",
-    "departamento": "Chocó"
+    "departamento": "Chocó",
+    "categoria_ley617": "Categoría 6 (Ley 617/2000)",
+    "aislamiento_modal": true,
+    "acceso_principal": "Fluvial predominante / Vía terciaria intermitente",
+    "entorno_geografico": "Valle Fluvial Atrato"
   },
   {
     "id": "pereira",
@@ -509,7 +633,11 @@
     "licuacion_riesgo": "Media en llanuras aluviales y paleocauces",
     "costero_pacifico": false,
     "poblacion": 480000,
-    "ultimo_destructor": "1999 (Mw 6.2 Terremoto del Eje Cafetero) / 2026 (Mw 7.4 sentido fuerte)"
+    "ultimo_destructor": "1999 (Mw 6.2 Terremoto del Eje Cafetero) / 2026 (Mw 7.4 sentido fuerte)",
+    "categoria_ley617": "Referencia Regional (Fuera de Chocó)",
+    "aislamiento_modal": false,
+    "acceso_principal": "Red vial nacional (Eje Cafetero / Valle)",
+    "entorno_geografico": "Referencia Regional (Risaralda)"
   },
   {
     "id": "dosquebradas",
@@ -525,7 +653,11 @@
     "licuacion_riesgo": "Baja a Media",
     "costero_pacifico": false,
     "poblacion": 220000,
-    "ultimo_destructor": "1999 (Mw 6.2 Terremoto del Eje Cafetero)"
+    "ultimo_destructor": "1999 (Mw 6.2 Terremoto del Eje Cafetero)",
+    "categoria_ley617": "Referencia Regional (Fuera de Chocó)",
+    "aislamiento_modal": false,
+    "acceso_principal": "Red vial nacional (Eje Cafetero / Valle)",
+    "entorno_geografico": "Referencia Regional (Risaralda)"
   },
   {
     "id": "santa_rosa_de_cabal",
@@ -541,7 +673,11 @@
     "licuacion_riesgo": "Baja",
     "costero_pacifico": false,
     "poblacion": 78000,
-    "ultimo_destructor": "1999 (Mw 6.2) / 1995 (Mw 6.4)"
+    "ultimo_destructor": "1999 (Mw 6.2) / 1995 (Mw 6.4)",
+    "categoria_ley617": "Referencia Regional (Fuera de Chocó)",
+    "aislamiento_modal": false,
+    "acceso_principal": "Red vial nacional (Eje Cafetero / Valle)",
+    "entorno_geografico": "Referencia Regional (Risaralda)"
   },
   {
     "id": "pueblo_rico",
@@ -557,7 +693,11 @@
     "licuacion_riesgo": "Baja (Alta amenaza de movimientos en masa)",
     "costero_pacifico": false,
     "poblacion": 16500,
-    "ultimo_destructor": "2026 (Mw 7.4 Terremoto del 10 de Agosto - Daños severos)"
+    "ultimo_destructor": "2026 (Mw 7.4 Terremoto del 10 de Agosto - Daños severos)",
+    "categoria_ley617": "Referencia Regional (Fuera de Chocó)",
+    "aislamiento_modal": false,
+    "acceso_principal": "Red vial nacional (Eje Cafetero / Valle)",
+    "entorno_geografico": "Referencia Regional (Risaralda)"
   },
   {
     "id": "mistrato",
@@ -573,7 +713,11 @@
     "licuacion_riesgo": "Baja",
     "costero_pacifico": false,
     "poblacion": 17000,
-    "ultimo_destructor": "2026 (Mw 7.4 Terremoto del 10 de Agosto)"
+    "ultimo_destructor": "2026 (Mw 7.4 Terremoto del 10 de Agosto)",
+    "categoria_ley617": "Referencia Regional (Fuera de Chocó)",
+    "aislamiento_modal": false,
+    "acceso_principal": "Red vial nacional (Eje Cafetero / Valle)",
+    "entorno_geografico": "Referencia Regional (Risaralda)"
   },
   {
     "id": "la_virginia",
@@ -589,7 +733,11 @@
     "licuacion_riesgo": "Muy Alta (Suelo blando inundable y licuable)",
     "costero_pacifico": false,
     "poblacion": 33000,
-    "ultimo_destructor": "1999 (Mw 6.2) / 2026 (Mw 7.4 sentido muy violento)"
+    "ultimo_destructor": "1999 (Mw 6.2) / 2026 (Mw 7.4 sentido muy violento)",
+    "categoria_ley617": "Referencia Regional (Fuera de Chocó)",
+    "aislamiento_modal": false,
+    "acceso_principal": "Red vial nacional (Eje Cafetero / Valle)",
+    "entorno_geografico": "Referencia Regional (Risaralda)"
   },
   {
     "id": "apia",
@@ -605,7 +753,11 @@
     "licuacion_riesgo": "Baja",
     "costero_pacifico": false,
     "poblacion": 19000,
-    "ultimo_destructor": "2026 (Mw 7.4 Terremoto del 10 de Agosto - Afectaciones viales)"
+    "ultimo_destructor": "2026 (Mw 7.4 Terremoto del 10 de Agosto - Afectaciones viales)",
+    "categoria_ley617": "Referencia Regional (Fuera de Chocó)",
+    "aislamiento_modal": false,
+    "acceso_principal": "Red vial nacional (Eje Cafetero / Valle)",
+    "entorno_geografico": "Referencia Regional (Risaralda)"
   },
   {
     "id": "santuario",
@@ -621,7 +773,11 @@
     "licuacion_riesgo": "Baja",
     "costero_pacifico": false,
     "poblacion": 15000,
-    "ultimo_destructor": "2026 (Mw 7.4 Terremoto del 10 de Agosto)"
+    "ultimo_destructor": "2026 (Mw 7.4 Terremoto del 10 de Agosto)",
+    "categoria_ley617": "Referencia Regional (Fuera de Chocó)",
+    "aislamiento_modal": false,
+    "acceso_principal": "Red vial nacional (Eje Cafetero / Valle)",
+    "entorno_geografico": "Referencia Regional (Risaralda)"
   },
   {
     "id": "belen_de_umbria",
@@ -637,7 +793,11 @@
     "licuacion_riesgo": "Baja",
     "costero_pacifico": false,
     "poblacion": 27000,
-    "ultimo_destructor": "1999 (Mw 6.2) / 2026 (Mw 7.4)"
+    "ultimo_destructor": "1999 (Mw 6.2) / 2026 (Mw 7.4)",
+    "categoria_ley617": "Referencia Regional (Fuera de Chocó)",
+    "aislamiento_modal": false,
+    "acceso_principal": "Red vial nacional (Eje Cafetero / Valle)",
+    "entorno_geografico": "Referencia Regional (Risaralda)"
   },
   {
     "id": "marsella",
@@ -653,7 +813,11 @@
     "licuacion_riesgo": "Baja a Media en taludes",
     "costero_pacifico": false,
     "poblacion": 21000,
-    "ultimo_destructor": "1999 (Mw 6.2)"
+    "ultimo_destructor": "1999 (Mw 6.2)",
+    "categoria_ley617": "Referencia Regional (Fuera de Chocó)",
+    "aislamiento_modal": false,
+    "acceso_principal": "Red vial nacional (Eje Cafetero / Valle)",
+    "entorno_geografico": "Referencia Regional (Risaralda)"
   },
   {
     "id": "quinchia",
@@ -669,7 +833,11 @@
     "licuacion_riesgo": "Baja",
     "costero_pacifico": false,
     "poblacion": 34000,
-    "ultimo_destructor": "1979 / 1999 / 2026"
+    "ultimo_destructor": "1979 / 1999 / 2026",
+    "categoria_ley617": "Referencia Regional (Fuera de Chocó)",
+    "aislamiento_modal": false,
+    "acceso_principal": "Red vial nacional (Eje Cafetero / Valle)",
+    "entorno_geografico": "Referencia Regional (Risaralda)"
   },
   {
     "id": "guatica",
@@ -685,7 +853,11 @@
     "licuacion_riesgo": "Baja",
     "costero_pacifico": false,
     "poblacion": 15500,
-    "ultimo_destructor": "2026 (Mw 7.4)"
+    "ultimo_destructor": "2026 (Mw 7.4)",
+    "categoria_ley617": "Referencia Regional (Fuera de Chocó)",
+    "aislamiento_modal": false,
+    "acceso_principal": "Red vial nacional (Eje Cafetero / Valle)",
+    "entorno_geografico": "Referencia Regional (Risaralda)"
   },
   {
     "id": "balboa",
@@ -701,7 +873,11 @@
     "licuacion_riesgo": "Baja",
     "costero_pacifico": false,
     "poblacion": 6500,
-    "ultimo_destructor": "2026 (Mw 7.4)"
+    "ultimo_destructor": "2026 (Mw 7.4)",
+    "categoria_ley617": "Referencia Regional (Fuera de Chocó)",
+    "aislamiento_modal": false,
+    "acceso_principal": "Red vial nacional (Eje Cafetero / Valle)",
+    "entorno_geografico": "Referencia Regional (Risaralda)"
   },
   {
     "id": "la_celia",
@@ -717,7 +893,11 @@
     "licuacion_riesgo": "Baja",
     "costero_pacifico": false,
     "poblacion": 8500,
-    "ultimo_destructor": "2026 (Mw 7.4 Terremoto del 10 de Agosto - Alta sacudida)"
+    "ultimo_destructor": "2026 (Mw 7.4 Terremoto del 10 de Agosto - Alta sacudida)",
+    "categoria_ley617": "Referencia Regional (Fuera de Chocó)",
+    "aislamiento_modal": false,
+    "acceso_principal": "Red vial nacional (Eje Cafetero / Valle)",
+    "entorno_geografico": "Referencia Regional (Risaralda)"
   },
   {
     "id": "manizales",
@@ -733,7 +913,11 @@
     "licuacion_riesgo": "Media en rellenos y laderas antrópicas",
     "costero_pacifico": false,
     "poblacion": 450000,
-    "ultimo_destructor": "1979 (Mw 7.2) / 1999 (Mw 6.2) / 2026 (Mw 7.4 sentido VI MM)"
+    "ultimo_destructor": "1979 (Mw 7.2) / 1999 (Mw 6.2) / 2026 (Mw 7.4 sentido VI MM)",
+    "categoria_ley617": "Referencia Regional (Fuera de Chocó)",
+    "aislamiento_modal": false,
+    "acceso_principal": "Red vial nacional (Eje Cafetero / Valle)",
+    "entorno_geografico": "Referencia Regional (Caldas)"
   },
   {
     "id": "chinchina",
@@ -749,7 +933,11 @@
     "licuacion_riesgo": "Media en vegas fluviales",
     "costero_pacifico": false,
     "poblacion": 52000,
-    "ultimo_destructor": "1999 (Mw 6.2 Terremoto del Eje Cafetero)"
+    "ultimo_destructor": "1999 (Mw 6.2 Terremoto del Eje Cafetero)",
+    "categoria_ley617": "Referencia Regional (Fuera de Chocó)",
+    "aislamiento_modal": false,
+    "acceso_principal": "Red vial nacional (Eje Cafetero / Valle)",
+    "entorno_geografico": "Referencia Regional (Caldas)"
   },
   {
     "id": "villamaria",
@@ -765,7 +953,11 @@
     "licuacion_riesgo": "Baja a Media",
     "costero_pacifico": false,
     "poblacion": 67000,
-    "ultimo_destructor": "1999 (Mw 6.2) / 2026 (Mw 7.4)"
+    "ultimo_destructor": "1999 (Mw 6.2) / 2026 (Mw 7.4)",
+    "categoria_ley617": "Referencia Regional (Fuera de Chocó)",
+    "aislamiento_modal": false,
+    "acceso_principal": "Red vial nacional (Eje Cafetero / Valle)",
+    "entorno_geografico": "Referencia Regional (Caldas)"
   },
   {
     "id": "anserma",
@@ -781,7 +973,11 @@
     "licuacion_riesgo": "Baja",
     "costero_pacifico": false,
     "poblacion": 34000,
-    "ultimo_destructor": "2026 (Mw 7.4 Terremoto del 10 de Agosto - Agrietamientos)"
+    "ultimo_destructor": "2026 (Mw 7.4 Terremoto del 10 de Agosto - Agrietamientos)",
+    "categoria_ley617": "Referencia Regional (Fuera de Chocó)",
+    "aislamiento_modal": false,
+    "acceso_principal": "Red vial nacional (Eje Cafetero / Valle)",
+    "entorno_geografico": "Referencia Regional (Caldas)"
   },
   {
     "id": "riosucio_caldas",
@@ -797,7 +993,11 @@
     "licuacion_riesgo": "Baja",
     "costero_pacifico": false,
     "poblacion": 63000,
-    "ultimo_destructor": "2026 (Mw 7.4 Terremoto del 10 de Agosto)"
+    "ultimo_destructor": "2026 (Mw 7.4 Terremoto del 10 de Agosto)",
+    "categoria_ley617": "Referencia Regional (Fuera de Chocó)",
+    "aislamiento_modal": false,
+    "acceso_principal": "Red vial nacional (Eje Cafetero / Valle)",
+    "entorno_geografico": "Referencia Regional (Caldas)"
   },
   {
     "id": "supia",
@@ -813,7 +1013,11 @@
     "licuacion_riesgo": "Media en planicie del río",
     "costero_pacifico": false,
     "poblacion": 28000,
-    "ultimo_destructor": "2026 (Mw 7.4)"
+    "ultimo_destructor": "2026 (Mw 7.4)",
+    "categoria_ley617": "Referencia Regional (Fuera de Chocó)",
+    "aislamiento_modal": false,
+    "acceso_principal": "Red vial nacional (Eje Cafetero / Valle)",
+    "entorno_geografico": "Referencia Regional (Caldas)"
   },
   {
     "id": "viterbo",
@@ -829,7 +1033,11 @@
     "licuacion_riesgo": "Alta (Susceptible a licuación en sismos mayores)",
     "costero_pacifico": false,
     "poblacion": 13000,
-    "ultimo_destructor": "1999 (Mw 6.2) / 2026 (Mw 7.4 fuerte amplificación)"
+    "ultimo_destructor": "1999 (Mw 6.2) / 2026 (Mw 7.4 fuerte amplificación)",
+    "categoria_ley617": "Referencia Regional (Fuera de Chocó)",
+    "aislamiento_modal": false,
+    "acceso_principal": "Red vial nacional (Eje Cafetero / Valle)",
+    "entorno_geografico": "Referencia Regional (Caldas)"
   },
   {
     "id": "neira",
@@ -845,7 +1053,11 @@
     "licuacion_riesgo": "Baja",
     "costero_pacifico": false,
     "poblacion": 31000,
-    "ultimo_destructor": "1999 (Mw 6.2)"
+    "ultimo_destructor": "1999 (Mw 6.2)",
+    "categoria_ley617": "Referencia Regional (Fuera de Chocó)",
+    "aislamiento_modal": false,
+    "acceso_principal": "Red vial nacional (Eje Cafetero / Valle)",
+    "entorno_geografico": "Referencia Regional (Caldas)"
   },
   {
     "id": "palestina",
@@ -861,7 +1073,11 @@
     "licuacion_riesgo": "Baja",
     "costero_pacifico": false,
     "poblacion": 17500,
-    "ultimo_destructor": "1999 (Mw 6.2)"
+    "ultimo_destructor": "1999 (Mw 6.2)",
+    "categoria_ley617": "Referencia Regional (Fuera de Chocó)",
+    "aislamiento_modal": false,
+    "acceso_principal": "Red vial nacional (Eje Cafetero / Valle)",
+    "entorno_geografico": "Referencia Regional (Caldas)"
   },
   {
     "id": "belalcazar",
@@ -877,7 +1093,11 @@
     "licuacion_riesgo": "Baja",
     "costero_pacifico": false,
     "poblacion": 11500,
-    "ultimo_destructor": "1999 (Mw 6.2) / 2026 (Mw 7.4)"
+    "ultimo_destructor": "1999 (Mw 6.2) / 2026 (Mw 7.4)",
+    "categoria_ley617": "Referencia Regional (Fuera de Chocó)",
+    "aislamiento_modal": false,
+    "acceso_principal": "Red vial nacional (Eje Cafetero / Valle)",
+    "entorno_geografico": "Referencia Regional (Caldas)"
   },
   {
     "id": "cali",
@@ -893,7 +1113,11 @@
     "licuacion_riesgo": "Alta en oriente (Aguablanca) y llanura del Cauca",
     "costero_pacifico": false,
     "poblacion": 2250000,
-    "ultimo_destructor": "1925 / 1979 (Mw 7.2) / 2026 (Mw 7.4 sentido V-VI MM)"
+    "ultimo_destructor": "1925 / 1979 (Mw 7.2) / 2026 (Mw 7.4 sentido V-VI MM)",
+    "categoria_ley617": "Referencia Regional (Fuera de Chocó)",
+    "aislamiento_modal": false,
+    "acceso_principal": "Red vial nacional (Eje Cafetero / Valle)",
+    "entorno_geografico": "Referencia Regional (Valle del Cauca)"
   },
   {
     "id": "buenaventura",
@@ -909,7 +1133,11 @@
     "licuacion_riesgo": "Muy Alta (Zona insular y bajamares de Cascajal)",
     "costero_pacifico": true,
     "poblacion": 315000,
-    "ultimo_destructor": "1979 (Mw 8.2 Terremoto y Tsunami de Tumaco/Pacífico)"
+    "ultimo_destructor": "1979 (Mw 8.2 Terremoto y Tsunami de Tumaco/Pacífico)",
+    "categoria_ley617": "Referencia Regional (Fuera de Chocó)",
+    "aislamiento_modal": false,
+    "acceso_principal": "Red vial nacional (Eje Cafetero / Valle)",
+    "entorno_geografico": "Referencia Regional (Valle del Cauca)"
   },
   {
     "id": "cartago",
@@ -925,7 +1153,11 @@
     "licuacion_riesgo": "Alta en zonas bajas del río",
     "costero_pacifico": false,
     "poblacion": 135000,
-    "ultimo_destructor": "2026 (Mw 7.4 Terremoto del 10 de Agosto - Daños en centros de salud)"
+    "ultimo_destructor": "2026 (Mw 7.4 Terremoto del 10 de Agosto - Daños en centros de salud)",
+    "categoria_ley617": "Referencia Regional (Fuera de Chocó)",
+    "aislamiento_modal": false,
+    "acceso_principal": "Red vial nacional (Eje Cafetero / Valle)",
+    "entorno_geografico": "Referencia Regional (Valle del Cauca)"
   },
   {
     "id": "el_dovio",
@@ -941,7 +1173,11 @@
     "licuacion_riesgo": "Baja (Alta susceptibilidad a deslizamientos)",
     "costero_pacifico": false,
     "poblacion": 9000,
-    "ultimo_destructor": "2026 (Mw 7.4 Terremoto del 10 de Agosto - Severamente afectado)"
+    "ultimo_destructor": "2026 (Mw 7.4 Terremoto del 10 de Agosto - Severamente afectado)",
+    "categoria_ley617": "Referencia Regional (Fuera de Chocó)",
+    "aislamiento_modal": false,
+    "acceso_principal": "Red vial nacional (Eje Cafetero / Valle)",
+    "entorno_geografico": "Referencia Regional (Valle del Cauca)"
   },
   {
     "id": "bolivar_valle",
@@ -957,7 +1193,11 @@
     "licuacion_riesgo": "Baja",
     "costero_pacifico": false,
     "poblacion": 15000,
-    "ultimo_destructor": "2026 (Mw 7.4 Terremoto del 10 de Agosto)"
+    "ultimo_destructor": "2026 (Mw 7.4 Terremoto del 10 de Agosto)",
+    "categoria_ley617": "Referencia Regional (Fuera de Chocó)",
+    "aislamiento_modal": false,
+    "acceso_principal": "Red vial nacional (Eje Cafetero / Valle)",
+    "entorno_geografico": "Referencia Regional (Valle del Cauca)"
   },
   {
     "id": "versalles",
@@ -973,7 +1213,11 @@
     "licuacion_riesgo": "Baja",
     "costero_pacifico": false,
     "poblacion": 7500,
-    "ultimo_destructor": "2026 (Mw 7.4 Terremoto del 10 de Agosto - Vías colapsadas)"
+    "ultimo_destructor": "2026 (Mw 7.4 Terremoto del 10 de Agosto - Vías colapsadas)",
+    "categoria_ley617": "Referencia Regional (Fuera de Chocó)",
+    "aislamiento_modal": false,
+    "acceso_principal": "Red vial nacional (Eje Cafetero / Valle)",
+    "entorno_geografico": "Referencia Regional (Valle del Cauca)"
   },
   {
     "id": "toro",
@@ -989,7 +1233,11 @@
     "licuacion_riesgo": "Media en planicie",
     "costero_pacifico": false,
     "poblacion": 16000,
-    "ultimo_destructor": "2026 (Mw 7.4)"
+    "ultimo_destructor": "2026 (Mw 7.4)",
+    "categoria_ley617": "Referencia Regional (Fuera de Chocó)",
+    "aislamiento_modal": false,
+    "acceso_principal": "Red vial nacional (Eje Cafetero / Valle)",
+    "entorno_geografico": "Referencia Regional (Valle del Cauca)"
   },
   {
     "id": "roldanillo",
@@ -1005,7 +1253,11 @@
     "licuacion_riesgo": "Media a Alta",
     "costero_pacifico": false,
     "poblacion": 34000,
-    "ultimo_destructor": "2026 (Mw 7.4 Terremoto del 10 de Agosto - Daños estructurales)"
+    "ultimo_destructor": "2026 (Mw 7.4 Terremoto del 10 de Agosto - Daños estructurales)",
+    "categoria_ley617": "Referencia Regional (Fuera de Chocó)",
+    "aislamiento_modal": false,
+    "acceso_principal": "Red vial nacional (Eje Cafetero / Valle)",
+    "entorno_geografico": "Referencia Regional (Valle del Cauca)"
   },
   {
     "id": "zarzal",
@@ -1021,7 +1273,11 @@
     "licuacion_riesgo": "Alta en zonas ribereñas",
     "costero_pacifico": false,
     "poblacion": 46000,
-    "ultimo_destructor": "2026 (Mw 7.4)"
+    "ultimo_destructor": "2026 (Mw 7.4)",
+    "categoria_ley617": "Referencia Regional (Fuera de Chocó)",
+    "aislamiento_modal": false,
+    "acceso_principal": "Red vial nacional (Eje Cafetero / Valle)",
+    "entorno_geografico": "Referencia Regional (Valle del Cauca)"
   },
   {
     "id": "tulua",
@@ -1037,7 +1293,11 @@
     "licuacion_riesgo": "Media",
     "costero_pacifico": false,
     "poblacion": 220000,
-    "ultimo_destructor": "1999 (Mw 6.2) / 2026 (Mw 7.4)"
+    "ultimo_destructor": "1999 (Mw 6.2) / 2026 (Mw 7.4)",
+    "categoria_ley617": "Referencia Regional (Fuera de Chocó)",
+    "aislamiento_modal": false,
+    "acceso_principal": "Red vial nacional (Eje Cafetero / Valle)",
+    "entorno_geografico": "Referencia Regional (Valle del Cauca)"
   },
   {
     "id": "buga",
@@ -1053,7 +1313,11 @@
     "licuacion_riesgo": "Media en llanura",
     "costero_pacifico": false,
     "poblacion": 130000,
-    "ultimo_destructor": "1999 (Mw 6.2) / 2026 (Mw 7.4)"
+    "ultimo_destructor": "1999 (Mw 6.2) / 2026 (Mw 7.4)",
+    "categoria_ley617": "Referencia Regional (Fuera de Chocó)",
+    "aislamiento_modal": false,
+    "acceso_principal": "Red vial nacional (Eje Cafetero / Valle)",
+    "entorno_geografico": "Referencia Regional (Valle del Cauca)"
   },
   {
     "id": "palmira",
@@ -1069,6 +1333,10 @@
     "licuacion_riesgo": "Alta en suelos saturados",
     "costero_pacifico": false,
     "poblacion": 350000,
-    "ultimo_destructor": "1979 / 1999 / 2026"
+    "ultimo_destructor": "1979 / 1999 / 2026",
+    "categoria_ley617": "Referencia Regional (Fuera de Chocó)",
+    "aislamiento_modal": false,
+    "acceso_principal": "Red vial nacional (Eje Cafetero / Valle)",
+    "entorno_geografico": "Referencia Regional (Valle del Cauca)"
   }
 ]

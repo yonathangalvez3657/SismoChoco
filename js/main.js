@@ -36,13 +36,26 @@ let mlData = { features: [] };
 let oqData = { features: [] };
 let infraData = null;
 let faultData = null;
+let chocoBaseData = null;
 let municipiosData = [];
 let nsrEspectroChart = null;
+
+const SGC_WMS_TILE_URL = 'https://srvags.sgc.gov.co/arcprod/rest/services/Amenaza_Sismica/Amenaza_Sismica/MapServer/export?bbox={bbox-epsg-3857}&bboxSR=3857&imageSR=3857&size=256,256&layers=show:9&format=png32&transparent=true&f=image';
+
+async function fetchWithTimeout(url, timeoutMs = 6500, options = {}) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+        return await fetch(url, { ...options, signal: controller.signal });
+    } finally {
+        clearTimeout(timer);
+    }
+}
 
 let viewMode = 'none'; 
 let currentMag = 0.0;
 let currentTime = 1993;
-let currentMaxDepth = 150.0;
+let currentMaxDepth = 250.0;
 let highQualityOnly = false;
 let showFaults = false;
 let showInfra = false;
@@ -50,6 +63,7 @@ let selectedFaultId = null;
 let faultKinematicFilter = 'all';
 let showFaultBuffer = false;
 let showLiveSGC = false;
+let showSgcWms = false;
 let showML = false;
 let showOQ = false;
 
@@ -102,38 +116,51 @@ Chart.defaults.color = '#94a3b8';
 Chart.defaults.font.family = 'Inter';
 
 // ============================================================================
-// LEY DE GUTENBERG-RICHTER: Log10(N) = a - b * Mw
+// LEY DE GUTENBERG-RICHTER: Log10(N) = a - b * Mw (Máxima Verosimilitud Aki-Utsu)
 // ============================================================================
-function calculateBValue(labels, dataLog) {
-    // Estimación por Mínimos Cuadrados para sismos >= 3.0 (magnitud de completitud)
-    let validPts = [];
-    for (let i = 0; i < labels.length; i++) {
-        if (labels[i] >= 3.0 && dataLog[i] > 0) {
-            validPts.push({ x: labels[i], y: dataLog[i] });
-        }
-    }
-    if (validPts.length < 3) return null;
+function calculateGutenbergRichterMLE(filteredData, yearsSpan, minMagFilter = 0) {
+    if (minMagFilter > 4.5) return null;
+    const mags = filteredData
+        .map(f => parseFloat(f.properties.magnitud))
+        .filter(m => Number.isFinite(m));
+    if (mags.length < 15) return null;
 
-    let n = validPts.length;
-    let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
-    validPts.forEach(p => {
-        sumX += p.x;
-        sumY += p.y;
-        sumXY += p.x * p.y;
-        sumX2 += p.x * p.x;
+    // Estimación de magnitud de completitud (Mc) por máxima curvatura en bines de 0.1
+    const binCounts = {};
+    mags.forEach(m => {
+        const bin = Math.round(m * 10) / 10;
+        binCounts[bin] = (binCounts[bin] || 0) + 1;
     });
+    let maxBin = 3.0;
+    let maxCount = -1;
+    Object.keys(binCounts).forEach(k => {
+        const b = parseFloat(k);
+        if (b >= 2.0 && b <= 4.5 && binCounts[k] > maxCount) {
+            maxCount = binCounts[k];
+            maxBin = b;
+        }
+    });
+    const mc = Math.max(2.5, minMagFilter, maxBin);
+    const completeMags = mags.filter(m => m >= mc - 1e-6);
+    if (completeMags.length < 10) return null;
 
-    let denom = (n * sumX2 - sumX * sumX);
-    if (denom === 0) return null;
-    
-    let slope = (n * sumXY - sumX * sumY) / denom;
-    return Math.abs(slope); // b = -pendiente
+    const maxObsMag = completeMags.reduce((mx, v) => (v > mx ? v : mx), -Infinity);
+    if ((maxObsMag - mc) < 1.0) return null;
+
+    const meanM = completeMags.reduce((s, v) => s + v, 0) / completeMags.length;
+    const denom = meanM - (mc - 0.05);
+    if (denom <= 0.05) return null;
+
+    const bVal = Math.LOG10E / denom;
+    const annualRateMc = completeMags.length / Math.max(1, yearsSpan);
+    const aAnnual = Math.log10(annualRateMc) + bVal * mc;
+    return { b: bVal, aAnnual, mc, nComplete: completeMags.length };
 }
 
 function updateChart(filteredData) {
     let counts = {};
     filteredData.forEach(f => {
-        let m = Math.floor(f.properties.magnitud * 10) / 10;
+        let m = Math.round((parseFloat(f.properties.magnitud) || 0) * 10) / 10;
         counts[m] = (counts[m] || 0) + 1;
     });
     let labels = Object.keys(counts).map(Number).sort((a,b) => a-b);
@@ -144,22 +171,36 @@ function updateChart(filteredData) {
         dataLog.push(sum > 0 ? Math.log10(sum) : 0);
     }
 
-    // Cálculo y actualización del valor b en pantalla
-    const bVal = calculateBValue(labels, dataLog);
+    const yearsSpan = Math.max(1, 2026 - currentTime + 1);
+    const gr = calculateGutenbergRichterMLE(filteredData, yearsSpan, currentMag);
+
     const bBadge = document.getElementById('b-value-badge');
+    const grMetaNote = document.getElementById('gr-meta-note');
     if (bBadge) {
-        if (bVal !== null && !isNaN(bVal)) {
-            bBadge.innerText = `b = ${bVal.toFixed(2)}`;
+        if (gr && Number.isFinite(gr.b)) {
+            bBadge.innerText = `b = ${gr.b.toFixed(2)}`;
             bBadge.style.color = '#38bdf8';
-            bBadge.style.borderColor = 'rgba(56,189,248,0.3)';
-            bBadge.title = `Pendiente de Gutenberg-Richter: b = ${bVal.toFixed(2)} (Valores típicos de subducción: 0.8 - 1.1)`;
+            bBadge.style.borderColor = 'rgba(56,189,248,0.35)';
+            bBadge.title = `Aki-Utsu MLE (Mc = ${gr.mc.toFixed(1)}, N ≥ Mc = ${gr.nComplete}). Catálogo heterogéneo ML/Mw/mb; referencia exploratoria.`;
+            if (grMetaNote) grMetaNote.innerText = `Mc=${gr.mc.toFixed(1)} · N=${gr.nComplete}`;
         } else {
             bBadge.innerText = 'b = --';
+            if (grMetaNote) grMetaNote.innerText = 'Muestra insuficiente';
         }
     }
 
-    // Cálculo y actualización de Períodos de Retorno Estimados
-    const yearsSpan = Math.max(1, 2026 - currentTime + 1);
+    const formatTr = (magTarget, observedCount) => {
+        if (gr && Number.isFinite(gr.b)) {
+            const lambda = Math.pow(10, gr.aAnnual - gr.b * magTarget);
+            if (lambda > 0) {
+                const tr = 1 / lambda;
+                if (tr > 999) return '> 999 a';
+                return `~${tr.toFixed(1)} a`;
+            }
+        }
+        return observedCount > 0 ? `~${(yearsSpan / observedCount).toFixed(1)} a` : 's/d';
+    };
+
     const countM5 = filteredData.filter(f => (f.properties.magnitud || 0) >= 5.0).length;
     const countM6 = filteredData.filter(f => (f.properties.magnitud || 0) >= 6.0).length;
     const countM7 = filteredData.filter(f => (f.properties.magnitud || 0) >= 7.0).length;
@@ -167,11 +208,27 @@ function updateChart(filteredData) {
     const elTr5 = document.getElementById('tr-m5');
     const elTr6 = document.getElementById('tr-m6');
     const elTr7 = document.getElementById('tr-m7');
-    if (elTr5) elTr5.innerText = countM5 > 0 ? `~${(yearsSpan / countM5).toFixed(1)} a` : '> 35 a';
-    if (elTr6) elTr6.innerText = countM6 > 0 ? `~${(yearsSpan / countM6).toFixed(1)} a` : '> 50 a';
-    if (elTr7) elTr7.innerText = countM7 > 0 ? `~${(yearsSpan / countM7).toFixed(1)} a` : '> 80 a';
+    const elP50 = document.getElementById('tr-p50-m6');
+    if (elTr5) elTr5.innerText = formatTr(5.0, countM5);
+    if (elTr6) elTr6.innerText = formatTr(6.0, countM6);
+    if (elTr7) elTr7.innerText = formatTr(7.0, countM7);
+    if (elP50) {
+        if (gr && Number.isFinite(gr.b)) {
+            const lam6 = Math.pow(10, gr.aAnnual - gr.b * 6.0);
+            const p50 = (1 - Math.exp(-50 * lam6)) * 100;
+            elP50.innerText = `${Math.min(99.9, p50).toFixed(1)}%`;
+        } else {
+            elP50.innerText = '--';
+        }
+    }
 
-    if(chartInstance) chartInstance.destroy();
+    if (chartInstance) {
+        chartInstance.data.labels = labels;
+        chartInstance.data.datasets[0].data = dataLog;
+        chartInstance.update('none');
+        return;
+    }
+
     chartInstance = new Chart(ctx, {
         type: 'line',
         data: {
@@ -182,9 +239,9 @@ function updateChart(filteredData) {
             }]
         },
         options: {
-            responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+            responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { display: false } },
             scales: {
-                x: { title: { display: true, text: 'Mw' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                x: { title: { display: true, text: 'M' }, grid: { color: 'rgba(255,255,255,0.05)' } },
                 y: { title: { display: true, text: 'Log₁₀(N)' }, grid: { color: 'rgba(255,255,255,0.05)' } }
             },
             onClick: (event, elements, chart) => {
@@ -229,70 +286,78 @@ function handleHover(info) {
         tooltip.style.left = `${info.x}px`; tooltip.style.top = `${info.y}px`;
         
         if (p.pga !== undefined) {
-            tooltip.innerHTML = `<h4>Modelo de Amenaza OpenQuake</h4>
-                                 <p><strong>Aceleración Pico (PGA):</strong> ${p.pga} g</p>
-                                 <p><strong>Periodo de Retorno (Tr):</strong> ${p.retorno} años</p>
-                                 <p style="font-size: 0.7rem; margin-top: 6px; line-height: 1.3;">Aceleración máxima del terreno esperada con un 10% de probabilidad de excedencia en 50 años (Norma NSR-10).</p>`;
+            tooltip.innerHTML = `<h4>Malla OpenQuake (Demo Simplificada)</h4>
+                                 <p><strong>PGA Referencial:</strong> ${escapeHtml(p.pga)} g</p>
+                                 <p><strong>Periodo de Retorno (Tr):</strong> ${escapeHtml(p.retorno)} años</p>
+                                 <p style="font-size: 0.7rem; margin-top: 6px; line-height: 1.3;">Modelo ilustrativo BooreAtkinson2008 sobre fuente rectangular simplificada. No sustituye el Modelo Nacional de Amenaza Sísmica del SGC.</p>`;
         } else if (p.cluster_id !== undefined) {
             const col = getClusterColor(p.cluster_id);
             const colorHex = `rgb(${col[0]},${col[1]},${col[2]})`;
-            const magTxt = p.magnitud ? `${p.magnitud.toFixed(1)} Mw` : '≥ 4.0 Mw';
-            const munTxt = p.municipio ? p.municipio.replace(/_/g, ' ') : 'Chocó, Colombia';
-            const profTxt = (p.profundidad !== undefined && p.profundidad !== null) ? `<p><strong>Profundidad:</strong> ${p.profundidad} km</p>` : '';
-            const fechaTxt = p.fecha ? `<p><strong>Fecha:</strong> ${p.fecha}</p>` : '';
+            const magTxt = p.magnitud ? `${p.magnitud.toFixed(1)} M` : '≥ 4.0 M';
+            const munTxt = escapeHtml(p.municipio ? p.municipio.replace(/_/g, ' ') : 'Chocó, Colombia');
+            const profTxt = (p.profundidad !== undefined && p.profundidad !== null) ? `<p><strong>Profundidad:</strong> ${escapeHtml(p.profundidad)} km</p>` : '';
+            const fechaTxt = p.fecha ? `<p><strong>Fecha:</strong> ${escapeHtml(p.fecha)}</p>` : '';
             tooltip.innerHTML = `<h4>Enjambre Sísmico (IA DBSCAN)</h4>
                                  <p><strong>Ubicación:</strong> ${munTxt}</p>
-                                 <p><strong>Clúster Tectónico:</strong> <span style="color:${colorHex}; font-weight:bold; text-shadow:0 0 8px ${colorHex};">Grupo #${p.cluster_id}</span></p>
-                                 <p><strong>Magnitud del Evento:</strong> ${magTxt}</p>
+                                 <p><strong>Clúster Tectónico:</strong> <span style="color:${colorHex}; font-weight:bold; text-shadow:0 0 8px ${colorHex};">Grupo #${escapeHtml(p.cluster_id)}</span></p>
+                                 <p><strong>Magnitud del Evento:</strong> ${escapeHtml(magTxt)}</p>
                                  ${profTxt}
                                  ${fechaTxt}
-                                 <p style="font-size: 0.7rem; margin-top: 6px; line-height: 1.3;">Agrupación de alta densidad espacial (&gt;4.0 Mw) detectada en radio geodésico de 15 km mediante algoritmo DBSCAN sobre el catálogo sísmico.</p>`;
-        } else if (p.tipo && (p.tipo === 'vial' || p.tipo === 'fluvial' || p.tipo === 'aeropuerto' || p.tipo === 'hospital')) {
-            let icon = p.tipo === 'aeropuerto' ? '✈️' : (p.tipo === 'hospital' ? '🏥' : (p.tipo === 'fluvial' ? '🚢' : '🛣️'));
-            let sub = p.subtipo || p.nivel || p.tipo;
-            tooltip.innerHTML = `<h4>${icon} ${p.nombre}</h4>
+                                 <p style="font-size: 0.7rem; margin-top: 6px; line-height: 1.3;">Agrupación de alta densidad espacial (≥4.0 M) detectada en radio geodésico de 15 km mediante algoritmo DBSCAN sobre el catálogo sísmico.</p>`;
+        } else if (p.tipo && ['vial', 'fluvial', 'maritimo', 'aeropuerto', 'hospital', 'puerto'].includes(p.tipo)) {
+            const iconMap = {
+                aeropuerto: '✈️',
+                hospital: '🏥',
+                fluvial: '🚢',
+                maritimo: '⛵',
+                puerto: '⚓',
+                vial: '🛣️'
+            };
+            const icon = iconMap[p.tipo] || '📍';
+            const sub = escapeHtml(p.subtipo || p.nivel || p.tipo);
+            tooltip.innerHTML = `<h4>${icon} ${escapeHtml(p.nombre)}</h4>
                                  <p><strong>Categoría:</strong> ${sub}</p>
-                                 ${p.ciudad ? `<p><strong>Municipio:</strong> ${p.ciudad}</p>` : ''}
-                                 ${p.longitud_km ? `<p><strong>Longitud de Corredor:</strong> ${p.longitud_km} km</p>` : ''}
-                                 ${p.vulnerabilidad ? `<p style="color:#ffb703;"><strong>Vulnerabilidad:</strong> ${p.vulnerabilidad}</p>` : ''}
-                                 ${p.rol ? `<p><strong>Función Estratégica:</strong> ${p.rol}</p>` : ''}
-                                 ${p.importancia_nsr10 ? `<p style="color:#38bdf8;"><strong>Clasificación NSR-10:</strong> ${p.importancia_nsr10}</p>` : ''}`;
+                                 ${p.ciudad ? `<p><strong>Municipio:</strong> ${escapeHtml(p.ciudad)}</p>` : ''}
+                                 ${p.longitud_km ? `<p><strong>Longitud de Corredor:</strong> ${escapeHtml(p.longitud_km)} km</p>` : ''}
+                                 ${p.vulnerabilidad ? `<p style="color:#ffb703;"><strong>Vulnerabilidad:</strong> ${escapeHtml(p.vulnerabilidad)}</p>` : ''}
+                                 ${p.rol ? `<p><strong>Función Estratégica:</strong> ${escapeHtml(p.rol)}</p>` : ''}
+                                 ${p.importancia_nsr10 ? `<p style="color:#38bdf8;"><strong>Clasificación NSR-10:</strong> ${escapeHtml(p.importancia_nsr10)}</p>` : ''}`;
         } else if (p.nombre) {
             let desc = "";
             if (p.nombre.includes("Nazca")) {
                 desc = `<p style="font-size: 0.7rem; margin-top: 6px; line-height: 1.3;">Límite de colisión tectónica (Margen Convergente o Fosa) donde la placa oceánica de Nazca se subduce bajo la placa continental Sudamericana, responsable de la sismicidad más destructiva de la región.</p>`;
             }
             tooltip.innerHTML = `<h4>Estructura Geológica</h4>
-                                 <p><strong>Falla:</strong> ${p.nombre.replace(' (Margen)', '')}</p>
+                                 <p><strong>Falla:</strong> ${escapeHtml(p.nombre.replace(' (Margen)', ''))}</p>
                                  ${desc}`;
         } else if (p.fuente && (p.fuente.includes('SGC') || p.fuente.includes('Telemétrica') || p.fuente.includes('USGS') || p.fuente.includes('EMSC'))) {
             const depthStr = p.profundidad < 30 ? 'Superficial' : (p.profundidad < 70 ? 'Intermedio' : 'Profundo');
             const magVal = (p.mag !== undefined ? p.mag : p.magnitud) || 0;
             const tiempoBadge = p.esHoy
-                ? `<span style="background:rgba(16,185,129,0.25); color:#34d399; border:1px solid #10b981; border-radius:4px; padding:1px 6px; font-size:0.68rem; font-weight:700;">● HOY (${p.diffHours || 0}h)</span>`
-                : `<span style="background:rgba(148,163,184,0.15); color:#cbd5e1; border:1px solid #64748b; border-radius:4px; padding:1px 6px; font-size:0.68rem;">Reciente (${p.diffHours ? Math.round(p.diffHours/24) + 'd atrás' : 'Telemétrico'})</span>`;
+                ? `<span style="background:rgba(16,185,129,0.25); color:#34d399; border:1px solid #10b981; border-radius:4px; padding:1px 6px; font-size:0.68rem; font-weight:700;">● HOY (${escapeHtml(p.diffHours || 0)}h)</span>`
+                : `<span style="background:rgba(148,163,184,0.15); color:#cbd5e1; border:1px solid #64748b; border-radius:4px; padding:1px 6px; font-size:0.68rem;">Reciente (${escapeHtml(p.diffHours ? Math.round(p.diffHours/24) + 'd atrás' : 'Telemétrico')})</span>`;
 
             tooltip.innerHTML = `<h4 style="color:#34d399; display:flex; align-items:center; justify-content:space-between; gap:6px;">
                                     <span style="display:flex; align-items:center; gap:6px;">
                                         <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#10b981; box-shadow:0 0 8px #10b981;"></span>
-                                        📡 SGC Live: ${p.fecha}
+                                        📡 Telemetría FDSN: ${escapeHtml(p.fecha)}
                                     </span>
                                     ${tiempoBadge}
                                  </h4>
-                                 <p><strong>Magnitud:</strong> <span style="color:#ffd60a; font-weight:bold;">${magVal} Mw</span></p>
-                                 <p><strong>Profundidad Hipocentral:</strong> ${p.profundidad} km (${depthStr})</p>
-                                 <p><strong>Ubicación:</strong> ${p.municipio}</p>
-                                 <p style="color:#a7f3d0; font-size:0.72rem; margin-top:4px;"><strong>Red:</strong> ${p.fuente}</p>
-                                 ${p.rms ? `<p style="color:#94a3b8; font-size:0.7rem;">RMS: ${p.rms}s | Gap: ${p.gap}°</p>` : ''}`;
+                                 <p><strong>Magnitud:</strong> <span style="color:#ffd60a; font-weight:bold;">${escapeHtml(magVal)} M</span></p>
+                                 <p><strong>Profundidad Hipocentral:</strong> ${escapeHtml(p.profundidad)} km (${depthStr})</p>
+                                 <p><strong>Ubicación:</strong> ${escapeHtml(p.municipio)}</p>
+                                 <p style="color:#a7f3d0; font-size:0.72rem; margin-top:4px;"><strong>Agencia / Red:</strong> ${escapeHtml(p.fuente)}</p>
+                                 ${p.rms ? `<p style="color:#94a3b8; font-size:0.7rem;">RMS: ${escapeHtml(p.rms)}s | Gap: ${escapeHtml(p.gap)}°</p>` : ''}`;
         } else {
             const depthStr = p.profundidad < 30 ? 'Superficial' : (p.profundidad < 70 ? 'Intermedio' : 'Profundo');
-            const fuenteInfo = (p.municipio && p.municipio.includes('SGC Live')) ? '<span style="color:#10b981; font-weight:bold;">[SGC Live]</span> ' : '';
+            const fuenteInfo = (p.fuente) ? `<span style="color:#38bdf8; font-weight:600;">[${escapeHtml(p.fuente)}]</span> ` : '';
             let benioffExtra = '';
             if (isBenioffMode) {
                 const zVisual = (p.profundidad * benioffExaggeration).toFixed(1);
                 benioffExtra = `<p style="color:#38bdf8; font-size:0.72rem; margin-top:4px;">📐 <strong>Corte Benioff:</strong> Profundidad Z: -${zVisual} km (${benioffExaggeration.toFixed(2)}x)</p>`;
             }
-            tooltip.innerHTML = `<h4>${p.fecha}</h4><p><strong>Mag:</strong> ${p.magnitud} Mw</p><p><strong>Profundidad:</strong> ${p.profundidad} km (${depthStr})</p><p><strong>Ubicación:</strong> ${fuenteInfo}${p.municipio}</p>${benioffExtra}`;
+            tooltip.innerHTML = `<h4>${escapeHtml(p.fecha)}</h4><p><strong>Magnitud:</strong> ${escapeHtml(p.magnitud)} M <span style="font-size:0.7rem;color:#94a3b8;">(ML/Mw/mb)</span></p><p><strong>Profundidad:</strong> ${escapeHtml(p.profundidad)} km (${depthStr})</p><p><strong>Ubicación:</strong> ${fuenteInfo}${escapeHtml(p.municipio)}</p>${benioffExtra}`;
         }
     } else {
         tooltip.style.display = 'none';
@@ -338,9 +403,9 @@ function handleStandardCalorHover(info) {
         }
 
         tooltip.innerHTML = `<h4>Foco de Acumulación Sísmica</h4>
-                             <p><strong>Ubicación:</strong> ${mainLocation}</p>
+                             <p><strong>Ubicación:</strong> ${escapeHtml(mainLocation)}</p>
                              <p>Total sismos acumulados: <strong>${totalSismos} eventos</strong></p>
-                             <p>Magnitud Máxima en zona: <strong>${maxMag > 0 ? maxMag.toFixed(1) : 'N/A'} Mw</strong></p>`;
+                             <p>Magnitud Máxima en zona: <strong>${maxMag > 0 ? maxMag.toFixed(1) + ' M' : 'N/A'}</strong></p>`;
     } else {
         tooltip.style.display = 'none';
     }
@@ -372,7 +437,7 @@ function handleStandardHexHover(info) {
         }
 
         tooltip.innerHTML = `<h4>Agrupación Espacial 3D</h4>
-                             <p><strong>Ubicación:</strong> ${mainLocation}</p>
+                             <p><strong>Ubicación:</strong> ${escapeHtml(mainLocation)}</p>
                              <p>Eventos registrados: <strong>${info.object.points.length}</strong></p>`;
     } else {
         tooltip.style.display = 'none';
@@ -396,8 +461,8 @@ function handleBenioffCalorHover(info) {
         tooltip.style.top = `${info.y}px`;
         tooltip.innerHTML = `
             <h4>Concentración de Energía Sísmica 3D</h4>
-            <p><strong>Ubicación:</strong> ${p.municipio || 'Chocó - Región Pacífica'}</p>
-            <p><strong>Magnitud:</strong> <span style="color:#fbbf24; font-weight:bold;">${mag.toFixed(1)} Mw</span></p>
+            <p><strong>Ubicación:</strong> ${escapeHtml(p.municipio || 'Chocó - Región Pacífica')}</p>
+            <p><strong>Magnitud:</strong> <span style="color:#fbbf24; font-weight:bold;">${mag.toFixed(1)} M</span></p>
             <p><strong>Profundidad Hipocentral:</strong> ${prof.toFixed(1)} km (${estrato})</p>
             <p><strong>Energía Radiada:</strong> <span style="color:#f97316; font-weight:700;">${joules.toExponential(2)} Joules</span></p>
             <p style="font-size:0.72rem; color:var(--text-secondary); margin-top:4px; line-height:1.3;">Equivalente detonante: ≈ ${tonsTnt < 1 ? (tonsTnt * 1000).toFixed(0) + ' kg TNT' : tonsTnt.toFixed(1) + ' Toneladas TNT'}.</p>
@@ -420,10 +485,10 @@ function handleBenioffHexHover(info) {
 
         tooltip.innerHTML = `
             <h4>Agrupación Espacial 3D (Cúmulo de Subducción)</h4>
-            <p><strong>Sector:</strong> ${d.municipio}</p>
+            <p><strong>Sector:</strong> ${escapeHtml(d.municipio || 'Sector Benioff')}</p>
             <p><strong>Profundidad Media:</strong> ${d.avgProf.toFixed(1)} km</p>
             <p><strong>Sismos Agrupados en Celda:</strong> <span style="color:#34d399; font-weight:bold;">${d.count} eventos</span></p>
-            <p><strong>Rango de Magnitud:</strong> ${d.minMag.toFixed(1)} - ${d.maxMag.toFixed(1)} Mw</p>
+            <p><strong>Rango de Magnitud:</strong> ${d.minMag.toFixed(1)} - ${d.maxMag.toFixed(1)} M</p>
             <p style="font-size:0.72rem; color:var(--text-secondary); margin-top:4px; line-height:1.3;">Nivel: ${nivel}. Prisma 3D anclado a la losa subducente.</p>
         `;
     } else {
@@ -566,14 +631,14 @@ function handleFaultHover(info) {
 
         tooltip.innerHTML = `
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-                <h4 style="margin:0; font-size:0.85rem; color:#fff;">${p.nombre}</h4>
+                <h4 style="margin:0; font-size:0.85rem; color:#fff;">${escapeHtml(p.nombre)}</h4>
             </div>
-            <p style="margin:2px 0;"><span style="display:inline-block; padding:1px 6px; border-radius:4px; font-size:0.68rem; font-weight:bold; background:rgba(255,255,255,0.1); color:${colorBadge};">${tipoBadge}</span></p>
-            <p style="margin:2px 0;"><strong>Sistema:</strong> ${p.sistema || 'Falla Activa'}</p>
-            <p style="margin:2px 0;"><strong>Tasa de Desplazamiento:</strong> ${p.tasa_mm_ano || 2.0} mm/año</p>
-            <p style="margin:2px 0;"><strong>Potencial Sismogénico:</strong> <span style="color:#ef4444; font-weight:bold;">${p.m_max || 7.0} Mw</span></p>
-            <p style="margin:2px 0;"><strong>Longitud de Traza:</strong> ${p.longitud_km || 100} km</p>
-            ${p.sismo_historico ? `<p style="margin:2px 0; color:#fbbf24; font-size:0.72rem;"><strong>Sismo Destructor:</strong> ${p.sismo_historico}</p>` : ''}
+            <p style="margin:2px 0;"><span style="display:inline-block; padding:1px 6px; border-radius:4px; font-size:0.68rem; font-weight:bold; background:rgba(255,255,255,0.1); color:${colorBadge};">${escapeHtml(tipoBadge)}</span></p>
+            <p style="margin:2px 0;"><strong>Sistema:</strong> ${escapeHtml(p.sistema || 'Falla Activa')}</p>
+            <p style="margin:2px 0;"><strong>Tasa de Desplazamiento:</strong> ${escapeHtml(p.tasa_mm_ano || 2.0)} mm/año</p>
+            <p style="margin:2px 0;"><strong>Potencial Sismogénico:</strong> <span style="color:#ef4444; font-weight:bold;">${escapeHtml(p.m_max || 7.0)} Mw</span></p>
+            <p style="margin:2px 0;"><strong>Longitud de Traza:</strong> ${escapeHtml(p.longitud_km || 100)} km</p>
+            ${p.sismo_historico ? `<p style="margin:2px 0; color:#fbbf24; font-size:0.72rem;"><strong>Sismo Destructor:</strong> ${escapeHtml(p.sismo_historico)}</p>` : ''}
         `;
     } else {
         tooltip.style.display = 'none';
@@ -686,8 +751,45 @@ function selectFault(faultId, shouldFly = false) {
     renderLayers();
 }
 
-function renderLayers() {
+function renderLayers(options = {}) {
     let layers = [];
+
+    if (chocoBaseData && chocoBaseData.features) {
+        layers.push(new deck.GeoJsonLayer({
+            id: 'choco-offline-basemap',
+            data: chocoBaseData,
+            filled: true,
+            stroked: true,
+            getFillColor: d => d.properties && d.properties.es_choco && d.properties.nivel === 'municipio'
+                ? [56, 189, 248, 12]
+                : (d.properties && d.properties.es_choco ? [56, 189, 248, 22] : [148, 163, 184, 8]),
+            getLineColor: d => d.properties && d.properties.es_choco && d.properties.nivel === 'departamento'
+                ? [56, 189, 248, 160]
+                : (d.properties && d.properties.es_choco ? [56, 189, 248, 55] : [148, 163, 184, 65]),
+            lineWidthMinPixels: d => (d.properties && d.properties.nivel === 'departamento' && d.properties.es_choco) ? 2 : 1,
+            pickable: false
+        }));
+    }
+
+    if (showSgcWms) {
+        layers.push(new deck.TileLayer({
+            id: 'sgc-official-pga-wms',
+            data: SGC_WMS_TILE_URL,
+            minZoom: 4,
+            maxZoom: 13,
+            tileSize: 256,
+            opacity: 0.62,
+            renderSubLayers: props => {
+                const { boundingBox } = props.tile;
+                if (!props.data || !boundingBox) return null;
+                return new deck.BitmapLayer(props, {
+                    data: null,
+                    image: props.data,
+                    bounds: [boundingBox[0][0], boundingBox[0][1], boundingBox[1][0], boundingBox[1][1]]
+                });
+            }
+        }));
+    }
 
     const filteredData = mapData.features.filter(f => {
         const p = f.properties;
@@ -708,7 +810,9 @@ function renderLayers() {
     });
 
     document.getElementById('count').innerText = filteredData.length.toLocaleString();
-    updateChart(filteredData);
+    if (!options.skipChart) {
+        updateChart(filteredData);
+    }
     window.currentFilteredData = filteredData;
 
     if (!showOQ && !showLiveSGC) {
@@ -1003,7 +1107,7 @@ function renderLayers() {
         }));
     }
 
-    // CAPA 1: INFRAESTRUCTURA CRÍTICA (VÍAS PRIMARIAS, FLUVIAL, HOSPITALES, AEROPUERTOS)
+    // CAPA 1: INFRAESTRUCTURA CRÍTICA (VÍAS PRIMARIAS, FLUVIAL, CABOTAJE MARÍTIMO, HOSPITALES, AEROPUERTOS, MUELLES)
     if (showInfra && infraData && infraData.features) {
         const lineasInfra = infraData.features.filter(f => f.geometry.type === 'LineString');
         const puntosInfra = infraData.features.filter(f => f.geometry.type === 'Point');
@@ -1013,9 +1117,14 @@ function renderLayers() {
                 id: 'infra-lineas',
                 data: lineasInfra,
                 getPath: d => d.geometry.coordinates,
-                getWidth: d => d.properties.tipo === 'vial' ? 4 : 5,
+                getWidth: d => d.properties.tipo === 'vial' ? 4 : (d.properties.tipo === 'maritimo' ? 3 : 5),
                 widthUnits: 'pixels',
-                getColor: d => d.properties.tipo === 'vial' ? [255, 183, 3, 230] : [56, 189, 248, 230], // Amarillo oro (vial) / Cian claro (fluvial)
+                getColor: d => {
+                    const t = d.properties.tipo;
+                    if (t === 'vial') return [255, 183, 3, 230];
+                    if (t === 'maritimo') return [20, 184, 166, 225];
+                    return [56, 189, 248, 230];
+                },
                 pickable: true,
                 autoHighlight: true,
                 highlightColor: [255, 255, 255, 240],
@@ -1029,11 +1138,16 @@ function renderLayers() {
                 data: puntosInfra,
                 getPosition: d => [d.geometry.coordinates[0], d.geometry.coordinates[1], 20],
                 radiusUnits: 'pixels',
-                getRadius: d => d.properties.tipo === 'hospital' ? 14 : 12,
-                getFillColor: d => d.properties.tipo === 'hospital' ? [255, 45, 85, 240] : [10, 132, 255, 240], // Fucsia/Rojo (Hospital) / Azul (Aeropuerto)
+                getRadius: d => d.properties.tipo === 'hospital' ? 13 : (d.properties.tipo === 'puerto' ? 10 : 12),
+                getFillColor: d => {
+                    const t = d.properties.tipo;
+                    if (t === 'hospital') return [255, 45, 85, 240];
+                    if (t === 'puerto') return [20, 184, 166, 240];
+                    return [10, 132, 255, 240];
+                },
                 stroked: true,
                 getLineColor: [255, 255, 255, 255],
-                lineWidthMinPixels: 2.5,
+                lineWidthMinPixels: 2.2,
                 pickable: true,
                 autoHighlight: true,
                 highlightColor: [255, 255, 255, 240],
@@ -1347,12 +1461,12 @@ function renderLayers() {
                     tooltip.style.display = 'block';
                     tooltip.style.left = `${info.x}px`;
                     tooltip.style.top = `${info.y}px`;
-                    tooltip.innerHTML = `<h4>🏛️ ${m.nombre} (${m.departamento})</h4>
-                                         <p><strong>Perfil de Suelo:</strong> Tipo ${obj.curSuelo} (Fa=${obj.curFactors.Fa}, Fv=${obj.curFactors.Fv})</p>
+                    tooltip.innerHTML = `<h4>🏛️ ${escapeHtml(m.nombre)} (${escapeHtml(m.departamento)})</h4>
+                                         <p><strong>Perfil de Suelo:</strong> Tipo ${escapeHtml(obj.curSuelo)} (Fa=${obj.curFactors.Fa}, Fv=${obj.curFactors.Fv})</p>
                                          <p><strong>Grupo de Uso:</strong> I = ${obj.curI.toFixed(2)}</p>
                                          <p><strong>PGA Terreno:</strong> <strong style="color:#38bdf8;">${obj.curPga} g</strong> (Aa=${m.aa.toFixed(2)}g)</p>
                                          <p><strong>Sa Máx Meseta (Diseño):</strong> <strong style="color:#ff453a;">${obj.curSaMax.toFixed(2)} g</strong></p>
-                                         <p style="font-size:0.75rem; margin-top:4px; color:#A1A1A6;">${m.geologia}</p>`;
+                                         <p style="font-size:0.75rem; margin-top:4px; color:#A1A1A6;">${escapeHtml(m.geologia)}</p>`;
                 } else {
                     tooltip.style.display = 'none';
                 }
@@ -1402,11 +1516,11 @@ function renderLayers() {
                     tooltip.style.display = 'block';
                     tooltip.style.left = `${info.x}px`;
                     tooltip.style.top = `${info.y}px`;
-                    tooltip.innerHTML = `<h4>🏛️ ${m.nombre} (${m.departamento}) — POT</h4>
+                    tooltip.innerHTML = `<h4>🏛️ ${escapeHtml(m.nombre)} (${escapeHtml(m.departamento)}) — POT</h4>
                                          <p><strong>Población Expuesta:</strong> ${(m.poblacion || 0).toLocaleString()} hab.</p>
-                                         <p><strong>Aceleración Aa:</strong> <strong style="color:#ffd60a;">${m.aa} g</strong></p>
+                                         <p><strong>Aceleración Aa:</strong> <strong style="color:#ffd60a;">${escapeHtml(m.aa)} g</strong></p>
                                          <p><strong>Radio de Análisis:</strong> 30 km circundantes</p>
-                                         <p style="font-size:0.75rem; margin-top:4px; color:#A1A1A6;">${m.geologia || ''}</p>`;
+                                         <p style="font-size:0.75rem; margin-top:4px; color:#A1A1A6;">${escapeHtml(m.geologia || '')}</p>`;
                 } else {
                     tooltip.style.display = 'none';
                 }
@@ -1486,11 +1600,30 @@ function renderLayers() {
                     </div>
                 `;
             }
+        } else if (showSgcWms) {
+            legend.style.display = 'block';
+            legend.innerHTML = `
+                <h4 style="margin: 0 0 8px 0; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #F5F5F7;">SGC Oficial · PGA Tr=475a</h4>
+                <div style="font-size: 0.72rem; color: #CBD5E1; line-height: 1.4;">
+                    Modelo Nacional de Amenaza Sísmica (SGC, 10% exc. en 50 años, roca firme).<br>
+                    <a href="https://amenazasismica.sgc.gov.co/" target="_blank" rel="noopener noreferrer" style="color:#38bdf8;">Consultar visor oficial SGC ↗</a>
+                </div>
+            `;
+        } else if (showOQ) {
+            legend.style.display = 'block';
+            legend.innerHTML = `
+                <h4 style="margin: 0 0 8px 0; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #F5F5F7;">OpenQuake Demo (No Oficial)</h4>
+                <div style="display: flex; align-items: center; justify-content: space-between; height: 12px; border-radius: 6px; margin-bottom: 5px; background: linear-gradient(to right, rgb(255,255,178), rgb(254,204,92), rgb(253,141,60), rgb(240,59,32), rgb(189,0,38));"></div>
+                <div style="display: flex; justify-content: space-between; color: #CBD5E1; font-size: 0.72rem; font-weight: 500;">
+                    <span>0.04 g (Ref.)</span>
+                    <span>0.11 g (Demo B&amp;A 2008)</span>
+                </div>
+            `;
         } else if (showInfra) {
             legend.style.display = 'block';
             legend.innerHTML = `
-                <h4 style="margin: 0 0 10px 0; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #F5F5F7;">Líneas Vitales</h4>
-                <div style="display: flex; flex-direction: column; gap: 7px; color: #A1A1A6; font-size: 0.74rem; font-weight: 500;">
+                <h4 style="margin: 0 0 10px 0; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #F5F5F7;">Conectividad y Líneas Vitales</h4>
+                <div style="display: flex; flex-direction: column; gap: 7px; color: #CBD5E1; font-size: 0.74rem; font-weight: 500;">
                     <div style="display:flex; align-items:center; gap: 8px;">
                         <span style="display:inline-block; width:16px; height:4px; border-radius:2px; background:#FFB703;"></span>
                         <span>🛣️ <strong style="color:#FFB703;">Red Vial Primaria</strong></span>
@@ -1500,12 +1633,20 @@ function renderLayers() {
                         <span>🚢 <strong style="color:#38BDF8;">Corredor Fluvial</strong></span>
                     </div>
                     <div style="display:flex; align-items:center; gap: 8px;">
+                        <span style="display:inline-block; width:16px; height:3px; border-radius:2px; background:#14B8A6;"></span>
+                        <span>⛵ <strong style="color:#2DD4BF;">Ruta Marítima</strong></span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap: 8px;">
                         <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#0A84FF; border:1.5px solid #fff;"></span>
                         <span>✈️ <strong style="color:#60A5FA;">Terminal Aéreo</strong></span>
                     </div>
                     <div style="display:flex; align-items:center; gap: 8px;">
                         <span style="display:inline-block; width:11px; height:11px; border-radius:50%; background:#FF2D55; border:1.5px solid #fff;"></span>
                         <span>🏥 <strong style="color:#FF6482;">Centro Asistencial</strong></span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap: 8px;">
+                        <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#14B8A6; border:1.5px solid #fff;"></span>
+                        <span>⚓ <strong style="color:#2DD4BF;">Muelle / Puerto</strong></span>
                     </div>
                 </div>
             `;
@@ -1514,15 +1655,17 @@ function renderLayers() {
         }
 
         // Si hay una capa sismica activa y ademas estan visibles las lineas vitales, concatenar sub-leyenda compacta
-        if (showInfra && (viewMode !== 'none' || (isSimulatorActive && currentShakemapData))) {
+        if (showInfra && (viewMode !== 'none' || showSgcWms || showOQ || (isSimulatorActive && currentShakemapData))) {
             legend.innerHTML += `
                 <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.12);">
                     <div style="font-size: 0.68rem; font-weight: 700; text-transform: uppercase; color: #38bdf8; margin-bottom: 5px;">Líneas Vitales</div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; font-size: 0.67rem; color: #D1D5DB;">
                         <div style="display:flex; align-items:center; gap:5px;"><span style="width:12px; height:3px; background:#FFB703; display:inline-block; border-radius:1px;"></span> 🛣️ Vías</div>
                         <div style="display:flex; align-items:center; gap:5px;"><span style="width:12px; height:4px; background:#38BDF8; display:inline-block; border-radius:1px;"></span> 🚢 Fluvial</div>
+                        <div style="display:flex; align-items:center; gap:5px;"><span style="width:12px; height:3px; background:#14B8A6; display:inline-block; border-radius:1px;"></span> ⛵ Marítimo</div>
                         <div style="display:flex; align-items:center; gap:5px;"><span style="width:8px; height:8px; border-radius:50%; background:#0A84FF; border:1px solid #fff; display:inline-block;"></span> ✈️ Aéreo</div>
                         <div style="display:flex; align-items:center; gap:5px;"><span style="width:8px; height:8px; border-radius:50%; background:#FF2D55; border:1px solid #fff; display:inline-block;"></span> 🏥 Salud</div>
+                        <div style="display:flex; align-items:center; gap:5px;"><span style="width:8px; height:8px; border-radius:50%; background:#14B8A6; border:1px solid #fff; display:inline-block;"></span> ⚓ Puertos</div>
                     </div>
                 </div>
             `;
@@ -1578,13 +1721,13 @@ document.getElementById('btn-reset').addEventListener('click', () => {
     currentTime = 1993;
     document.getElementById('time-val').innerText = '1993';
 
-    // Restaurar Profundidad
+    // Restaurar Profundidad completa (250 km)
     const depthSlider = document.getElementById('depth-slider');
     if (depthSlider) {
-        depthSlider.value = 150;
-        currentMaxDepth = 150.0;
+        depthSlider.value = 250;
+        currentMaxDepth = 250.0;
         const depthVal = document.getElementById('depth-val');
-        if (depthVal) depthVal.innerText = '150 km';
+        if (depthVal) depthVal.innerText = '250 km (Todos)';
     }
     
     // Disparar Render
@@ -1614,10 +1757,11 @@ document.getElementById('btn-reset-capas').addEventListener('click', () => {
     showFaultBuffer = false;
     faultKinematicFilter = 'all';
     showLiveSGC = false;
+    showSgcWms = false;
     showML = false;
     showOQ = false;
     
-    const checks = ['check-calidad', 'check-fallas', 'check-infra', 'check-live-sgc', 'check-ml', 'check-oq', 'check-fallas-buffer'];
+    const checks = ['check-calidad', 'check-fallas', 'check-infra', 'check-live-sgc', 'check-sgc-wms', 'check-ml', 'check-oq', 'check-fallas-buffer'];
     checks.forEach(id => {
         const el = document.getElementById(id);
         if(el) el.checked = false;
@@ -1686,93 +1830,88 @@ async function checkServerHealth() {
     }
 }
 
+async function fetchJsonWithFallback(primaryUrl, fallbackUrl, timeoutMs = 6500) {
+    if (primaryUrl) {
+        try {
+            const res = await fetchWithTimeout(primaryUrl, timeoutMs);
+            if (res && res.ok) return await res.json();
+        } catch (e) {
+            console.warn(`Fallback a caché/estático para ${primaryUrl}:`, e && e.name ? e.name : e);
+        }
+    }
+    if (fallbackUrl) {
+        const fbRes = await fetch(fallbackUrl);
+        if (fbRes && fbRes.ok) return await fbRes.json();
+    }
+    return null;
+}
+
 async function loadData() {
     checkServerHealth();
+    const progressEl = document.getElementById('loader-progress');
+
+    // Lanzar en paralelo las cargas auxiliares (sin bloquear por el catálogo principal)
+    const auxPromise = Promise.allSettled([
+        fetchJsonWithFallback(ENDPOINTS.FALLAS_API, './data/fallas.geojson', 5000).then(d => { if (d) faultData = d; }),
+        fetchJsonWithFallback(MUNICIPIOS_API, './data/municipios_choco_nsr10.json', 5000).then(d => { if (d) { municipiosData = d; initMunicipiosUI(); } }),
+        fetchJsonWithFallback(INFRA_API, './data/vias_infraestructura.geojson', 5000).then(d => { if (d) infraData = d; }),
+        fetchJsonWithFallback('./data/choco_base_offline.geojson', null, 4000).then(d => { if (d) chocoBaseData = d; })
+    ]);
+
     try {
-        const res = await fetch(API_URL);
-        const progressEl = document.getElementById('loader-progress');
-        
+        let res = await fetchWithTimeout(API_URL, 8000).catch(() => null);
+        if (!res || !res.ok) {
+            res = await fetch('./sismicidad_choco_consolidado.geojson');
+        }
+        if (!res || !res.ok) {
+            throw new Error('No fue posible cargar catálogo sísmico ni respaldo local');
+        }
+
         if (!res.body) {
-            // Fallback si el navegador bloquea Streams API
             mapData = await res.json();
-            if(progressEl) progressEl.innerText = '100%';
+            if (progressEl) progressEl.innerText = '100%';
         } else {
-            // Configurar lector de flujo (Streams API) para barra de progreso
             const reader = res.body.getReader();
-            const contentLength = +res.headers.get('Content-Length') || 3500000;
-            
+            const contentLength = +res.headers.get('Content-Length') || 4100000;
             let receivedLength = 0;
             let chunks = [];
-            
-            while(true) {
-                const {done, value} = await reader.read();
+
+            while (true) {
+                const { done, value } = await reader.read();
                 if (done) break;
-                
                 chunks.push(value);
                 receivedLength += value.length;
-                
-                if(progressEl) {
+                if (progressEl) {
                     const perc = Math.min(100, Math.round((receivedLength / contentLength) * 100));
                     progressEl.innerText = `${perc}%`;
                 }
             }
-            
+
             let chunksAll = new Uint8Array(receivedLength);
             let position = 0;
-            for(let chunk of chunks) { chunksAll.set(chunk, position); position += chunk.length; }
-            
-            const result = new TextDecoder("utf-8").decode(chunksAll);
-            mapData = JSON.parse(result);
+            for (let chunk of chunks) { chunksAll.set(chunk, position); position += chunk.length; }
+            mapData = JSON.parse(new TextDecoder('utf-8').decode(chunksAll));
         }
-        
-    } catch(e) { 
-        console.error("Error API Sismos", e); 
-        document.getElementById('count').innerText = "Error API"; 
+    } catch (e) {
+        console.error('Error cargando catálogo sísmico:', e);
+        const countEl = document.getElementById('count');
+        if (countEl) countEl.innerText = 'Sin datos';
     }
-    
-    try {
-        const fRes = await fetch(ENDPOINTS.FALLAS_API); 
-        faultData = await fRes.json();
-    } catch(e) { console.error("Error API Fallas", e); }
+
+    await auxPromise;
 
     try {
-        let munRes = await fetch(MUNICIPIOS_API).catch(() => null);
-        if (!munRes || !munRes.ok) {
-            munRes = await fetch('./data/municipios_choco_nsr10.json');
-        }
-        municipiosData = await munRes.json();
-        initMunicipiosUI();
-    } catch(e) { console.error("Error cargando municipios NSR-10", e); }
-
-    try {
-        let infraRes = await fetch(INFRA_API).catch(() => null);
-        if (!infraRes || !infraRes.ok) {
-            infraRes = await fetch('./data/vias_infraestructura.geojson');
-        }
-        infraData = await infraRes.json();
-    } catch(e) { console.error("Error cargando infraestructura crítica", e); }
-    
-    try {
+        restoreSavedPreferences();
         if (deckgl) {
-            deckgl.setProps({ mapStyle: BASEMAP_STYLES['voy'] });
-        }
-        const voyBtn = document.querySelector('.basemap-btn[data-style="voy"]');
-        if (voyBtn) {
-            document.querySelectorAll('.basemap-btn').forEach(b => b.classList.remove('active'));
-            voyBtn.classList.add('active');
-        }
-        const btnPuntos = document.getElementById('btn-puntos');
-        if (btnPuntos && viewMode === 'puntos') {
-            btnPuntos.classList.add('active');
+            deckgl.setProps({ mapStyle: currentMapStyle });
         }
         renderLayers();
-    } catch(e) { console.error("Error renderizando capas", e); }
-    
-    // Fade out y remover pantalla de carga
+    } catch (e) { console.error('Error renderizando capas:', e); }
+
     const loader = document.getElementById('loader-overlay');
-    if(loader) {
+    if (loader) {
         loader.style.opacity = '0';
-        setTimeout(() => loader.remove(), 800);
+        setTimeout(() => loader.remove(), 500);
     }
 }
 
@@ -1887,29 +2026,28 @@ async function loadRealSgcHttp() {
     }
 
     try {
-        // 1. Intento primario: Endpoint de telemetría del servidor local/nube
-        const resp = await fetch(ENDPOINTS.SGC_API, { cache: 'no-store' });
+        // 1. Intento primario: Endpoint de telemetría del servidor local/nube (EMSC + USGS)
+        const resp = await fetchWithTimeout(ENDPOINTS.SGC_API, 6000, { cache: 'no-store' });
         if (resp.ok) {
             const data = await resp.json();
             if (data.features && data.features.length > 0) {
                 sgcData.features = data.features;
-                updateSgcLiveBadge(data.features.length, 'FastAPI / SGC Live');
+                updateSgcLiveBadge(data.features.length, 'FDSN Live (EMSC/USGS)');
                 if (showLiveSGC) queueRender();
                 return;
             }
         }
     } catch (err) {
-        console.warn("Backend local no disponible para SGC Live. Conectando directo a feed telemétrico satelital...", err);
+        console.warn("Backend no disponible para telemetría FDSN. Consultando feed directo USGS...", err);
     }
 
-    // 2. Consulta directa a la API FDSN oficial de USGS (eventos telemétricos en tiempo real en la región)
+    // 2. Consulta directa a la API FDSN oficial de USGS
     try {
-        // Ventana telemétrica: últimos 7 días con prioridad a las últimas 24-48 horas
         const dNow = new Date();
         const dStart = new Date(dNow.getTime() - (7 * 24 * 60 * 60 * 1000));
         const startIso = dStart.toISOString().split('T')[0];
         const usgsUrl = `https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&minlatitude=3.0&maxlatitude=8.8&minlongitude=-78.5&maxlongitude=-74.5&starttime=${startIso}&limit=30`;
-        const usgsResp = await fetch(usgsUrl, { cache: 'no-store' });
+        const usgsResp = await fetchWithTimeout(usgsUrl, 6000, { cache: 'no-store' });
         if (usgsResp.ok) {
             const usgsData = await usgsResp.json();
             if (usgsData.features && usgsData.features.length > 0) {
@@ -1959,7 +2097,7 @@ async function loadRealSgcHttp() {
                             magnitud: Math.round((p.mag || 0.0) * 10) / 10,
                             profundidad: Math.round(depth * 10) / 10,
                             municipio: nearestName,
-                            fuente: diffHours <= 24 ? "SGC / USGS Live (Últimas 24h)" : "SGC / USGS Telemétrico",
+                            fuente: diffHours <= 24 ? "USGS FDSN Live (Últimas 24h)" : "USGS FDSN Reciente (7d)",
                             rms: p.rms || 0.0,
                             gap: p.gap || 0.0
                         }
@@ -1968,7 +2106,7 @@ async function loadRealSgcHttp() {
 
                 sgcData.features = parsedFeatures;
                 const rec24h = parsedFeatures.filter(f => f.properties.esHoy).length;
-                const sourceLabel = rec24h > 0 ? `USGS/SGC Live (${rec24h} de hoy)` : 'USGS/SGC Reciente';
+                const sourceLabel = rec24h > 0 ? `USGS FDSN Live (${rec24h} de hoy)` : 'USGS FDSN Reciente';
                 updateSgcLiveBadge(parsedFeatures.length, sourceLabel);
                 if (showLiveSGC) queueRender();
                 return;
@@ -1985,7 +2123,7 @@ async function loadRealSgcHttp() {
             .slice(0, 25);
         if (recientes.length > 0) {
             sgcData.features = recientes;
-            updateSgcLiveBadge(recientes.length, 'Catálogo Local');
+            updateSgcLiveBadge(recientes.length, 'Catálogo Local Offline');
             if (showLiveSGC) queueRender();
         }
     }
@@ -2002,7 +2140,7 @@ function updateSgcLiveBadge(count, sourceName) {
         badge.style.background = 'rgba(52,211,153,0.15)';
     }
     if (subtext) {
-        subtext.innerHTML = `<span style="color:#34d399;">● Conectado a ${sourceName}</span> (${count} eventos)`;
+        subtext.innerHTML = `<span style="color:#34d399;">● Conectado: ${escapeHtml(sourceName)}</span> (${count} eventos)`;
     }
 }
 
@@ -2022,7 +2160,7 @@ function triggerSeismicAlertBanner(eventFeature) {
     const magEl = document.getElementById('alert-banner-mag');
     const depthEl = document.getElementById('alert-banner-depth');
 
-    if (descEl) descEl.innerHTML = `<strong>${p.municipio || 'Chocó / Pacífico'}</strong> detectado por red telemétrica oficial.`;
+    if (descEl) descEl.innerHTML = `<strong>${escapeHtml(p.municipio || 'Chocó / Pacífico')}</strong> (${escapeHtml(p.fuente || 'FDSN')}).`;
     if (timeEl) timeEl.innerText = p.fecha || 'Reciente';
     if (magEl) magEl.innerText = `${mag.toFixed(1)} Mw`;
     if (depthEl) depthEl.innerText = `${p.profundidad} km`;
@@ -2130,7 +2268,7 @@ document.getElementById('check-live-sgc').addEventListener('change', e => {
                             sgcData.features = incoming.features;
                             checkIncomingEventsForAlert(incoming.features);
                         }
-                        updateSgcLiveBadge(sgcData.features.length, 'WebSocket SGC');
+                        updateSgcLiveBadge(sgcData.features.length, 'WebSocket FDSN Live');
                         if (showLiveSGC) queueRender();
                     }
                 };
@@ -2163,36 +2301,66 @@ document.getElementById('check-live-sgc').addEventListener('change', e => {
         renderLayers();
     }
 });
+const checkSgcWms = document.getElementById('check-sgc-wms');
+if (checkSgcWms) {
+    checkSgcWms.addEventListener('change', e => {
+        showSgcWms = e.target.checked;
+        renderLayers();
+    });
+}
 document.getElementById('check-ml').addEventListener('change', async e => {
     showML = e.target.checked;
     if (showML && mlData.features.length === 0) {
-        try { const r = await fetch(ML_API); mlData = await r.json(); } catch(e){}
+        const d = await fetchJsonWithFallback(ML_API, './data/ml_clusters_fallback.json', 5500);
+        if (d && d.features) mlData = d;
     }
     renderLayers();
 });
 document.getElementById('check-oq').addEventListener('change', async e => {
     showOQ = e.target.checked;
     if (showOQ && oqData.features.length === 0) {
-        try { const r = await fetch(OQ_API); oqData = await r.json(); } catch(e){}
+        const d = await fetchJsonWithFallback(OQ_API, './data/oq_resultados.geojson', 5500);
+        if (d && d.features) oqData = d;
     }
     renderLayers();
 });
 
-// Selector Dinámico de Mapas Base Cartográficos
-document.querySelectorAll('.basemap-btn').forEach(btn => {
+// Selector Dinámico de Mapas Base, Tema Claro y Modo Ligero
+document.querySelectorAll('.basemap-btn[data-style]').forEach(btn => {
     btn.addEventListener('click', function() {
-        document.querySelectorAll('.basemap-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.basemap-btn[data-style]').forEach(b => b.classList.remove('active'));
         this.classList.add('active');
         const styleKey = this.getAttribute('data-style');
         if (BASEMAP_STYLES[styleKey]) {
             currentMapStyle = BASEMAP_STYLES[styleKey];
             deckgl.setProps({ mapStyle: currentMapStyle });
+            savePreferences();
         }
     });
 });
 
+const btnThemeToggle = document.getElementById('btn-theme-toggle');
+if (btnThemeToggle) {
+    btnThemeToggle.addEventListener('click', () => {
+        const isLight = document.body.classList.toggle('theme-light');
+        btnThemeToggle.classList.toggle('active', isLight);
+        btnThemeToggle.setAttribute('aria-pressed', String(isLight));
+        savePreferences();
+    });
+}
+
+const btnLowBwToggle = document.getElementById('btn-lowbw-toggle');
+if (btnLowBwToggle) {
+    btnLowBwToggle.addEventListener('click', () => {
+        const isLow = document.body.classList.toggle('low-bandwidth');
+        btnLowBwToggle.classList.toggle('active', isLow);
+        btnLowBwToggle.setAttribute('aria-pressed', String(isLow));
+        savePreferences();
+    });
+}
+
 document.querySelectorAll('.toggle-btn').forEach(btn => {
-    if (btn.id === "btn-export-csv" || btn.id === "btn-print") return;
+    if (['btn-export-csv', 'btn-export-geojson', 'btn-export-png', 'btn-print'].includes(btn.id)) return;
     
     btn.addEventListener('click', function(e) {
         // Solo quitamos la clase active de los 3 botones principales
@@ -2201,7 +2369,6 @@ document.querySelectorAll('.toggle-btn').forEach(btn => {
         viewBtns.forEach(b => {
             if (b) {
                 b.classList.remove('active');
-                b.blur();
             }
         });
         
@@ -2214,18 +2381,78 @@ document.querySelectorAll('.toggle-btn').forEach(btn => {
     });
 });
 
-// Botones de Exportación
-document.getElementById('btn-export-csv').addEventListener('click', () => {
-    if(!window.currentFilteredData) return;
-    let csv = "FECHA,LATITUD,LONGITUD,PROFUNDIDAD,MAGNITUD,MUNICIPIO\n";
-    window.currentFilteredData.forEach(f => {
-        const p = f.properties; const c = f.geometry.coordinates;
-        csv += `${p.fecha},${c[1]},${c[0]},${p.profundidad},${p.magnitud},"${p.municipio}"\n`;
-    });
-    const blob = new Blob([csv], { type: 'text/csv' });
+// Botones de Exportación Abierta (CSV UTF-8 BOM, GeoJSON, PNG WebGL)
+function downloadBlob(blob, filename) {
     const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url; a.download = 'sismos_filtrados.csv'; a.click();
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+    }, 150);
+}
+
+function safeCsvField(val) {
+    const s = String(val ?? '');
+    return /^[=+\-@\t\r]/.test(s) ? `'${s}` : s;
+}
+
+document.getElementById('btn-export-csv').addEventListener('click', () => {
+    if (!window.currentFilteredData) return;
+    let csv = '\uFEFFFECHA,LATITUD,LONGITUD,PROFUNDIDAD_KM,MAGNITUD,MUNICIPIO,FUENTE\r\n';
+    window.currentFilteredData.forEach(f => {
+        const p = f.properties;
+        const c = f.geometry.coordinates;
+        const fecha = safeCsvField(p.fecha || '').replace(/"/g, '""');
+        const mun = safeCsvField(p.municipio || '').replace(/"/g, '""');
+        const fnt = safeCsvField(p.fuente || 'Catálogo SGC Consolidado').replace(/"/g, '""');
+        csv += `"${fecha}",${c[1]},${c[0]},${p.profundidad ?? ''},${p.magnitud ?? ''},"${mun}","${fnt}"\r\n`;
+    });
+    downloadBlob(new Blob([csv], { type: 'text/csv;charset=utf-8;' }), `sismos_choco_${currentTime}_2026.csv`);
 });
+
+const btnExportGeojson = document.getElementById('btn-export-geojson');
+if (btnExportGeojson) {
+    btnExportGeojson.addEventListener('click', () => {
+        if (!window.currentFilteredData) return;
+        const fc = {
+            type: 'FeatureCollection',
+            generado: new Date().toISOString(),
+            filtros: { anio_inicio: currentTime, magnitud_min: currentMag, profundidad_max_km: currentMaxDepth },
+            features: window.currentFilteredData
+        };
+        downloadBlob(new Blob([JSON.stringify(fc)], { type: 'application/geo+json;charset=utf-8;' }), `sismos_choco_${currentTime}_2026.geojson`);
+    });
+}
+
+const btnExportPng = document.getElementById('btn-export-png');
+if (btnExportPng) {
+    btnExportPng.addEventListener('click', () => {
+        try {
+            const container = document.getElementById('map-container');
+            const canvases = container ? Array.from(container.querySelectorAll('canvas')) : [];
+            if (canvases.length === 0) return;
+            const base = canvases[0];
+            const out = document.createElement('canvas');
+            out.width = base.width || window.innerWidth;
+            out.height = base.height || window.innerHeight;
+            const ctxOut = out.getContext('2d');
+            ctxOut.fillStyle = '#0f172a';
+            ctxOut.fillRect(0, 0, out.width, out.height);
+            canvases.forEach(c => {
+                try { ctxOut.drawImage(c, 0, 0, out.width, out.height); } catch (_) {}
+            });
+            out.toBlob(blob => {
+                if (blob) downloadBlob(blob, `sismochoco_mapa_${Date.now()}.png`);
+            }, 'image/png');
+        } catch (err) {
+            console.warn('No fue posible componer captura PNG:', err);
+        }
+    });
+}
 
 document.getElementById('btn-print').addEventListener('click', () => {
     const printDate = document.getElementById('print-date');
@@ -2245,12 +2472,13 @@ document.getElementById('btn-print').addEventListener('click', () => {
         const activeCapas = [];
         if (highQualityOnly) activeCapas.push('Alta Precisión');
         if (showFaults) activeCapas.push('Fallas Geológicas');
-        if (showLiveSGC) activeCapas.push('SGC Live');
+        if (showLiveSGC) activeCapas.push('Telemetría Live');
+        if (showSgcWms) activeCapas.push('SGC Oficial PGA Tr=475a');
         if (showML) activeCapas.push('Zonas Anómalas (IA)');
-        if (showOQ) activeCapas.push('Amenaza OpenQuake');
+        if (showOQ) activeCapas.push('Malla OpenQuake (Demo)');
         
         const countStr = window.currentFilteredData ? window.currentFilteredData.length.toLocaleString() : '0';
-        printFilters.innerText = `Ventana: ${currentTime}-2026 | Magnitud: ≥ ${currentMag.toFixed(1)} Mw | Muestra: ${countStr} eventos | Modo: ${visModeNames[viewMode] || viewMode}${activeCapas.length > 0 ? ' | Capas: ' + activeCapas.join(', ') : ''}`;
+        printFilters.innerText = `Ventana: ${currentTime}-2026 | M ≥ ${currentMag.toFixed(1)} | Prof ≤ ${currentMaxDepth} km | Muestra: ${countStr} eventos | Modo: ${visModeNames[viewMode] || viewMode}${activeCapas.length > 0 ? ' | Capas: ' + activeCapas.join(', ') : ''}`;
     }
     window.print();
 });
@@ -2552,7 +2780,7 @@ const modalData = {
                 </p>
                 <ul style="margin: 0; padding-left: 18px; color: #FFF; font-size: 0.82rem; line-height: 1.45;">
                     <li style="margin-bottom: 4px;"><strong>🔄 Restablecer Visualización Espacial:</strong> Retira de inmediato la capa visual activa (apaga Puntos 3D, Mapa de Calor o Hexbins volumétricos) y desactiva el corte Benioff para dejar el mapa completamente limpio.</li>
-                    <li style="margin-bottom: 4px;"><strong>🔄 Restablecer Filtros Paramétricos:</strong> Regresa los deslizadores a sus valores predeterminados (Magnitud $\ge 0.0$ Mw, Profundidad máxima $150$ km y Año $1993$), volviendo a mostrar el 100% de los sismos del catálogo.</li>
+                    <li style="margin-bottom: 4px;"><strong>🔄 Restablecer Filtros Paramétricos:</strong> Regresa los deslizadores a sus valores predeterminados (Magnitud ≥ 0.0, Profundidad máxima 250 km y Año 1993), volviendo a mostrar el 100% de los sismos del catálogo.</li>
                     <li style="margin-bottom: 4px;"><strong>🔄 Restablecer Capas Avanzadas:</strong> Desmarca y apaga simultáneamente todos los interruptores activos (Fallas geológicas, Sismos de alta precisión, IA enjambres DBSCAN, SGC Live, OpenQuake e Infraestructura Crítica con sus convenciones).</li>
                     <li style="margin-bottom: 4px;"><strong>🧹 Limpiar Escenario ShakeMap:</strong> Dentro del simulador determinista de ruptura, retira las isoseistas y ondas de aceleración del mapa 3D.</li>
                     <li><strong>⌂ Restablecer Todo (Barra Superior):</strong> Ejecuta una restauración integral del sistema en cascada y regresa la cámara 3D a la vista cenital completa del departamento del Chocó.</li>
@@ -2639,13 +2867,18 @@ const modalData = {
             </p>
         </div>
 
-        <!-- SECCIÓN 5: ATAJOS DE TECLADO (ACCESIBILIDAD Y CONTROL OPERATIVO RÁPIDO) -->
+        <!-- SECCIÓN 5: ATAJOS DE TECLADO (ACCESIBILIDAD Y CONTROL OPERATIVO RÁPIDO - USO EN COMPUTADOR) -->
         <div style="background:linear-gradient(135deg, rgba(16,185,129,0.12), rgba(6,78,59,0.2)); border:1.5px solid #10b981; border-radius:14px; padding:16px; margin-bottom:20px; box-shadow:0 4px 18px rgba(16,185,129,0.2);">
-            <h3 style="color:#34d399; font-size:1.02rem; margin:0 0 10px 0; display:flex; align-items:center; gap:8px;">
-                <span>⌨️</span> 5. Atajos de Teclado y Control Espacial (Navegación Rápida)
-            </h3>
+            <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
+                <h3 style="color:#34d399; font-size:1.02rem; margin:0; display:flex; align-items:center; gap:8px;">
+                    <span>⌨️</span> 5. Atajos de Teclado y Control Espacial (Navegación Rápida)
+                </h3>
+                <span style="background:rgba(52,211,153,0.18); color:#34d399; border:1px solid #10b981; border-radius:6px; padding:3px 10px; font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; display:inline-flex; align-items:center; gap:5px;">
+                    💻 Uso en Computador
+                </span>
+            </div>
             <p style="color:#E2E8F0; font-size:0.86rem; line-height:1.5; margin:0 0 12px 0;">
-                Puedes controlar y conmutar las principales funciones analíticas directamente con las teclas del teclado:
+                Esta funcionalidad está optimizada para su <strong>uso en computador (escritorio o portátil con teclado físico)</strong>. Permite controlar y conmutar las principales funciones analíticas directamente con las teclas del teclado:
             </p>
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; font-size:0.82rem; margin-bottom:12px;">
                 <div style="background:rgba(0,0,0,0.35); padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.08); display:flex; align-items:center; gap:8px;">
@@ -2702,12 +2935,12 @@ const modalData = {
             </div>
 
             <p style="color:#94A3B8; font-size:0.75rem; margin:10px 0 0 0; line-height:1.4;">
-                <em>Nota: Los atajos se desactivan automáticamente al escribir dentro de cajas de búsqueda o campos de texto.</em>
+                <em>Nota: Diseñado para navegación en computador mediante teclado. Los atajos se desactivan automáticamente al escribir dentro de cajas de búsqueda o campos de texto.</em>
             </p>
         </div>
 
         <div style="display:flex; justify-content:center;">
-            <button id="btn-entendido-guia" style="background:linear-gradient(135deg, #0A84FF, #0066CC); color:#FFFFFF; border:none; border-radius:12px; padding:12px 28px; font-size:0.95rem; font-weight:600; cursor:pointer; box-shadow:0 6px 18px rgba(10,132,255,0.45); transition:all 0.2s ease;">
+            <button id="btn-entendido-guia" style="background:linear-gradient(135deg, #0052CC, #003E99); color:#FFFFFF; border:none; border-radius:12px; padding:12px 28px; font-size:0.95rem; font-weight:600; cursor:pointer; box-shadow:0 6px 18px rgba(0,82,204,0.45); transition:all 0.2s ease;">
                 ¡Entendido, Explorar la Plataforma!
             </button>
         </div>
@@ -2775,8 +3008,8 @@ const modalData = {
         <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:14px; margin-bottom:14px;">
             <h3 style="color:#38BDF8; font-size:0.98rem; margin:0 0 10px 0;">🎛️ Controles del Módulo:</h3>
             <ul style="margin:0; padding-left:18px; color:#E5E7EB; font-size:0.84rem; line-height:1.5;">
-                <li style="margin-bottom:8px;"><strong>Deslizador de Magnitud (Mw):</strong> Arrastra para definir el límite inferior de magnitud. Al subir a $\ge 5.0$, se aíslan los sismos con potencial de causar daños estructurales.</li>
-                <li style="margin-bottom:8px;"><strong>Profundidad Hipocentral (km):</strong> Permite acotar el rango vertical del subsuelo (sismos superficiales $&lt;30$ km asociados a fallas activas, frente a sismos profundos de subducción en la Placa de Nazca).</li>
+                <li style="margin-bottom:8px;"><strong>Deslizador de Magnitud (Mw):</strong> Arrastra para definir el límite inferior de magnitud. Al subir a ≥ 5.0 Mw, se aíslan los sismos con potencial de causar daños estructurales.</li>
+                <li style="margin-bottom:8px;"><strong>Profundidad Hipocentral (km):</strong> Permite acotar el rango vertical del subsuelo (sismos superficiales &lt; 30 km asociados a fallas activas, frente a sismos profundos de subducción en la Placa de Nazca).</li>
                 <li style="margin-bottom:8px;"><strong>Ventana de Tiempo y Time-Lapse:</strong> Modifica el año inicial de corte (1993 a 2026) o presiona <strong>▶ Reproducir</strong> para presenciar la animación histórica cronológica año por año.</li>
                 <li><strong>Interacción con el Gráfico Gutenberg-Richter:</strong> Al hacer clic en cualquier barra del histograma de magnitudes, el filtro se ajusta automáticamente a ese valor.</li>
             </ul>
@@ -2789,7 +3022,7 @@ const modalData = {
                 <strong style="color:#FFD60A; font-size:0.9rem;">¿Cómo retirar o restablecer los filtros?</strong>
             </div>
             <p style="margin:0; color:#FFF; font-size:0.83rem; line-height:1.45;">
-                Para <strong>retirar todos los filtros paramétricos aplicados</strong> y volver a visualizar la totalidad del catálogo histórico, presiona el botón <span style="display:inline-block; padding:1px 6px; background:rgba(255,255,255,0.2); border-radius:4px; font-weight:bold;">🔄</span> ubicado a la derecha del título <em>Filtros Paramétricos</em>. Al pulsarlo, la magnitud vuelve a 0.0 Mw, la profundidad a 150 km y el año a 1993 en un instante.
+                Para <strong>retirar todos los filtros paramétricos aplicados</strong> y volver a visualizar la totalidad del catálogo histórico, presiona el botón <span style="display:inline-block; padding:1px 6px; background:rgba(255,255,255,0.2); border-radius:4px; font-weight:bold;">🔄</span> ubicado a la derecha del título <em>Filtros Paramétricos</em>. Al pulsarlo, la magnitud vuelve a 0.0, la profundidad a 250 km y el año a 1993 en un instante.
             </p>
         </div>
     `,
@@ -2814,8 +3047,8 @@ const modalData = {
                 <li style="margin-bottom:6px;"><strong>Sismos de Alta Precisión:</strong> Filtra y oculta registros con incertidumbre geométrica instrumental (GAP &gt; 180° y RMS &gt; 1.0s).</li>
                 <li style="margin-bottom:6px;"><strong>Fallas Geológicas:</strong> Proyecta trazas activas con clasificación cinemática, ficha interactiva y zona de amortiguamiento normativo (buffer de 5 km).</li>
                 <li style="margin-bottom:6px;"><strong>Enjambres Sísmicos (IA DBSCAN):</strong> Algoritmo no supervisado que agrupa sismos con alta densidad espaciotemporal.</li>
-                <li style="margin-bottom:6px;"><strong>SGC Live:</strong> Monitoreo telemétrico continuo con pulsos de ondas en tiempo real.</li>
-                <li><strong>Amenaza OpenQuake (PGA):</strong> Proyecta la aceleración sísmica esperada para un periodo de retorno de 475 años.</li>
+                <li style="margin-bottom:6px;"><strong>Telemetría FDSN Live:</strong> Monitoreo telemétrico continuo (EMSC / USGS) con pulsos de ondas en tiempo real.</li>
+                <li><strong>Malla OpenQuake (Demo):</strong> Proyecta un escenario demostrativo simplificado para periodo de retorno referencial de 475 años (no sustituye el mapa oficial del SGC).</li>
             </ul>
         </div>
 
@@ -2887,11 +3120,12 @@ const modalData = {
         </div>
     `,
     'puntos': `
-        <h2 style="margin-top:0; color:#0A84FF; font-size:1.4rem; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:15px; margin-bottom:20px;">Eventos Individuales (Scatter)</h2>
-        <p style="color:var(--text-secondary); font-size:0.95rem; line-height:1.5; margin-bottom:10px;">Cada sismo registrado en el catálogo se dibuja como una esfera exacta en el espacio tridimensional del subsuelo.</p>
+        <h2 style="margin-top:0; color:#0A84FF; font-size:1.4rem; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:15px; margin-bottom:20px;">Eventos Individuales (Scatter 3D)</h2>
+        <p style="color:var(--text-secondary); font-size:0.95rem; line-height:1.5; margin-bottom:10px;">Cada sismo del catálogo histórico se proyecta sobre la cartografía y, al activar el <strong>Perfil 3D Benioff</strong>, se extruye en profundidad dentro del subsuelo.</p>
         <ul style="color:var(--text-secondary); font-size:0.95rem; line-height:1.5; margin-bottom:10px;">
-            <li style="margin-bottom:6px;"><strong>El tamaño y color:</strong> Son directamente proporcionales a la Magnitud (Mw) del sismo.</li>
-            <li><strong>La altura:</strong> Indica su profundidad bajo tierra (hipocentro), permitiendo ver perfiles de subducción (zonas de Benioff).</li>
+            <li style="margin-bottom:6px;"><strong>El radio (tamaño):</strong> Es proporcional a la Magnitud del sismo.</li>
+            <li style="margin-bottom:6px;"><strong>El color:</strong> Codifica el régimen de profundidad hipocentral: ámbar (&lt; 30 km superficial), rosa (30–70 km intermedio) e índigo (&gt; 70 km profundo).</li>
+            <li><strong>La cota Z (en Perfil Benioff):</strong> Representa la profundidad focal real multiplicada por el factor de exageración vertical (0.5x–3.0x).</li>
         </ul>
 
         <!-- INSTRUCCIONES DE USO Y RESTABLECIMIENTO -->
@@ -3040,12 +3274,12 @@ const modalData = {
         </div>
     `,
     'sgc': `
-        <h2 style="margin-top:0; color:#0A84FF; font-size:1.4rem; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:15px; margin-bottom:20px;">Conexión SGC Live (Monitoreo Telemétrico en Tiempo Real)</h2>
+        <h2 style="margin-top:0; color:#0A84FF; font-size:1.4rem; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:15px; margin-bottom:20px;">Telemetría FDSN en Vivo (EMSC / USGS)</h2>
         <h3 style="color:#F5F5F7; font-size:1.1rem; margin-bottom:8px;">¿Qué muestra esta capa?</h3>
-        <p style="color:var(--text-secondary); font-size:0.95rem; line-height:1.5; margin-bottom:10px;">Establece un enlace telemétrico directo con las redes sismológicas oficiales (Servicio Geológico Colombiano y feeds FDSN internacionales de USGS/EMSC) para capturar los eventos sísmicos ocurridos recientemente en el Chocó y el Pacífico colombiano.</p>
-        <p style="color:var(--text-secondary); font-size:0.95rem; line-height:1.5; margin-bottom:10px;">Cada evento se representa mediante <strong>anillos concéntricos verde esmeralda con núcleo brillante</strong> que destacan sobre la cartografía base y se autoajustan a la escala visual de pantalla.</p>
+        <p style="color:var(--text-secondary); font-size:0.95rem; line-height:1.5; margin-bottom:10px;">Establece un enlace telemétrico abierto mediante protocolo FDSN con los catálogos en tiempo real del <strong>EMSC</strong> (European-Mediterranean Seismological Centre) y del <strong>USGS</strong> (United States Geological Survey), georreferenciando cada evento respecto a las cabeceras municipales del Chocó. Para contraste sísmico oficial nacional, utilice la capa <strong>Modelo SGC Oficial (OGC)</strong> o el portal <a href="https://sismo.sgc.gov.co/" target="_blank" rel="noopener noreferrer" style="color:#38bdf8;">sismo.sgc.gov.co</a>.</p>
+        <p style="color:var(--text-secondary); font-size:0.95rem; line-height:1.5; margin-bottom:10px;">Cada evento se representa mediante <strong>anillos concéntricos verde esmeralda con núcleo brillante</strong> ajustados al zoom de pantalla.</p>
         <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; padding: 12px; margin-top: 12px; color: #a7f3d0; font-size: 0.85rem; line-height: 1.4;">
-            <strong>Arquitectura de Red Resiliente:</strong> El sistema opera con sondeo continuo cada 45 segundos y canal WebSockets en vivo. Si el servidor local está desconectado, el navegador enlaza automáticamente con los servidores telemétricos FDSN satelitales en vivo con georreferenciación municipal calculada.
+            <strong>Resiliencia y Atribución Transparente:</strong> Si no hay conectividad hacia las APIs FDSN externas, el sistema recurre automáticamente al catálogo local precargado en caché PWA sin falsificar la agencia de origen.
         </div>
 
         <!-- INSTRUCCIONES DE USO Y RESTABLECIMIENTO -->
@@ -3055,17 +3289,23 @@ const modalData = {
                 <strong style="color:#FFD60A; font-size:0.88rem;">Instrucciones de Uso y Restablecimiento:</strong>
             </div>
             <ul style="margin:6px 0 0 0; padding-left:18px; color:#FFF; font-size:0.82rem; line-height:1.45;">
-                <li><strong>Uso:</strong> Activa el interruptor <em>Conexión SGC Live</em>. El distintivo superior indicará <code>● EN VIVO (n)</code> mostrando el número de sismos detectados y sus anillos de sacudida.</li>
-                <li><strong>Restablecer:</strong> Apaga el interruptor directamente o presiona el botón <em>🔄 Restablecer Capas</em> en Capas Avanzadas para desconectar el flujo telemétrico y retirar los marcadores del mapa.</li>
+                <li><strong>Uso:</strong> Activa el interruptor <em>Telemetría FDSN Live</em>. El distintivo indicará la fuente real activa (EMSC, USGS o caché local).</li>
+                <li><strong>Restablecer:</strong> Apaga el interruptor o presiona <em>🔄 Restablecer Capas</em> para retirar los marcadores en vivo.</li>
             </ul>
         </div>
     `,
+    'sgc_wms': `
+        <h2 style="margin-top: 0; color: #0A84FF; font-size: 1.4rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px; margin-bottom: 20px;">Modelo Nacional de Amenaza Sísmica — SGC (Servicio OGC)</h2>
+        <p style="color: var(--text-secondary); font-size: 0.95rem; line-height: 1.5; margin-bottom: 12px;">Consume directamente las teselas cartográficas interoperables del servidor oficial del <strong>Servicio Geológico Colombiano (SGC)</strong> para aceleración horizontal máxima en roca (<strong>PGA [g] con período de retorno Tr = 475 años</strong>, equivalente a 10% de probabilidad de excedencia en 50 años, base de la norma NSR-10).</p>
+        <p style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.5;">Al interoperar directamente con el servicio institucional, SismoChocó evita duplicar cartografía oficial y mantiene coherencia técnica con <a href="https://amenazasismica.sgc.gov.co/" target="_blank" rel="noopener noreferrer" style="color:#38bdf8;">amenazasismica.sgc.gov.co</a>.</p>
+    `,
     'oq': `
-        <h2 style="margin-top: 0; color: #0A84FF; font-size: 1.4rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px; margin-bottom: 20px;">Evaluación Probabilística de Amenaza Sísmica</h2>
-        <h3 style="color: #F5F5F7; font-size: 1.1rem; margin-bottom: 8px;">1. ¿Qué es la Aceleración del Suelo?</h3>
-        <p style="color: var(--text-secondary); font-size: 0.95rem; line-height: 1.5; margin-bottom: 15px;">A diferencia de la magnitud (que mide la energía en el foco del sismo), la aceleración mide con qué fuerza y violencia se sacude el terreno bajo nuestros pies. Es el dato fundamental que usan los ingenieros para saber qué tan resistentes deben ser las columnas y vigas de una edificación.</p>
-        <h3 style="color: #F5F5F7; font-size: 1.1rem; margin-bottom: 8px;">2. ¿Qué significa el período de 475 años?</h3>
-        <p style="color: var(--text-secondary); font-size: 0.95rem; line-height: 1.5; margin-bottom: 15px;">Es el estándar de seguridad exigido por las normas de construcción. No significa que un terremoto ocurra exactamente cada 475 años, sino que los edificios deben diseñarse con la fuerza suficiente para soportar el sismo más severo que tiene probabilidad de presentarse durante los 50 años de vida útil de la edificación.</p>
+        <h2 style="margin-top: 0; color: #0A84FF; font-size: 1.4rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px; margin-bottom: 20px;">Malla Demostrativa OpenQuake (Modelo Simplificado — No Oficial)</h2>
+        <div style="background: rgba(245, 158, 11, 0.14); border: 1px solid rgba(245, 158, 11, 0.45); border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; color: #fde68a; font-size: 0.85rem; line-height: 1.45;">
+            <strong>Alcance Técnico del Artefacto:</strong> Esta capa corresponde a un escenario demostrativo de una fuente planar única bajo ecuación <em>BooreAtkinson2008</em> (valores de PGA entre 0.04 g y 0.11 g). Para diseño estructural u ordenamiento territorial utilice exclusivamente los coeficientes oficiales NSR-10 y la capa <strong>Modelo SGC Oficial (OGC)</strong>.
+        </div>
+        <h3 style="color: #F5F5F7; font-size: 1.1rem; margin-bottom: 8px;">¿Qué significa el período de retorno de 475 años?</h3>
+        <p style="color: var(--text-secondary); font-size: 0.95rem; line-height: 1.5; margin-bottom: 15px;">Corresponde al movimiento con 10% de probabilidad de excedencia en 50 años. No implica periodicidad fija, sino una tasa probabilística poissoniana para definir demanda sísmica.</p>
 
         <!-- INSTRUCCIONES DE USO Y RESTABLECIMIENTO -->
         <div style="background:rgba(255,149,0,0.12); border:1.5px solid #FF9500; border-radius:12px; padding:12px 14px; margin-top:14px;">
@@ -3074,7 +3314,7 @@ const modalData = {
                 <strong style="color:#FFD60A; font-size:0.88rem;">Instrucciones de Uso y Restablecimiento:</strong>
             </div>
             <ul style="margin:6px 0 0 0; padding-left:18px; color:#FFF; font-size:0.82rem; line-height:1.45;">
-                <li><strong>Uso:</strong> Activa el interruptor <em>Amenaza SGC (PGA 475a)</em> para proyectar la malla continua de isolíneas y aceleración esperada en roca.</li>
+                <li><strong>Uso:</strong> Activa el interruptor <em>Malla OpenQuake (Demo)</em> para proyectar la malla demostrativa simplificada en roca (no sustituye el mapa oficial del SGC).</li>
                 <li><strong>Restablecer:</strong> Apaga el interruptor o presiona el botón <em>🔄 Restablecer Capas</em> para ocultar la malla de amenaza sísmica.</li>
             </ul>
         </div>
@@ -3124,7 +3364,7 @@ const modalData = {
                 <strong style="color:#FFD60A; font-size:0.88rem;">Instrucciones de Uso y Restablecimiento:</strong>
             </div>
             <ul style="margin:6px 0 0 0; padding-left:18px; color:#FFF; font-size:0.82rem; line-height:1.45;">
-                <li><strong>Uso:</strong> Selecciona un municipio del departamento para consultar sus coeficientes sismorresistentes ($A_a$, $A_v$, $A_e$, $A_d$).</li>
+                <li><strong>Uso:</strong> Selecciona un municipio del departamento para consultar sus coeficientes sismorresistentes (<i>A<sub>a</sub></i>, <i>A<sub>v</sub></i>, <i>A<sub>e</sub></i>, <i>A<sub>d</sub></i>).</li>
                 <li><strong>Restablecer:</strong> Para regresar a la selección por defecto (Quibdó), vuelve a seleccionarlo en el menú desplegable o presiona el botón general <em>⌂ Restablecer Todo</em>.</li>
             </ul>
         </div>
@@ -3216,17 +3456,17 @@ const modalData = {
 
         <h3 style="color:#F5F5F7; font-size:1.05rem; margin-top:0; margin-bottom:8px;">1. Integración de Estado del Arte: Cinemática y Falla Finita</h3>
         <p style="color:var(--text-secondary); font-size:0.92rem; line-height:1.6; margin-bottom:12px;">
-            En sismos mayores ($M_w \ge 6.8$), la energía no se libera en un punto geométrico sino a lo largo de un <strong>plano de falla con longitud finita</strong>. Esta plataforma integra dos componentes complementarios:
+            En sismos mayores (<i>M<sub>w</sub></i> ≥ 6.8), la energía no se libera en un punto geométrico sino a lo largo de un <strong>plano de falla con longitud finita</strong>. Esta plataforma integra dos componentes complementarios:
         </p>
         <ul style="color:var(--text-secondary); font-size:0.86rem; line-height:1.5; margin-bottom:14px; padding-left:20px;">
-            <li style="margin-bottom:6px;"><strong style="color:#ff453a;">Plano de Ruptura 3D y Huella Lobular ($R_{\text{jb}}$):</strong> Proyección superficial rectangular del plano de falla y curvas de nivel elípticas orientadas según el rumbo (<em>strike</em>) tectónico regional, modelando la concentración de daño longitudinal.</li>
-            <li style="margin-bottom:6px;"><strong style="color:#38bdf8;">Frente Onda P (Compresional, $V_p \approx 6.0\text{ km/s}$):</strong> Anillo celeste rápido de primer arribo. Activa los sistemas de alerta temprana antes del impacto severo.</li>
-            <li><strong style="color:#ffd60a;">Frente Onda S (Cizallante, $V_s \approx 3.5\text{ km/s}$):</strong> Anillo anaranjado/rojo de alta energía que transporta las máximas aceleraciones destructivas y causa el daño estructural.</li>
+            <li style="margin-bottom:6px;"><strong style="color:#ff453a;">Plano de Ruptura 3D y Huella Lobular (<i>R</i><sub>jb</sub>):</strong> Proyección superficial rectangular del plano de falla y curvas de nivel elípticas orientadas según el rumbo (<em>strike</em>) tectónico regional, modelando la concentración de daño longitudinal.</li>
+            <li style="margin-bottom:6px;"><strong style="color:#38bdf8;">Frente Onda P (Compresional, <i>V<sub>p</sub></i> ≈ 6.0 km/s):</strong> Anillo celeste rápido de primer arribo. Activa los sistemas de alerta temprana antes del impacto severo.</li>
+            <li><strong style="color:#ffd60a;">Frente Onda S (Cizallante, <i>V<sub>s</sub></i> ≈ 3.5 km/s):</strong> Anillo anaranjado/rojo de alta energía que transporta las máximas aceleraciones destructivas y causa el daño estructural.</li>
         </ul>
 
         <h3 style="color:#F5F5F7; font-size:1.05rem; margin-top:14px; margin-bottom:8px;">2. Escenarios Deterministas Disponibles:</h3>
         <ul style="color:var(--text-secondary); font-size:0.86rem; line-height:1.5; margin-bottom:14px; padding-left:20px;">
-            <li style="margin-bottom:6px;"><strong style="color:#ff453a;">Falla Murindó (Mw 7.3):</strong> Réplica del evento de 1992 con traza de 65 km, aceleraciones $PGA \ge 0.68\text{ g}$ e intensidades $MMI\text{ VIII-IX}$.</li>
+            <li style="margin-bottom:6px;"><strong style="color:#ff453a;">Falla Murindó (Mw 7.3):</strong> Réplica del evento de 1992 con traza de 65 km, aceleraciones PGA ≥ 0.68 g e intensidades MMI VIII-IX.</li>
             <li style="margin-bottom:6px;"><strong style="color:#38bdf8;">Subducción Nazca (Mw 8.2):</strong> Megaterremoto de contacto interplaca de 140 km con afectación en toda la fosa pacífica.</li>
             <li style="margin-bottom:6px;"><strong style="color:#fbbf24;">Falla Atrato - Quibdó (Mw 6.8):</strong> Sismo cortical superficial directo con arribo de onda destructora a la capital en menos de 5 segundos.</li>
             <li><strong style="color:#32d74b;">Falla Bahía Solano (Mw 7.0):</strong> Ruptura costera en la Serranía de Baudó orientada N15W.</li>
@@ -3239,7 +3479,7 @@ const modalData = {
                 <strong style="color:#FFD60A; font-size:0.88rem;">Instrucciones de Simulación y Limpieza:</strong>
             </div>
             <ul style="margin:6px 0 0 0; padding-left:18px; color:#FFF; font-size:0.82rem; line-height:1.45;">
-                <li><strong>Simular:</strong> Elige un escenario y pulsa <em>⚡ Simular Ruptura Sísmica</em>. Las ondas $P$ y $S$ comenzarán su avance y el cronómetro medirá el tiempo de arribo a Quibdó e Istmina.</li>
+                <li><strong>Simular:</strong> Elige un escenario y pulsa <em>⚡ Simular Ruptura Sísmica</em>. Las ondas P y S comenzarán su avance y el cronómetro medirá el tiempo de arribo a Quibdó e Istmina.</li>
                 <li><strong>Pausar / Reiniciar Ondas:</strong> Usa los controles cinemáticos (<em>▶ Propagar Ondas</em> / <em>↺ Reiniciar</em>) para estudiar en detalle el frente de onda.</li>
                 <li><strong>Limpiar Simulación:</strong> Presiona el botón <em>🧹 Limpiar</em> para retirar de inmediato las isoseistas, las ondas y el plano de ruptura.</li>
             </ul>
@@ -3323,15 +3563,16 @@ if (infoModal && closeInfoModal) {
 
     // Auto-apertura de la Guía de Uso SIEMPRE al cargar la plataforma (Requisito de Usabilidad)
     const triggerGuiaAutoOpen = () => {
-        setTimeout(() => {
-            if (infoModal && infoContent && modalData['guia']) {
-                infoContent.innerHTML = modalData['guia'];
-                infoModal.style.display = 'flex';
-                requestAnimationFrame(() => {
-                    infoModal.style.opacity = '1';
-                });
-            }
-        }, 700);
+        if (infoModal && infoContent && modalData['guia']) {
+            // Solo auto-abrir la primera vez por sesión para respetar preferencia en recargas y modo offline
+            if (sessionStorage.getItem('sismochoco_guia_seen')) return;
+            sessionStorage.setItem('sismochoco_guia_seen', '1');
+            infoContent.innerHTML = modalData['guia'];
+            infoModal.style.display = 'flex';
+            requestAnimationFrame(() => {
+                infoModal.style.opacity = '1';
+            });
+        }
     };
 
     if (document.readyState === 'complete') {
@@ -3364,9 +3605,184 @@ function haversineDistanceKm(lat1, lon1, lat2, lon2) {
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
 
+function savePreferences() {
+    try {
+        const prefs = {
+            themeLight: document.body.classList.contains('theme-light'),
+            lowBw: document.body.classList.contains('low-bandwidth'),
+            mapStyleKey: Object.keys(BASEMAP_STYLES).find(k => BASEMAP_STYLES[k] === currentMapStyle) || 'voy',
+            profile: currentProfile,
+            mag: currentMag,
+            time: currentTime,
+            depth: currentMaxDepth
+        };
+        localStorage.setItem('sismochoco_prefs_v1', JSON.stringify(prefs));
+    } catch (_) {}
+}
+
+function restoreSavedPreferences() {
+    try {
+        const raw = localStorage.getItem('sismochoco_prefs_v1');
+        if (!raw) {
+            const voyBtn = document.querySelector('.basemap-btn[data-style="voy"]');
+            if (voyBtn) {
+                document.querySelectorAll('.basemap-btn[data-style]').forEach(b => b.classList.remove('active'));
+                voyBtn.classList.add('active');
+            }
+            return;
+        }
+        const prefs = JSON.parse(raw);
+        if (prefs.themeLight) {
+            document.body.classList.add('theme-light');
+            const tBtn = document.getElementById('btn-theme-toggle');
+            if (tBtn) { tBtn.classList.add('active'); tBtn.setAttribute('aria-pressed', 'true'); }
+        }
+        if (prefs.lowBw) {
+            document.body.classList.add('low-bandwidth');
+            const lBtn = document.getElementById('btn-lowbw-toggle');
+            if (lBtn) { lBtn.classList.add('active'); lBtn.setAttribute('aria-pressed', 'true'); }
+        }
+        if (prefs.mapStyleKey && BASEMAP_STYLES[prefs.mapStyleKey]) {
+            currentMapStyle = BASEMAP_STYLES[prefs.mapStyleKey];
+            document.querySelectorAll('.basemap-btn[data-style]').forEach(b => {
+                b.classList.toggle('active', b.getAttribute('data-style') === prefs.mapStyleKey);
+            });
+        }
+        if (typeof prefs.mag === 'number') {
+            currentMag = prefs.mag;
+            const el = document.getElementById('mag-slider');
+            const lbl = document.getElementById('mag-val');
+            if (el) el.value = currentMag;
+            if (lbl) lbl.innerText = currentMag.toFixed(1);
+        }
+        if (typeof prefs.time === 'number') {
+            currentTime = prefs.time;
+            const el = document.getElementById('time-slider');
+            const lbl = document.getElementById('time-val');
+            if (el) el.value = currentTime;
+            if (lbl) lbl.innerText = currentTime;
+        }
+        if (typeof prefs.depth === 'number') {
+            currentMaxDepth = Math.min(250, Math.max(10, prefs.depth));
+            const el = document.getElementById('depth-slider');
+            const lbl = document.getElementById('depth-val');
+            if (el) el.value = currentMaxDepth;
+            if (lbl) lbl.innerText = currentMaxDepth >= 250 ? '250 km (Todos)' : `≤ ${currentMaxDepth.toFixed(0)} km`;
+        }
+        if (prefs.profile && ['sismologia', 'nsr10', 'alcaldia'].includes(prefs.profile)) {
+            const tab = document.querySelector(`.profile-tab[data-profile="${prefs.profile}"]`);
+            if (tab) {
+                currentProfile = prefs.profile;
+                document.querySelectorAll('.profile-tab').forEach(t => {
+                    const isAct = t === tab;
+                    t.classList.toggle('active', isAct);
+                    t.setAttribute('aria-selected', String(isAct));
+                });
+                document.querySelectorAll('.profile-panel').forEach(p => p.style.display = 'none');
+                const panel = document.getElementById(`panel-${prefs.profile}`);
+                if (panel) panel.style.display = 'block';
+                if (prefs.profile === 'nsr10') updateNSR10Metrics();
+                if (prefs.profile === 'alcaldia') updatePOTMetrics();
+            }
+        }
+    } catch (_) {}
+}
+
+function populatePotSelect(filterMode = 'all') {
+    const potSelect = document.getElementById('pot-municipio-select');
+    if (!potSelect || !municipiosData || municipiosData.length === 0) return;
+
+    const depts = [
+        { name: 'Chocó', label: '📍 Chocó' },
+        { name: 'Risaralda', label: '☕ Risaralda' },
+        { name: 'Caldas', label: '🏔️ Caldas' },
+        { name: 'Valle del Cauca', label: '🌴 Valle del Cauca' }
+    ];
+
+    const matchesFilter = (m) => {
+        if (filterMode === 'choco_cat6') {
+            return m.departamento === 'Chocó' && String(m.categoria_ley617 || '').includes('Categoría 6');
+        }
+        if (filterMode === 'choco_aislados') {
+            return m.departamento === 'Chocó' && m.aislamiento_modal === true;
+        }
+        if (filterMode === 'choco_costero') {
+            return m.departamento === 'Chocó' && m.costero_pacifico === true;
+        }
+        return true;
+    };
+
+    const prevVal = potSelect.value;
+    potSelect.innerHTML = '';
+    let firstOptionVal = null;
+    depts.forEach(d => {
+        const group = document.createElement('optgroup');
+        let countInGroup = 0;
+        municipiosData.forEach((m, idx) => {
+            if ((m.departamento || 'Chocó') === d.name && matchesFilter(m)) {
+                const opt = document.createElement('option');
+                opt.value = idx;
+                const isoTag = m.aislamiento_modal ? ' [Aislado]' : '';
+                opt.textContent = `${m.nombre} (${(m.poblacion || 0).toLocaleString()} hab.)${isoTag}`;
+                if (firstOptionVal === null) firstOptionVal = String(idx);
+                if (prevVal && prevVal === String(idx)) opt.selected = true;
+                else if (!prevVal && (m.id === 'quibdo' || m.nombre.toLowerCase().includes('quibdó'))) opt.selected = true;
+                group.appendChild(opt);
+                countInGroup++;
+            }
+        });
+        if (countInGroup > 0) {
+            group.label = `${d.label} (${countInGroup})`;
+            potSelect.appendChild(group);
+        }
+    });
+    if (!potSelect.value && firstOptionVal !== null) {
+        potSelect.value = firstOptionVal;
+    }
+    renderPotTabularSummary(filterMode);
+}
+
+function renderPotTabularSummary(filterMode = 'all') {
+    const container = document.getElementById('pot-tabular-summary');
+    if (!container || !municipiosData) return;
+    const rows = municipiosData
+        .map((m, idx) => ({ m, idx }))
+        .filter(({ m }) => {
+            if (filterMode === 'choco_cat6') return m.departamento === 'Chocó' && String(m.categoria_ley617 || '').includes('Categoría 6');
+            if (filterMode === 'choco_aislados') return m.departamento === 'Chocó' && m.aislamiento_modal === true;
+            if (filterMode === 'choco_costero') return m.departamento === 'Chocó' && m.costero_pacifico === true;
+            return m.departamento === 'Chocó';
+        });
+
+    let html = `<div style="font-weight:700; color:#38bdf8; margin-bottom:6px;">Resumen Municipal Chocó (${rows.length} municipios)</div>`;
+    html += `<table class="ficha-pot-table" style="font-size:0.68rem;"><thead><tr><th>Municipio</th><th>Aa</th><th>Cat. Ley 617</th><th>Acceso</th></tr></thead><tbody>`;
+    rows.forEach(({ m, idx }) => {
+        const catShort = m.id === 'quibdo' ? 'Cat. 4' : (String(m.categoria_ley617 || '').includes('Categoría 6') ? 'Cat. 6' : 'Ref.');
+        const accShort = m.costero_pacifico ? 'Marítimo/Aéreo' : (m.aislamiento_modal ? 'Fluvial' : 'Terrestre');
+        html += `<tr data-mun-idx="${idx}" class="pot-summary-row" tabindex="0" role="button" aria-label="Seleccionar municipio ${escapeHtml(m.nombre)}" style="cursor:pointer;"><td>${escapeHtml(m.nombre)}</td><td>${m.aa.toFixed(2)}g</td><td>${catShort}</td><td>${accShort}</td></tr>`;
+    });
+    html += `</tbody></table>`;
+    container.innerHTML = html;
+    container.querySelectorAll('.pot-summary-row').forEach(tr => {
+        const selectRow = () => {
+            const potSel = document.getElementById('pot-municipio-select');
+            if (potSel) {
+                potSel.value = tr.getAttribute('data-mun-idx');
+                potSel.dispatchEvent(new Event('change'));
+            }
+        };
+        tr.addEventListener('click', selectRow);
+        tr.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                selectRow();
+            }
+        });
+    });
+}
+
 function initMunicipiosUI() {
     const nsrSelect = document.getElementById('nsr-municipio-select');
-    const potSelect = document.getElementById('pot-municipio-select');
     if (!municipiosData || municipiosData.length === 0) return;
     
     const depts = [
@@ -3396,52 +3812,11 @@ function initMunicipiosUI() {
         });
     }
     
-    if (potSelect) {
-        potSelect.innerHTML = '';
-        depts.forEach(d => {
-            const group = document.createElement('optgroup');
-            group.label = d.label;
-            municipiosData.forEach((m, idx) => {
-                if ((m.departamento || 'Chocó') === d.name) {
-                    const opt = document.createElement('option');
-                    opt.value = idx;
-                    opt.textContent = `${m.nombre} (${(m.poblacion || 0).toLocaleString()} hab.)`;
-                    if (m.id === 'quibdo' || m.nombre.toLowerCase().includes('quibdó')) opt.selected = true;
-                    group.appendChild(opt);
-                }
-            });
-            if (group.children.length > 0) {
-                potSelect.appendChild(group);
-            }
-        });
-    }
-    
-    const comSelect = document.getElementById('comunidad-municipio-select');
-    if (comSelect) {
-        comSelect.innerHTML = '';
-        depts.forEach(d => {
-            const group = document.createElement('optgroup');
-            group.label = d.label;
-            municipiosData.forEach((m, idx) => {
-                if ((m.departamento || 'Chocó') === d.name) {
-                    const opt = document.createElement('option');
-                    opt.value = idx;
-                    opt.textContent = `${m.nombre} (${d.name})`;
-                    if (m.id === 'quibdo' || m.nombre.toLowerCase().includes('quibdó')) opt.selected = true;
-                    group.appendChild(opt);
-                }
-            });
-            if (group.children.length > 0) {
-                comSelect.appendChild(group);
-            }
-        });
-    }
-    
+    const priorityFilter = document.getElementById('pot-priority-filter');
+    populatePotSelect(priorityFilter ? priorityFilter.value : 'all');
+
     updateNSR10Metrics();
     updatePOTMetrics();
-    renderRegionalImpactMatrix();
-    updateSimuladorMetrics();
-    updateComunidadMetrics();
 }
 
 // ============================================================================
@@ -3494,7 +3869,7 @@ function getFactoresSitioNSR10(Aa, Av, suelo) {
     return { Fa, Fv };
 }
 
-function calcularEspectroNSR10(Aa, Av, suelo, I = 1.0) {
+function calcularEspectroNSR10(Aa, Av, suelo, I = 1.0, periodsOverride = null) {
     const { Fa, Fv } = getFactoresSitioNSR10(Aa, Av, suelo);
 
     // Ecuaciones Oficiales NSR-10 Título A.2.6
@@ -3503,11 +3878,7 @@ function calcularEspectroNSR10(Aa, Av, suelo, I = 1.0) {
     const TL = 2.4 * Fv;
     const SaMax = 2.5 * Aa * Fa * I;
 
-    const periods = [];
-    const accelerations = [];
-
-    for (let t = 0; t <= 3.001; t += 0.04) {
-        const roundT = parseFloat(t.toFixed(2));
+    const evalSa = (roundT) => {
         let Sa = 0;
         if (roundT < T0) {
             Sa = Aa * Fa * I * (1 + 1.5 * (roundT / T0));
@@ -3518,8 +3889,26 @@ function calcularEspectroNSR10(Aa, Av, suelo, I = 1.0) {
         } else {
             Sa = (1.2 * Av * Fv * TL * I) / (roundT * roundT);
         }
-        periods.push(roundT);
-        accelerations.push(parseFloat(Sa.toFixed(3)));
+        return parseFloat(Sa.toFixed(3));
+    };
+
+    const periods = [];
+    const accelerations = [];
+
+    if (Array.isArray(periodsOverride) && periodsOverride.length > 0) {
+        for (let i = 0; i < periodsOverride.length; i++) {
+            const roundT = parseFloat(periodsOverride[i]);
+            periods.push(roundT);
+            accelerations.push(evalSa(roundT));
+        }
+    } else {
+        const tMax = Math.max(4.0, Math.min(10.0, Math.ceil((TL + 0.5) * 10) / 10));
+        const step = tMax > 4.5 ? 0.08 : 0.04;
+        for (let t = 0; t <= tMax + 0.001; t += step) {
+            const roundT = parseFloat(t.toFixed(2));
+            periods.push(roundT);
+            accelerations.push(evalSa(roundT));
+        }
     }
 
     return { Fa, Fv, T0, Tc, TL, SaMax, periods, accelerations };
@@ -3538,8 +3927,8 @@ function updateNSREspectroChart() {
 
     // Curva de Sitio Real con Suelo e Importancia
     const spec = calcularEspectroNSR10(m.aa, m.av, suelo, I);
-    // Curva de Referencia Base en Roca (Perfil B, I = 1.00)
-    const specRoca = calcularEspectroNSR10(m.aa, m.av, 'B', 1.0);
+    // Curva de Referencia Base en Roca (Perfil B, I = 1.00) evaluada en idénticos períodos T
+    const specRoca = calcularEspectroNSR10(m.aa, m.av, 'B', 1.0, spec.periods);
 
     const elT0 = document.getElementById('nsr-t0-val');
     const elTc = document.getElementById('nsr-tc-val');
@@ -3682,7 +4071,7 @@ function exportarEspectroCSV() {
 
     let csvContent = "";
     csvContent += `# ESPECTRO ELASTICO DE DISENO NSR-10 (TITULO A)\r\n`;
-    csvContent += `# Municipio: ${data.municipio} (${data.departamento})\r\n`;
+    csvContent += `# Municipio: ${safeCsvField(`${data.municipio} (${data.departamento})`)}\r\n`;
     csvContent += `# Parametros: Aa=${data.aa}, Av=${data.av}, Fa=${data.Fa}, Fv=${data.Fv}, Perfil_Suelo=${data.suelo}, Importancia_I=${data.I}\r\n`;
     csvContent += `# Sa_Max_Meseta: ${data.SaMax} g\r\n`;
     csvContent += `Periodo_T_seg,Sa_Diseno_Sitio_g,Sa_Diseno_Sitio_ms2,Sa_Roca_Base_g\r\n`;
@@ -3695,7 +4084,7 @@ function exportarEspectroCSV() {
         csvContent += `${t},${saG},${saMs2},${saRoca}\r\n`;
     }
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.setAttribute("href", url);
@@ -3706,6 +4095,28 @@ function exportarEspectroCSV() {
         document.body.removeChild(link);
         window.URL.revokeObjectURL(url);
     }, 150);
+}
+
+function classifyLiquefaction(licRaw, suelo = '') {
+    const raw = String(licRaw || '').trim();
+    const low = raw.toLowerCase();
+    const isSlopeLow = low.startsWith('baja') && (low.includes('deslizamiento') || low.includes('caída') || low.includes('movimientos'));
+    if (isSlopeLow && suelo !== 'F') {
+        return { pillClass: 'normal', uiText: '🟢 Baja (Ladera alta)', potText: `🟢 BAJA EN LICUACIÓN (${raw})` };
+    }
+    if (low === 'baja' && suelo !== 'F' && suelo !== 'E') {
+        return { pillClass: 'normal', uiText: '🟢 Baja', potText: '🟢 BAJA' };
+    }
+    if (low.includes('crítica') || low.includes('critica') || low.includes('alta') || suelo === 'F') {
+        const prefix = low.startsWith('baja') ? '🟢 BAJA EN LICUACIÓN / 🔴 PERFIL F' : (low.includes('crítica') ? '🔴 Crítica / Alta' : '🔴 Alta');
+        const pot = low.startsWith('baja') ? `🟢 BAJA EN LICUACIÓN (${raw}) / 🔴 PERFIL F` : `🔴 ${raw.toUpperCase() || 'ALTA'}`;
+        return { pillClass: 'critico', uiText: prefix, potText: pot };
+    }
+    if (low.includes('moderada') || low.includes('media') || suelo === 'E') {
+        const pot = low === 'baja' ? '🟠 BAJA EN LICUACIÓN / AMPLIFICACIÓN PERFIL E' : `🟠 ${raw.toUpperCase() || 'MEDIA'}`;
+        return { pillClass: 'alerta', uiText: '🟠 Moderada', potText: pot };
+    }
+    return { pillClass: 'normal', uiText: '🟢 Baja', potText: `🟢 ${raw.toUpperCase() || 'BAJA'}` };
 }
 
 function updateNSR10Metrics() {
@@ -3800,7 +4211,7 @@ function updateNSR10Metrics() {
         },
         'E': {
             title: 'Perfil E — Suelos Blandos / Aluviales (Vs < 180 m/s)',
-            desc: 'Depósitos aluviales de ríos, llanuras de inundación o bajamar. Alta amplificación por efecto gelatina (Fv = 2.60). Exige cimentaciones profundas.',
+            desc: `Depósitos aluviales de ríos, llanuras de inundación o bajamar. Alta amplificación por efecto gelatina (Fv = ${Fv.toFixed(2)}). Exige cimentaciones profundas.`,
             color: '#FF453A',
             border: '#FF453A'
         },
@@ -3830,13 +4241,33 @@ function updateNSR10Metrics() {
     if (elGeo) elGeo.innerText = m.geologia;
     
     if (elLic) {
-        const isAlta = m.licuacion_riesgo.includes('Alta') || suelo === 'F';
-        const isMedia = m.licuacion_riesgo.includes('Media') || suelo === 'E';
-        elLic.innerText = isAlta ? '🔴 Alta' : (isMedia ? '🟠 Media' : '🟢 Baja');
-        elLic.className = 'status-pill ' + (isAlta ? 'critico' : (isMedia ? 'alerta' : 'normal'));
+        const licInfo = classifyLiquefaction(m.licuacion_riesgo, suelo);
+        elLic.innerText = licInfo.uiText;
+        elLic.className = `status-pill ${licInfo.pillClass}`;
     }
 
     updateNSREspectroChart();
+}
+
+function getNearbyInfrastructure(m, radiusKm = 45) {
+    const items = [];
+    if (!infraData || !infraData.features) return items;
+    infraData.features.forEach(f => {
+        const p = f.properties || {};
+        if (f.geometry && f.geometry.type === 'Point') {
+            const c = f.geometry.coordinates;
+            const d = haversineDistanceKm(m.lat, m.lng, c[1], c[0]);
+            if (d <= radiusKm) {
+                items.push({ nombre: p.nombre, tipo: p.tipo, distKm: Math.round(d) });
+            }
+        } else if (f.geometry && f.geometry.type === 'LineString') {
+            const d = getMinDistanceToLine(m.lng, m.lat, f.geometry.coordinates);
+            if (d <= 25) {
+                items.push({ nombre: p.nombre, tipo: p.tipo, distKm: Math.round(d) });
+            }
+        }
+    });
+    return items.sort((a, b) => a.distKm - b.distKm);
 }
 
 function updatePOTMetrics() {
@@ -3862,13 +4293,29 @@ function updatePOTMetrics() {
         });
     }
     
+    const nearbyInfra = getNearbyInfrastructure(m, 35);
     const elPob = document.getElementById('pot-pob-val');
+    const elCat = document.getElementById('pot-cat-ley617');
     const elSismos = document.getElementById('pot-sismos-cercanos');
+    const elInfraProx = document.getElementById('pot-infra-prox');
+    const elAcceso = document.getElementById('pot-acceso-val');
+    const elAisl = document.getElementById('pot-aislamiento-alert');
     const elDestructor = document.getElementById('pot-ultimo-destructor');
     const elSemaforo = document.getElementById('pot-semaforo-badge');
     
-    if (elPob) elPob.innerText = m.poblacion.toLocaleString();
-    if (elSismos) elSismos.innerText = `${sismos30km} (${maxMag30km > 0 ? maxMag30km.toFixed(1) + ' Mw' : 's/d'})`;
+    if (elPob) elPob.innerText = (m.poblacion || 0).toLocaleString();
+    if (elCat) elCat.innerText = m.categoria_ley617 || 'Categoría Ley 617';
+    if (elSismos) elSismos.innerText = `${sismos30km} (${maxMag30km > 0 ? maxMag30km.toFixed(1) + ' M' : 's/d'})`;
+    if (elInfraProx) elInfraProx.innerText = `${nearbyInfra.length} nodos/ejes (≤35 km)`;
+    if (elAcceso) elAcceso.innerText = m.acceso_principal || 'Consultar cartografía vial';
+    if (elAisl) {
+        if (m.aislamiento_modal) {
+            elAisl.style.display = 'block';
+            elAisl.innerHTML = `<strong>⚠️ Alerta de Aislamiento Modal:</strong> Cabecera sin conexión vial pavimentada continua. Ante bloqueo fluvial o colapso de muelle/pista, la respuesta de emergencia depende de corredores alternos marítimos, fluviales o aéreos.`;
+        } else {
+            elAisl.style.display = 'none';
+        }
+    }
     if (elDestructor) elDestructor.innerText = m.ultimo_destructor;
     
     if (elSemaforo) {
@@ -3916,94 +4363,113 @@ function openFichaPOTModal() {
         });
     }
 
-    // Calcular fallas geológicas cercanas
+    // Calcular distancia real punto-polilínea a fallas geológicas cercanas (<= 75 km)
     let fallasCercanas = [];
     if (faultData && faultData.features) {
         faultData.features.forEach(f => {
-            const p = f.properties;
+            const p = f.properties || {};
             let minDist = 999;
             if (f.geometry && f.geometry.coordinates) {
-                f.geometry.coordinates.forEach(pt => {
-                    const d = haversineDistanceKm(m.lat, m.lng, pt[1], pt[0]);
-                    if (d < minDist) minDist = d;
+                if (f.geometry.type === 'MultiLineString') {
+                    f.geometry.coordinates.forEach(line => {
+                        const d = getMinDistanceToLine(m.lng, m.lat, line);
+                        if (d < minDist) minDist = d;
+                    });
+                } else {
+                    minDist = getMinDistanceToLine(m.lng, m.lat, f.geometry.coordinates);
+                }
+            }
+            if (minDist <= 75) {
+                fallasCercanas.push({
+                    nombre: p.nombre || p.Nombre || p.NOMBRE || 'Falla Geológica Activa',
+                    dist: Math.round(minDist)
                 });
             }
-            if (minDist <= 60) {
-                fallasCercanas.push({ nombre: p.Nombre || p.NOMBRE || 'Falla Geológica Activa', dist: Math.round(minDist) });
-            }
         });
+        fallasCercanas.sort((a, b) => a.dist - b.dist);
     }
 
     const factors = getFactoresSitioNSR10(m.aa, m.av, m.suelo_defecto || 'E');
     const pgaDiseno = (factors.Fa * m.aa).toFixed(2);
+    const nearbyInfra = getNearbyInfrastructure(m, 45);
+    const licInfo = classifyLiquefaction(m.licuacion_riesgo, m.suelo_defecto || '');
+    const licLabel = escapeHtml(licInfo.potText);
 
-    title.innerText = `Ficha Técnica Municipal de Diagnóstico Sísmico — ${m.nombre}`;
-    subtitle.innerText = `Departamento de ${m.departamento} | Aplicación para POT / PBOT / EOT (Ley 388/1997 & Ley 1523/2012)`;
+    const directrizTerritorial = m.costero_pacifico
+        ? '<strong>Frente Costero Pacífico:</strong> Incorporar planes locales de alerta ante tsunami, muelles alternos y cotas de evacuación rápida por sismo fuerte sentido en playa.'
+        : (m.aislamiento_modal
+            ? '<strong>Aislamiento Modal Fluvial/Selvático:</strong> Priorizar redundancia en embarcaderos fluviales, pistas locales y autonomía asistencial del Nivel I/II ante cortes de comunicación.'
+            : '<strong>Eje Cordillerano / Carretero:</strong> Priorizar estabilización de taludes en vías troncales y verificación de puentes frente a deslizamientos cosísmicos.');
+
+    title.innerText = `Ficha Técnica Territorial (Orientadora) — ${m.nombre}`;
+    subtitle.innerText = `Departamento de ${m.departamento} | Insumo referencial para POT / PBOT / EOT (Decreto 1077/2015 · Ley 1523/2012)`;
 
     body.innerHTML = `
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px;">
             <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:12px;">
-                <h4 style="margin:0 0 8px 0; font-size:0.78rem; color:#38bdf8; text-transform:uppercase; letter-spacing:0.04em;">1. Localización y Demografía</h4>
-                <p style="margin:0 0 4px 0; font-size:0.75rem;"><strong>Municipio:</strong> ${m.nombre}</p>
-                <p style="margin:0 0 4px 0; font-size:0.75rem;"><strong>Departamento:</strong> ${m.departamento}</p>
-                <p style="margin:0 0 4px 0; font-size:0.75rem;"><strong>Población Expuesta (DANE):</strong> ${m.poblacion.toLocaleString()} habitantes</p>
+                <h4 style="margin:0 0 8px 0; font-size:0.78rem; color:#38bdf8; text-transform:uppercase; letter-spacing:0.04em;">1. Localización y Capacidad Institucional</h4>
+                <p style="margin:0 0 4px 0; font-size:0.75rem;"><strong>Municipio:</strong> ${escapeHtml(m.nombre)} (${escapeHtml(m.departamento)})</p>
+                <p style="margin:0 0 4px 0; font-size:0.75rem;"><strong>Categoría Ley 617/2000:</strong> ${escapeHtml(m.categoria_ley617 || 'Referencia')}</p>
+                <p style="margin:0 0 4px 0; font-size:0.75rem;"><strong>Población de Referencia:</strong> ${(m.poblacion || 0).toLocaleString()} habitantes</p>
+                <p style="margin:0 0 4px 0; font-size:0.75rem;"><strong>Conectividad:</strong> ${escapeHtml(m.acceso_principal || 'Consultar red')}</p>
                 <p style="margin:0; font-size:0.75rem;"><strong>Coordenadas Cabecera:</strong> Lat ${m.lat.toFixed(4)}°, Lon ${m.lng.toFixed(4)}°</p>
             </div>
 
             <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:12px;">
                 <h4 style="margin:0 0 8px 0; font-size:0.78rem; color:#38bdf8; text-transform:uppercase; letter-spacing:0.04em;">2. Parámetros Oficiales NSR-10</h4>
-                <p style="margin:0 0 4px 0; font-size:0.75rem;"><strong>Zona de Amenaza Sísmica:</strong> <span class="status-pill critico">🔴 ${m.zona}</span></p>
+                <p style="margin:0 0 4px 0; font-size:0.75rem;"><strong>Zona de Amenaza Sísmica:</strong> <span class="status-pill critico">🔴 ${escapeHtml(m.zona)}</span></p>
                 <p style="margin:0 0 4px 0; font-size:0.75rem;"><strong>Coeficientes de Aceleración:</strong> Aa = ${m.aa.toFixed(2)} g | Av = ${m.av.toFixed(2)} g</p>
-                <p style="margin:0 0 4px 0; font-size:0.75rem;"><strong>Perfil de Suelo Predominante:</strong> Tipo ${m.suelo_defecto || 'E'} (Fa=${factors.Fa}, Fv=${factors.Fv})</p>
+                <p style="margin:0 0 4px 0; font-size:0.75rem;"><strong>Perfil de Suelo Referencial:</strong> Tipo ${escapeHtml(m.suelo_defecto || 'E')} (Fa=${factors.Fa}, Fv=${factors.Fv})</p>
                 <p style="margin:0; font-size:0.75rem;"><strong>PGA Esperado en Superficie:</strong> <strong style="color:#38bdf8;">${pgaDiseno} g</strong></p>
             </div>
         </div>
 
         <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:12px; margin-bottom:14px;">
-            <h4 style="margin:0 0 8px 0; font-size:0.78rem; color:#38bdf8; text-transform:uppercase; letter-spacing:0.04em;">3. Contexto Sismotectónico y Fallas Activas</h4>
-            <p style="margin:0 0 5px 0; font-size:0.75rem;"><strong>Geología Local:</strong> ${m.geologia}</p>
-            <p style="margin:0 0 5px 0; font-size:0.75rem;"><strong>Sismos Instrumentales en 50 km:</strong> ${sismos50km} eventos registrados (Magnitud máx: ${maxMag50km > 0 ? maxMag50km.toFixed(1) + ' Mw' : 's/d'})</p>
-            <p style="margin:0 0 5px 0; font-size:0.75rem;"><strong>Eventos Históricos Destructores de Referencia:</strong> ${m.ultimo_destructor}</p>
-            <p style="margin:0; font-size:0.75rem;"><strong>Fallas Geológicas Próximas:</strong> ${fallasCercanas.length > 0 ? fallasCercanas.map(f => `${f.nombre} (${f.dist} km)`).join(', ') : 'Falla Murindó / Falla Atrato a menos de 70 km'}</p>
+            <h4 style="margin:0 0 8px 0; font-size:0.78rem; color:#38bdf8; text-transform:uppercase; letter-spacing:0.04em;">3. Contexto Sismotectónico y Exposición de Líneas Vitales</h4>
+            <p style="margin:0 0 5px 0; font-size:0.75rem;"><strong>Geología Local:</strong> ${escapeHtml(m.geologia)}</p>
+            <p style="margin:0 0 5px 0; font-size:0.75rem;"><strong>Sismos Instrumentales en 50 km:</strong> ${sismos50km} eventos (Magnitud máx: ${maxMag50km > 0 ? maxMag50km.toFixed(1) : 's/d'})</p>
+            <p style="margin:0 0 5px 0; font-size:0.75rem;"><strong>Eventos Históricos de Referencia:</strong> ${escapeHtml(m.ultimo_destructor)}</p>
+            <p style="margin:0 0 5px 0; font-size:0.75rem;"><strong>Fallas Cartografiadas Próximas:</strong> ${fallasCercanas.length > 0 ? fallasCercanas.map(f => `${escapeHtml(f.nombre)} (${f.dist} km)`).join(', ') : 'Sin trazas dentro de 75 km en capa local'}</p>
+            <p style="margin:0; font-size:0.75rem;"><strong>Infraestructura Crítica en 45 km:</strong> ${nearbyInfra.length > 0 ? nearbyInfra.slice(0, 6).map(i => `${escapeHtml(i.nombre)} (${i.distKm} km)`).join('; ') : 'Sin nodos mapeados en 45 km — verificar red local REPS/DIMAR'}</p>
         </div>
 
         <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:12px; margin-bottom:14px;">
-            <h4 style="margin:0 0 8px 0; font-size:0.78rem; color:#ff7b72; text-transform:uppercase; letter-spacing:0.04em;">4. Matriz de Amenazas Secundarias y Concomitantes</h4>
+            <h4 style="margin:0 0 8px 0; font-size:0.78rem; color:#ff7b72; text-transform:uppercase; letter-spacing:0.04em;">4. Matriz Cualitativa de Fenómenos Concomitantes</h4>
             <table class="ficha-pot-table">
                 <thead>
                     <tr>
                         <th>Fenómeno Concomitante</th>
-                        <th>Nivel de Susceptibilidad</th>
-                        <th>Impacto Esperado en el Municipio</th>
+                        <th>Susceptibilidad Cualitativa</th>
+                        <th>Alcance Técnico y Verificación Requerida</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
                         <td><strong>Licuación de Suelos</strong></td>
-                        <td>${m.licuacion_riesgo.includes('Alta') ? '🔴 ALTA' : '🟠 MEDIA'}</td>
-                        <td>Pérdida de soporte en llanuras aluviales de ríos, asentamientos diferenciales severos en obras viales y viviendas palafíticas.</td>
+                        <td>${licLabel}</td>
+                        <td>Indicador cualitativo regional; exige ensayos SPT/CPT y nivel freático en estudios geotécnicos de detalle (NSR-10 Título H).</td>
                     </tr>
                     <tr>
-                        <td><strong>Amenaza de Tsunami</strong></td>
-                        <td>${m.costero_pacifico ? '🔴 ZONA COSTERA EXPUESTA' : '🟢 NO APLICA (Interior)'}</td>
-                        <td>${m.costero_pacifico ? 'Evacuación inmediata obligatoria a cota superior a 15 msnm ante sismo fuerte sentido en playa.' : 'Sin exposición a inundación por maremoto.'}</td>
+                        <td><strong>Exposición a Tsunami</strong></td>
+                        <td>${m.costero_pacifico ? '🔴 LITORAL PACÍFICO EXPUESTO' : '🟢 INTERIOR (No costero)'}</td>
+                        <td>${m.costero_pacifico ? 'Verificar cartografía oficial de inundación por tsunami (DIMAR / SGC / UNGRD) y rutas hacia cota segura.' : 'Sin exposición directa a oleaje tsunamigénico.'}</td>
                     </tr>
                     <tr>
-                        <td><strong>Movimientos en Masa Cosísmicos</strong></td>
-                        <td>🟠 ALTA (Laderas Saturadas)</td>
-                        <td>Deslizamientos y bloqueos de vías estratégicas de abastecimiento terrestre y fluvial debido a pluviosidad extrema en cordillera.</td>
+                        <td><strong>Inestabilidad de Laderas</strong></td>
+                        <td>🟠 ALTA / VARIABLE</td>
+                        <td>Susceptibilidad potencial a bloqueos viales y fluviales por saturación hídrica cosísmica.</td>
                     </tr>
                 </tbody>
             </table>
         </div>
 
         <div style="background:rgba(10,132,255,0.08); border:1px solid rgba(10,132,255,0.25); border-radius:10px; padding:12px;">
-            <h4 style="margin:0 0 8px 0; font-size:0.78rem; color:#70b5ff; text-transform:uppercase; letter-spacing:0.04em;">5. Directrices Vinculantes para el POT / PBOT / EOT Municipal</h4>
+            <h4 style="margin:0 0 8px 0; font-size:0.78rem; color:#70b5ff; text-transform:uppercase; letter-spacing:0.04em;">5. Lineamientos Técnicos Orientadores (No Vinculantes)</h4>
             <ol style="margin:0; padding-left:18px; font-size:0.74rem; color:var(--text-secondary); line-height:1.5;">
-                <li style="margin-bottom:4px;"><strong>Franjas de Restricción a Fallas:</strong> Establecer retiros de mínimo <strong>100 metros</strong> a cada lado de la traza de fallas activas cartografiadas, prohibiendo la edificación de uso indispensable (escuelas, hospitales).</li>
-                <li style="margin-bottom:4px;"><strong>Estudios Geotécnicos de Detalle:</strong> En zonas de llanura aluvial y bajamar, condicionar licencias de urbanismo a estudios de microzonificación y verificación de licuabilidad de arenas (Título H de la NSR-10).</li>
-                <li style="margin-bottom:4px;"><strong>Infraestructura Hospitalaria y de Rescate:</strong> Obligatoriedad de cumplimiento de Coeficiente de Importancia I = 1.50 y evaluación de vulnerabilidad sísmica hospitalaria.</li>
-                <li><strong>Rutas de Evacuación y Albergues:</strong> Señalización de corredores de evacuación y verificación de que los albergues no se sitúen en zonas inundables ni de licuación.</li>
+                <li style="margin-bottom:4px;">${directrizTerritorial}</li>
+                <li style="margin-bottom:4px;"><strong>Articulación Decreto 1807 de 2014 (Dec. 1077/2015):</strong> Esta ficha constituye un insumo orientador preliminar y no reemplaza los Estudios Básicos ni Detallados ni las competencias de asistencia técnica de CODECHOCÓ.</li>
+                <li style="margin-bottom:4px;"><strong>Enfoque Territorial y Étnico (Ley 70/1993):</strong> Toda delimitación de suelos de protección o reasentamiento en consejos comunitarios y resguardos requiere cartografía IGAC/ANT y consulta previa (Convenio 169 OIT).</li>
+                <li><strong>Edificaciones Indispensables (NSR-10 Grupo IV):</strong> Centros de salud (I = 1.50), sedes de emergencia y nodos portuarios deben priorizar evaluación de vulnerabilidad sísmica estructural.</li>
             </ol>
         </div>
     `;
@@ -4040,9 +4506,30 @@ document.querySelectorAll('.profile-tab').forEach(tab => {
         } else if (profile === 'alcaldia') {
             updatePOTMetrics();
         }
+        savePreferences();
         queueRender();
     });
 });
+
+const potPriorityFilter = document.getElementById('pot-priority-filter');
+if (potPriorityFilter) {
+    potPriorityFilter.addEventListener('change', (e) => {
+        populatePotSelect(e.target.value);
+        updatePOTMetrics();
+        queueRender();
+    });
+}
+
+const btnPotSummaryToggle = document.getElementById('btn-pot-summary-toggle');
+if (btnPotSummaryToggle) {
+    btnPotSummaryToggle.addEventListener('click', () => {
+        const box = document.getElementById('pot-tabular-summary');
+        if (!box) return;
+        const isHidden = box.style.display === 'none' || !box.style.display;
+        box.style.display = isHidden ? 'block' : 'none';
+        btnPotSummaryToggle.innerText = isHidden ? '✖ Ocultar Tablero Municipal' : '📊 Ver Tablero Municipal Simplificado';
+    });
+}
 
 // Listeners de Selección NSR-10
 const nsrSelect = document.getElementById('nsr-municipio-select');
@@ -4132,14 +4619,17 @@ if (btnPotPrint) {
 }
 
 // Controles del Modal de Ficha Técnica POT
+if (!window.__sismoAfterPrintBound) {
+    window.__sismoAfterPrintBound = true;
+    window.addEventListener('afterprint', () => {
+        document.body.classList.remove('printing-ficha');
+    });
+}
 const btnFichaPrintAction = document.getElementById('btn-ficha-print-action');
 if (btnFichaPrintAction) {
     btnFichaPrintAction.addEventListener('click', () => {
         document.body.classList.add('printing-ficha');
         window.print();
-        setTimeout(() => {
-            document.body.classList.remove('printing-ficha');
-        }, 1000);
     });
 }
 
@@ -4237,10 +4727,10 @@ function toggleBenioffMode(forceState) {
     if (isBenioffMode) {
         if (btn) {
             btn.classList.add('active');
-            btn.style.background = '#0A84FF';
+            btn.style.background = '#0052CC';
             btn.style.color = '#ffffff';
-            btn.style.borderColor = '#0A84FF';
-            btn.style.boxShadow = '0 0 14px rgba(10,132,255,0.5)';
+            btn.style.borderColor = '#0052CC';
+            btn.style.boxShadow = '0 0 14px rgba(0,82,204,0.5)';
         }
         if (btnText) btnText.innerHTML = '↺ Restaurar Vista 3D';
         if (controls) controls.style.display = 'flex';
@@ -4319,8 +4809,9 @@ if (sldDepth) {
     sldDepth.addEventListener('input', (e) => {
         currentMaxDepth = parseFloat(e.target.value);
         if (lblDepth) {
-            lblDepth.innerText = currentMaxDepth >= 150 ? '150 km (Todos)' : `≤ ${currentMaxDepth.toFixed(0)} km`;
+            lblDepth.innerText = currentMaxDepth >= 250 ? '250 km (Todos)' : `≤ ${currentMaxDepth.toFixed(0)} km`;
         }
+        savePreferences();
         queueRender();
     });
 }
@@ -4369,7 +4860,7 @@ function stopTimelapse() {
     if (timelapseIcon) timelapseIcon.innerText = '▶';
     if (timelapseText) timelapseText.innerText = 'Reproducir';
     if (btnTimelapsePlay) {
-        btnTimelapsePlay.style.background = '#0A84FF';
+        btnTimelapsePlay.style.background = '#0052CC';
     }
 }
 
@@ -4916,7 +5407,7 @@ function stepWaveAnimation(timestamp) {
     }
 
     updateWaveUI();
-    renderLayers();
+    renderLayers({ skipChart: true });
 
     if (isWaveAnimPlaying) {
         waveAnimRafId = requestAnimationFrame(stepWaveAnimation);
@@ -4950,7 +5441,7 @@ function resetWaveAnimation() {
     stopWaveAnimation();
     waveAnimTimeSec = 0.0;
     updateWaveUI();
-    renderLayers();
+    renderLayers({ skipChart: true });
 }
 
 async function activateShakemap(scenarioKey) {
@@ -5185,12 +5676,25 @@ const interactionTelemetry = {
 };
 window.interactionTelemetry = interactionTelemetry;
 
-// Escuchador global de interacción con puntero/ratón para telemetría
+let __suppressNextClickTelemetry = false;
+function triggerProgrammaticClick(el) {
+    if (!el) return;
+    __suppressNextClickTelemetry = true;
+    try {
+        el.click();
+    } finally {
+        setTimeout(() => { __suppressNextClickTelemetry = false; }, 0);
+    }
+}
+
+// Escuchador global de interacción (teclado Enter/Espacio o puntero/ratón) para telemetría
 window.addEventListener('click', (e) => {
+    if (__suppressNextClickTelemetry || !e.isTrusted) return;
     const target = e.target;
     const tag = (target && target.tagName) ? target.tagName : '';
     const id = target ? (target.id || target.className || tag) : '';
-    interactionTelemetry.record('pointer', 'click', { targetId: id, tagName: tag });
+    const mode = (e.detail === 0) ? 'keyboard' : 'pointer';
+    interactionTelemetry.record(mode, 'click', { targetId: id, tagName: tag });
 }, { passive: true });
 
 // Desplazamiento y orientación orbital del mapa 3D con teclas de flecha
@@ -5261,12 +5765,25 @@ function initKeyboardShortcuts() {
         }
 
         switch (e.key) {
+            case 'Escape': {
+                const im = document.getElementById('info-modal');
+                const fm = document.getElementById('modal-ficha-pot');
+                if (im && im.style.display !== 'none') {
+                    im.style.opacity = '0';
+                    setTimeout(() => { im.style.display = 'none'; }, 250);
+                }
+                if (fm && fm.style.display !== 'none') {
+                    fm.style.opacity = '0';
+                    setTimeout(() => { fm.style.display = 'none'; }, 250);
+                }
+                break;
+            }
             case '1': {
                 e.preventDefault();
                 interactionTelemetry.record('keyboard', 'Perfil: Sismo-Geología', { key: '1' });
                 const tab1 = document.querySelector('.profile-tab[data-profile="sismologia"]');
                 if (tab1) {
-                    tab1.click();
+                    triggerProgrammaticClick(tab1);
                     showShortcutToast('1', 'Perfil: Sismo-Geología', '🌋');
                 }
                 break;
@@ -5276,7 +5793,7 @@ function initKeyboardShortcuts() {
                 interactionTelemetry.record('keyboard', 'Perfil: Diseño Estructural', { key: '2' });
                 const tab2 = document.querySelector('.profile-tab[data-profile="nsr10"]');
                 if (tab2) {
-                    tab2.click();
+                    triggerProgrammaticClick(tab2);
                     showShortcutToast('2', 'Perfil: Diseño Estructural', '🏗️');
                 }
                 break;
@@ -5286,7 +5803,7 @@ function initKeyboardShortcuts() {
                 interactionTelemetry.record('keyboard', 'Perfil: Gestión Territorial', { key: '3' });
                 const tab3 = document.querySelector('.profile-tab[data-profile="alcaldia"]');
                 if (tab3) {
-                    tab3.click();
+                    triggerProgrammaticClick(tab3);
                     showShortcutToast('3', 'Perfil: Gestión Territorial', '🏛️');
                 }
                 break;
@@ -5296,7 +5813,7 @@ function initKeyboardShortcuts() {
                 interactionTelemetry.record('keyboard', 'Visualización: Eventos 3D', { key: '4' });
                 const btnPuntos = document.getElementById('btn-puntos');
                 if (btnPuntos) {
-                    btnPuntos.click();
+                    triggerProgrammaticClick(btnPuntos);
                     showShortcutToast('4', 'Visualización: Eventos 3D', '⚪');
                 }
                 break;
@@ -5306,7 +5823,7 @@ function initKeyboardShortcuts() {
                 interactionTelemetry.record('keyboard', 'Visualización: Mapa de Calor', { key: '5' });
                 const btnCalor = document.getElementById('btn-calor');
                 if (btnCalor) {
-                    btnCalor.click();
+                    triggerProgrammaticClick(btnCalor);
                     showShortcutToast('5', 'Visualización: Mapa de Calor', '🔥');
                 }
                 break;
@@ -5316,7 +5833,7 @@ function initKeyboardShortcuts() {
                 interactionTelemetry.record('keyboard', 'Visualización: Hexbins 3D', { key: '6' });
                 const btnHex = document.getElementById('btn-hex');
                 if (btnHex) {
-                    btnHex.click();
+                    triggerProgrammaticClick(btnHex);
                     showShortcutToast('6', 'Visualización: Hexbins 3D', '🔷');
                 }
                 break;
@@ -5326,7 +5843,7 @@ function initKeyboardShortcuts() {
                 interactionTelemetry.record('keyboard', 'Corte Benioff 3D', { key: '7' });
                 const btnBenioff = document.getElementById('btn-benioff');
                 if (btnBenioff) {
-                    btnBenioff.click();
+                    triggerProgrammaticClick(btnBenioff);
                     const estado = isBenioffMode ? 'Activado' : 'Desactivado';
                     showShortcutToast('7', `Corte Benioff 3D: ${estado}`, '📐');
                 }
@@ -5334,13 +5851,13 @@ function initKeyboardShortcuts() {
             }
             case '8': {
                 e.preventDefault();
-                interactionTelemetry.record('keyboard', 'SGC Live', { key: '8' });
+                interactionTelemetry.record('keyboard', 'Telemetría FDSN Live', { key: '8' });
                 const checkLive = document.getElementById('check-live-sgc');
                 if (checkLive) {
                     checkLive.checked = !checkLive.checked;
                     checkLive.dispatchEvent(new Event('change', { bubbles: true }));
                     const estado = checkLive.checked ? 'Conectado (En Vivo)' : 'Desconectado';
-                    showShortcutToast('8', `SGC Live: ${estado}`, '📡');
+                    showShortcutToast('8', `Telemetría FDSN: ${estado}`, '📡');
                 }
                 break;
             }
@@ -5361,7 +5878,7 @@ function initKeyboardShortcuts() {
                 interactionTelemetry.record('keyboard', 'Restablecer Todo', { key: '0' });
                 const btnHome = document.getElementById('btn-home');
                 if (btnHome) {
-                    btnHome.click();
+                    triggerProgrammaticClick(btnHome);
                     showShortcutToast('0', 'Restablecer Todo', '🔄');
                 }
                 break;
@@ -5388,13 +5905,13 @@ function initKeyboardShortcuts() {
             }
 
             // ================================================================
-            // PANEL HUD OCULTO DE TELEMETRÍA UX (TECLA ESPACIO)
+            // PANEL HUD OCULTO DE TELEMETRÍA UX (TECLA T — sin interferir con Espacio)
             // ================================================================
-            case ' ':
-            case 'Spacebar': {
+            case 't':
+            case 'T': {
                 e.preventDefault();
                 toggleUxTelemetryHud();
-                interactionTelemetry.record('keyboard', 'Conmutar HUD Telemetría UX', { key: 'Space' });
+                interactionTelemetry.record('keyboard', 'Conmutar HUD Telemetría UX', { key: 'T' });
                 break;
             }
         }

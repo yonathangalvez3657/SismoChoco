@@ -600,6 +600,322 @@
           4.7467
         ]
       }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fluvial_baudo",
+        "nombre": "Corredor Fluvial del Río Baudó (Trazado Esquemático Cabeceras)",
+        "tipo": "fluvial",
+        "subtipo": "Navegación Fluvial Pacífica (Pie de Pató – Puerto Meluk – Pizarro)",
+        "vulnerabilidad": "Alta (Aislamiento sin carreteras troncales y licuación de riberas)",
+        "longitud_km": 115,
+        "departamentos": "Chocó",
+        "fuente": "DIMAR / Planes de Desarrollo Chocó"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -76.9944,
+            5.5342
+          ],
+          [
+            -77.0167,
+            5.1167
+          ],
+          [
+            -77.0522,
+            5.0497
+          ],
+          [
+            -77.3636,
+            4.9542
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "maritimo_pacifico_choco",
+        "nombre": "Ruta de Cabotaje Marítimo Pacífico Chocoano",
+        "tipo": "maritimo",
+        "subtipo": "Corredor de Cabotaje (Juradó – Bahía Solano – Nuquí – Pizarro – Docordó – Buenaventura)",
+        "vulnerabilidad": "Crítica ante oleaje/tsunami y daños en muelles de bajamar",
+        "longitud_km": 460,
+        "departamentos": "Chocó - Valle del Cauca",
+        "fuente": "DIMAR / Capitanías de Puerto Pacífico"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -77.7714,
+            7.1114
+          ],
+          [
+            -77.412,
+            6.2324
+          ],
+          [
+            -77.2703,
+            5.7069
+          ],
+          [
+            -77.3636,
+            4.9542
+          ],
+          [
+            -77.3675,
+            4.2586
+          ],
+          [
+            -77.0797,
+            3.8801
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "puerto_bahia_solano",
+        "nombre": "Muelle Turístico / Embarcadero Ciudad Mutis",
+        "tipo": "puerto",
+        "ciudad": "Bahía Solano",
+        "rol": "Nodo marítimo costero Pacífico norte (jurisdicción DIMAR)",
+        "fuente": "DIMAR / Cartografía costera"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -77.412,
+          6.2324
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "puerto_nuqui",
+        "nombre": "Embarcadero Costero de Nuquí (Golfo de Tribugá)",
+        "tipo": "puerto",
+        "ciudad": "Nuquí",
+        "rol": "Desembarco marítimo de pasajeros y abastecimiento costero",
+        "fuente": "DIMAR"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -77.2703,
+          5.7069
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "puerto_jurado",
+        "nombre": "Zona Portuaria Costera de Juradó",
+        "tipo": "puerto",
+        "ciudad": "Juradó",
+        "rol": "Acceso marítimo fronterizo con Panamá (sin acceso terrestre)",
+        "fuente": "DIMAR"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -77.7714,
+          7.1114
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "puerto_pizarro",
+        "nombre": "Puerto Fluvial y Costero de Pizarro",
+        "tipo": "puerto",
+        "ciudad": "Bajo Baudó (Pizarro)",
+        "rol": "Desembocadura del río Baudó hacia el Pacífico",
+        "fuente": "DIMAR / Alcaldía Bajo Baudó"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -77.3636,
+          4.9542
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "puerto_docordo",
+        "nombre": "Embarcadero de Santa Genoveva de Docordó",
+        "tipo": "puerto",
+        "ciudad": "Litoral del San Juan",
+        "rol": "Articulación delta del San Juan y esteros costeros sur",
+        "fuente": "DIMAR / Ministerio de Transporte"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -77.3675,
+          4.2586
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "puerto_quibdo",
+        "nombre": "Embarcadero Fluvial de Quibdó (Río Atrato)",
+        "tipo": "puerto",
+        "ciudad": "Quibdó",
+        "rol": "Principal terminal fluvial de carga y pasajeros hacia Medio/Bajo Atrato",
+        "fuente": "Ministerio de Transporte"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -76.6611,
+          5.6947
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "puerto_acandi",
+        "nombre": "Muelle Marítimo de Acandí (Golfo de Urabá)",
+        "tipo": "puerto",
+        "ciudad": "Acandí",
+        "rol": "Salida marítima sobre el Mar Caribe chocoano",
+        "fuente": "DIMAR"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -77.2783,
+          8.5108
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "hosp_2_mayo_bojaya",
+        "nombre": "Hospital 2 de Mayo de Bojayá (Bellavista)",
+        "tipo": "hospital",
+        "ciudad": "Bojayá (Bellavista)",
+        "nivel": "Nivel I (Atención subregión Medio Atrato)",
+        "importancia_nsr10": "Grupo IV (I = 1.50)",
+        "fuente": "REPS MinSalud / SSChocó"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -76.9022,
+          6.5517
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "hosp_local_riosucio",
+        "nombre": "Hospital Local de Riosucio",
+        "tipo": "hospital",
+        "ciudad": "Riosucio",
+        "nivel": "Nivel I (Atención Bajo Atrato / Darién)",
+        "importancia_nsr10": "Grupo IV (I = 1.50)",
+        "fuente": "REPS MinSalud"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -77.1139,
+          7.4417
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "centro_salud_pizarro",
+        "nombre": "Centro de Salud de Pizarro (Bajo Baudó)",
+        "tipo": "hospital",
+        "ciudad": "Bajo Baudó (Pizarro)",
+        "nivel": "Nivel I (Atención básica y urgencias)",
+        "importancia_nsr10": "Grupo IV (I = 1.50)",
+        "fuente": "REPS MinSalud"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -77.3658,
+          4.9547
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "centro_salud_docordo",
+        "nombre": "Centro de Salud de Docordó (Litoral del San Juan)",
+        "tipo": "hospital",
+        "ciudad": "Litoral del San Juan",
+        "nivel": "Nivel I (Delta San Juan)",
+        "importancia_nsr10": "Grupo IV (I = 1.50)",
+        "fuente": "REPS MinSalud"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -77.3664,
+          4.2625
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "centro_salud_jurado",
+        "nombre": "Centro de Salud / IPS Local de Juradó",
+        "tipo": "hospital",
+        "ciudad": "Juradó",
+        "nivel": "Nivel I (Costa Pacífica Fronteriza)",
+        "importancia_nsr10": "Grupo IV (I = 1.50)",
+        "fuente": "REPS MinSalud"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -77.7656,
+          7.1089
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "hosp_acandi",
+        "nombre": "Hospital Local de Acandí",
+        "tipo": "hospital",
+        "ciudad": "Acandí",
+        "nivel": "Nivel I (Urabá / Caribe Chocoano)",
+        "importancia_nsr10": "Grupo IV (I = 1.50)",
+        "fuente": "REPS MinSalud"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -77.2783,
+          8.5108
+        ]
+      }
     }
   ]
 }

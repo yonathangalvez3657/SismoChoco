@@ -30,23 +30,22 @@ jobs:
       - name: 🔍 Verificación estática y linting
         run: |
           # Detección de errores de sintaxis críticos o nombres indefinidos
-          flake8 main.py procesamiento.py --count --select=E9,F63,F7,F82 --show-source --statistics
+          flake8 main.py sync_catalogo.py tests/test_api.py --count --select=E9,F63,F7,F82 --show-source --statistics
 
-      - name: 🌐 Verificación de sintaxis de JavaScript Frontend
+      - name: 🌐 Verificación de sintaxis y pruebas frontend
         uses: actions/setup-node@v4
         with:
           node-version: '20'
       - run: |
-          node --check app/js/main.js
-          node --check app/sw.js
+          node --check js/core-oop.js
+          node --check js/main.js
+          node --check sw.js
+          node --test tests/test_frontend_logic.mjs
 
       - name: 🚀 Ejecutar pruebas de carga de APIs y Modelo
         run: |
-          python -c "
-          import main
-          print('FastAPI App Iniciada:', main.app.title)
-          assert main.app.version == '2.0.0'
-          "
+          pip install httpx
+          pytest -q tests/
 
   deploy-production:
     name: 🚀 Despliegue Automático Continuo (CD)

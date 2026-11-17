@@ -1,8 +1,10 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Header, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
 import json
 import os
+import secrets
 import asyncio
 from datetime import datetime, timezone, timedelta
 import random
@@ -21,14 +23,15 @@ app = FastAPI(
     version="2.0.0"
 )
 
-# Configuración de Orígenes Permitidos (CORS Seguro)
+# Configuración de Orígenes Permitidos (CORS Seguro acorde a RFC/Fetch)
 raw_origins = os.getenv("ALLOWED_ORIGINS", "*")
 allowed_origins = [o.strip() for o in raw_origins.split(",") if o.strip()] if raw_origins != "*" else ["*"]
 
+app.add_middleware(GZipMiddleware, minimum_size=1024)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
-    allow_credentials=True,
+    allow_credentials=(False if "*" in allowed_origins else True),
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
@@ -46,7 +49,6 @@ async def add_security_headers(request, call_next):
 from supabase import create_client, Client
 
 GEOJSON_PATH = "sismicidad_choco_consolidado.geojson"
-ADMIN_SECRET_TOKEN = os.getenv("ADMIN_SECRET_TOKEN", "sismochoco_secure_admin_2026")
 
 def resolve_file_path(relative_path: str) -> str:
     """Resuelve la ruta de un archivo tanto si la app corre en la raíz como dentro de app/."""
@@ -61,8 +63,8 @@ def resolve_file_path(relative_path: str) -> str:
             return c
     return candidates[0]
 
-# Variables de Entorno Seguras (Inyectadas en producción vía secrets)
-SUPABASE_URL = os.getenv("SUPABASE_URL", "https://ukqjtulsbzabadvgfybh.supabase.co")
+# Variables de Entorno Seguras (sin secretos o URLs productivas codificadas)
+SUPABASE_URL = os.getenv("SUPABASE_URL", "")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY", "")
 
 try:
@@ -111,6 +113,8 @@ async def daily_sync_scheduler():
             print("[Cron Diario] Iniciando sincronización automática de catálogo sísmico a las 00:00...")
             from sync_catalogo import sync_catalogo_live
             res = await asyncio.to_thread(sync_catalogo_live)
+            global SISMOS_CACHE
+            SISMOS_CACHE = None
             await asyncio.to_thread(load_data_from_supabase)
             print(f"[Cron Diario] Sincronización completada con éxito: {res}")
         except Exception as e:
@@ -193,25 +197,29 @@ def get_sismos():
         return json.load(f)
 
 def verify_admin_token(x_admin_token: str = Header(None)):
-    """Verifica autenticación para endpoints administrativos."""
-    expected_token = os.getenv("ADMIN_SECRET_TOKEN", "sismochoco_secure_admin_2026")
-    # Si estamos en localhost/dev o se proporciona el token válido
-    if x_admin_token != expected_token and os.getenv("ENVIRONMENT") == "production":
+    """Verifica autenticación en tiempo constante para endpoints administrativos."""
+    expected_token = os.getenv("ADMIN_SECRET_TOKEN", "")
+    if not expected_token:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Autenticación administrativa no configurada en el servidor."
+        )
+    if not secrets.compare_digest(x_admin_token or "", expected_token):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Acceso denegado: Token de autorización administrativa inválido o no suministrado."
         )
 
-@app.get("/api/sismos/reload")
 @app.post("/api/sismos/reload")
 def reload_sismos(x_admin_token: str = Header(None)):
     """Recarga el catálogo sísmico en memoria desde Supabase o archivo consolidado."""
     verify_admin_token(x_admin_token)
+    global SISMOS_CACHE
+    SISMOS_CACHE = None
     load_data_from_supabase()
     count = len(SISMOS_CACHE.get("features", [])) if SISMOS_CACHE else 0
     return {"status": "ok", "message": "Catálogo sísmico recargado", "total_eventos": count}
 
-@app.get("/api/sismos/sync")
 @app.post("/api/sismos/sync")
 def sync_sismos(x_admin_token: str = Header(None)):
     """Sincroniza el catálogo en vivo consultando USGS y EMSC y recarga la memoria."""
@@ -219,10 +227,13 @@ def sync_sismos(x_admin_token: str = Header(None)):
     try:
         from sync_catalogo import sync_catalogo_live
         res = sync_catalogo_live()
+        global SISMOS_CACHE
+        SISMOS_CACHE = None
         load_data_from_supabase()
         return {"status": "ok", "resultado": res}
     except Exception as e:
-        return {"status": "error", "message": str(e)}
+        print(f"Error interno en sync_sismos: {e}")
+        raise HTTPException(status_code=500, detail="Error interno al sincronizar el catálogo.")
 
 @app.get("/api/fallas")
 def get_fallas():
@@ -255,7 +266,7 @@ import requests
 from sync_catalogo import haversine, find_nearest_municipio
 
 def fetch_real_sgc_telemetry(limit: int = 25) -> list:
-    """Consulta la red telemétrica sísmica en tiempo real (EMSC/USGS/SGC) para la región del Chocó y zonas limítrofes."""
+    """Consulta catálogos FDSN en tiempo real (EMSC y USGS; atribución explícita por agencia) para el Chocó y zonas limítrofes."""
     lat_min, lat_max = 3.0, 8.8
     lon_min, lon_max = -78.5, -74.5
     features = []
@@ -282,7 +293,9 @@ def fetch_real_sgc_telemetry(limit: int = 25) -> list:
                 dt_utc = datetime.strptime(time_str, "%Y-%m-%dT%H:%M:%S").replace(tzinfo=timezone.utc)
                 dt_col = dt_utc.astimezone(COLOMBIA_TZ)
                 
-                lon, lat, depth = float(c[0]), float(c[1]), float(p.get("depth", 10.0))
+                raw_depth = p.get("depth")
+                lon, lat = float(c[0]), float(c[1])
+                depth = float(raw_depth if raw_depth is not None else 10.0)
                 mun_name = find_nearest_municipio(lat, lon, municipios) if municipios else p.get("flynn_region", "Chocó")
                 
                 features.append({
@@ -295,10 +308,10 @@ def fetch_real_sgc_telemetry(limit: int = 25) -> list:
                         "id": str(p.get("unid", item.get("id"))),
                         "fecha": dt_col.strftime("%Y-%m-%d %H:%M:%S"),
                         "anio": dt_col.year,
-                        "magnitud": round(float(p.get("mag", 0.0)), 1),
+                        "magnitud": round(float(p.get("mag") or 0.0), 1),
                         "profundidad": round(depth, 1),
-                        "municipio": f"{mun_name} (SGC / EMSC Real)",
-                        "fuente": "SGC / Red Telemétrica Oficial en Vivo",
+                        "municipio": f"{mun_name} · EMSC FDSN",
+                        "fuente": "EMSC FDSN Real-Time (European-Mediterranean Seismological Centre)",
                         "rms": float(p.get("rms") or 0.0),
                         "gap": float(p.get("gap") or 0.0)
                     }
@@ -306,7 +319,7 @@ def fetch_real_sgc_telemetry(limit: int = 25) -> list:
     except Exception as e:
         print(f"Aviso telemetría EMSC: {e}")
 
-    # 2. Si EMSC arrojó pocos datos, complementar con USGS FDSN
+    # 2. Complementar con USGS FDSN Real-Time
     if len(features) < 5:
         try:
             url_usgs = f"https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&minlatitude={lat_min}&maxlatitude={lat_max}&minlongitude={lon_min}&maxlongitude={lon_max}&limit={limit}"
@@ -315,7 +328,7 @@ def fetch_real_sgc_telemetry(limit: int = 25) -> list:
                 for item in resp.json().get("features", []):
                     p = item.get("properties", {})
                     c = item.get("geometry", {}).get("coordinates", [0, 0, 0])
-                    dt_utc = datetime.utcfromtimestamp(p.get("time", 0) / 1000.0).replace(tzinfo=timezone.utc)
+                    dt_utc = datetime.fromtimestamp(p.get("time", 0) / 1000.0, tz=timezone.utc)
                     dt_col = dt_utc.astimezone(COLOMBIA_TZ)
                     
                     lon, lat, depth = float(c[0]), float(c[1]), float(c[2])
@@ -331,10 +344,10 @@ def fetch_real_sgc_telemetry(limit: int = 25) -> list:
                             "id": str(item.get("id")),
                             "fecha": dt_col.strftime("%Y-%m-%d %H:%M:%S"),
                             "anio": dt_col.year,
-                            "magnitud": round(float(p.get("mag", 0.0)), 1),
+                            "magnitud": round(float(p.get("mag") or 0.0), 1),
                             "profundidad": round(depth, 1),
-                            "municipio": f"{mun_name} (SGC / USGS Real)",
-                            "fuente": "SGC / Red Telemétrica Oficial en Vivo",
+                            "municipio": f"{mun_name} · USGS FDSN",
+                            "fuente": "USGS FDSN Real-Time (U.S. Geological Survey)",
                             "rms": float(p.get("rms") or 0.0),
                             "gap": float(p.get("gap") or 0.0)
                         }
@@ -365,7 +378,11 @@ def get_live_sgc():
 
 @app.websocket("/ws/live_sgc")
 async def websocket_live_sgc(websocket: WebSocket):
-    """Túnel de WebSockets para transmitir sismos REALES en vivo de la red telemétrica en Hora de Colombia (UTC-5)."""
+    """Túnel de WebSockets para transmitir sismos reales de feeds FDSN en Hora de Colombia (UTC-5)."""
+    origin = websocket.headers.get("origin")
+    if "*" not in allowed_origins and origin not in allowed_origins:
+        await websocket.close(code=1008)
+        return
     await websocket.accept()
     known_event_ids = set()
     try:
@@ -397,7 +414,7 @@ async def websocket_live_sgc(websocket: WebSocket):
 
 @app.get("/api/ml_clusters")
 def get_ml_clusters():
-    """Detecta clústeres espaciales densos (Seismic Gaps) usando DBSCAN (Cloud-Cache)."""
+    """Detecta clústeres espaciales densos mediante DBSCAN (Haversine 15 km, M>=4.0) con fallback estático."""
     global SISMOS_CACHE
     actual_geojson = resolve_file_path(GEOJSON_PATH)
     if not SISMOS_CACHE:
@@ -405,12 +422,20 @@ def get_ml_clusters():
             with open(actual_geojson, 'r', encoding='utf-8') as f:
                 SISMOS_CACHE = json.load(f)
         else:
+            fb_path = resolve_file_path(os.path.join("data", "ml_clusters_fallback.json"))
+            if os.path.exists(fb_path):
+                with open(fb_path, 'r', encoding='utf-8') as fb:
+                    return json.load(fb)
             return {"features": []}
     
     try:
         from sklearn.cluster import DBSCAN
         import numpy as np
     except ImportError:
+        fb_path = resolve_file_path(os.path.join("data", "ml_clusters_fallback.json"))
+        if os.path.exists(fb_path):
+            with open(fb_path, 'r', encoding='utf-8') as fb:
+                return json.load(fb)
         return {"features": []}
         
     puntos_raw = []
@@ -420,7 +445,7 @@ def get_ml_clusters():
     fechas_raw = []
     for f in SISMOS_CACHE.get("features", []):
         m = f["properties"].get("magnitud", 0)
-        if m >= 4.0:
+        if m is not None and m >= 4.0:
             coords = f["geometry"]["coordinates"]
             puntos_raw.append([coords[0], coords[1]]) # [lon, lat]
             mags_raw.append(m)
@@ -454,15 +479,20 @@ def get_ml_clusters():
                 }
             })
             
-    return {"type": "FeatureCollection", "features": ml_features}
+    return {
+        "type": "FeatureCollection",
+        "algoritmo": "DBSCAN (Haversine eps=15 km, min_samples=8, M>=4.0)",
+        "features": ml_features
+    }
 
 @app.get("/api/openquake_mock")
 def get_openquake_mock():
-    """Retorna los resultados Genuinos de OpenQuake calculados en el M3."""
+    """Retorna la malla demostrativa simplificada de OpenQuake (fuente rectilínea + BooreAtkinson2008, no oficial)."""
     file_path = resolve_file_path(os.path.join('data', 'oq_resultados.geojson'))
     if os.path.exists(file_path):
-        with open(file_path, 'r') as f:
+        with open(file_path, 'r', encoding='utf-8') as f:
             data = json.load(f)
+            data['modelo_nota'] = 'Escenario demostrativo simplificado (BooreAtkinson2008 sobre fuente rectilínea); no sustituye el Modelo Nacional de Amenaza Sísmica del SGC.'
             for feature in data.get('features', []):
                 feature['properties']['retorno'] = 475
             return data

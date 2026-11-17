@@ -4,7 +4,9 @@ import os
 import json
 import math
 import requests
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+
+COLOMBIA_TZ = timezone(timedelta(hours=-5))
 
 def resolve_path(rel_path):
     candidates = [
@@ -63,7 +65,7 @@ def sync_catalogo_live(start_date_str=None):
         else:
             start_date_str = '2026-03-18'
 
-    end_date_str = datetime.utcnow().strftime('%Y-%m-%dT23:59:59')
+    end_date_str = datetime.now(timezone.utc).strftime('%Y-%m-%dT23:59:59')
     
     # Bounding Box ampliado
     lat_min, lat_max = 3.0, 8.8
@@ -86,7 +88,11 @@ def sync_catalogo_live(start_date_str=None):
                 c = f['geometry']['coordinates']
                 lon, lat, depth = c[0], c[1], c[2]
                 props = f['properties']
-                dt = datetime.utcfromtimestamp(props['time'] / 1000.0)
+                mag_val = props.get('mag')
+                if mag_val is None:
+                    continue
+                dt_utc = datetime.fromtimestamp(props['time'] / 1000.0, tz=timezone.utc)
+                dt = dt_utc.astimezone(COLOMBIA_TZ)
                 new_events.append({
                     'source': 'USGS',
                     'id': f['id'],
@@ -95,7 +101,7 @@ def sync_catalogo_live(start_date_str=None):
                     'lat': round(lat, 4),
                     'lon': round(lon, 4),
                     'depth': round(depth, 2),
-                    'mag': round(float(props['mag']), 1),
+                    'mag': round(float(mag_val), 1),
                     'rms': round(float(props.get('rms') or 0.0), 2),
                     'gap': round(float(props.get('gap') or 0.0), 1),
                     'municipio': find_nearest_municipio(lat, lon, municipios)
@@ -111,9 +117,13 @@ def sync_catalogo_live(start_date_str=None):
             emsc_data = r.json().get('features', [])
             for f in emsc_data:
                 props = f['properties']
+                mag_val = props.get('mag')
+                if mag_val is None:
+                    continue
                 lat, lon, depth = props['lat'], props['lon'], props['depth']
                 time_str = props['time'][:19]
-                dt = datetime.strptime(time_str, '%Y-%m-%dT%H:%M:%S')
+                dt_utc = datetime.strptime(time_str, '%Y-%m-%dT%H:%M:%S').replace(tzinfo=timezone.utc)
+                dt = dt_utc.astimezone(COLOMBIA_TZ)
                 new_events.append({
                     'source': 'EMSC',
                     'id': props.get('unid', f.get('id', '')),
@@ -122,7 +132,7 @@ def sync_catalogo_live(start_date_str=None):
                     'lat': round(lat, 4),
                     'lon': round(lon, 4),
                     'depth': round(depth, 2),
-                    'mag': round(float(props['mag']), 1),
+                    'mag': round(float(mag_val), 1),
                     'rms': 0.0,
                     'gap': 0.0,
                     'municipio': find_nearest_municipio(lat, lon, municipios)
@@ -171,8 +181,10 @@ def sync_catalogo_live(start_date_str=None):
 
     if added_features:
         total = existing_features + added_features
-        with open(geojson_path, 'w', encoding='utf-8') as f:
+        tmp_path = geojson_path + '.tmp'
+        with open(tmp_path, 'w', encoding='utf-8') as f:
             json.dump({'type': 'FeatureCollection', 'features': total}, f, ensure_ascii=False)
+        os.replace(tmp_path, geojson_path)
 
     return {
         'nuevos_agregados': len(added_features),

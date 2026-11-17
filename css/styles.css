@@ -34,13 +34,6 @@
     --fs-md: 1.05rem;
     --fs-lg: 1.25rem;
     --fs-xl: 1.45rem;
-
-    /* Colores estandarizados para títulos, subtítulos y párrafos en modales */
-    --modal-title: #0A84FF;
-    --modal-subtitle: #38BDF8;
-    --modal-text: #CBD5E1;
-    --modal-strong: #F8FAFC;
-    --modal-muted: #94A3B8;
 }
 
 html {
@@ -64,11 +57,6 @@ body.theme-light {
     --accent: #0052CC;
     --accent-ui: #0052CC;
     --focus-ring: #0052CC;
-    --modal-title: #0052CC;
-    --modal-subtitle: #0369A1;
-    --modal-text: #334155;
-    --modal-strong: #0F172A;
-    --modal-muted: #475569;
     --shadow-float: 0 18px 38px -10px rgba(15, 23, 42, 0.25);
 }
 
@@ -81,6 +69,31 @@ body.theme-light #ui-panel label,
 body.theme-light #ui-panel .metric-value,
 body.theme-light #ui-panel .val-display,
 body.theme-light #ui-panel span:not(.status-pill):not(.slider),
+body.theme-light .ficha-pot-container,
+body.theme-light .ficha-pot-container h2,
+body.theme-light .ficha-pot-container h3,
+body.theme-light .ficha-pot-container h4,
+body.theme-light .ficha-pot-container strong,
+body.theme-light .ficha-pot-container p,
+body.theme-light .ficha-pot-container li,
+body.theme-light .ficha-pot-container span,
+body.theme-light .ficha-pot-container div,
+body.theme-light .ficha-pot-table td,
+body.theme-light #info-modal-content,
+body.theme-light #info-modal-content h2,
+body.theme-light #info-modal-content h3,
+body.theme-light #info-modal-content h4,
+body.theme-light #info-modal-content p,
+body.theme-light #info-modal-content li,
+body.theme-light #info-modal-content strong,
+body.theme-light #info-modal-content span,
+body.theme-light #info-modal-content div,
+body.theme-light #mobile-device-modal h3,
+body.theme-light #mobile-device-modal p,
+body.theme-light #mobile-device-modal div,
+body.theme-light #tablet-orientation-modal h3,
+body.theme-light #tablet-orientation-modal p,
+body.theme-light #tablet-orientation-modal div,
 body.theme-light #ux-telemetry-hud,
 body.theme-light #ux-telemetry-hud strong,
 body.theme-light #ux-telemetry-hud span,
@@ -94,53 +107,6 @@ body.theme-light #tooltip p,
 body.theme-light #tooltip strong,
 body.theme-light #tooltip span:not(.status-pill) {
     color: #0F172A !important;
-}
-
-/* Jerarquía cromática estándar para todos los modales (Tema oscuro y Tema claro) */
-#info-modal-content,
-.ficha-pot-container,
-#mobile-device-modal > div,
-#tablet-orientation-modal > div {
-    color: var(--modal-text);
-}
-
-#info-modal-content h2,
-#ficha-pot-titulo,
-#mobile-device-modal h3,
-#tablet-orientation-modal h3 {
-    color: var(--modal-title) !important;
-}
-
-#info-modal-content h3,
-#info-modal-content h4,
-#info-modal-content .modal-subtitle,
-#modal-ficha-pot .modal-subtitle,
-#ficha-pot-subtitulo,
-#modal-ficha-pot h4 {
-    color: var(--modal-subtitle) !important;
-}
-
-#info-modal-content p,
-#info-modal-content li,
-#ficha-pot-body p,
-#ficha-pot-body li,
-.ficha-pot-container .ficha-pot-table td,
-#mobile-device-modal p,
-#tablet-orientation-modal p {
-    color: var(--modal-text) !important;
-}
-
-#info-modal-content strong:not([style*="color"]),
-#ficha-pot-body strong:not([style*="color"]),
-#mobile-device-modal strong,
-#tablet-orientation-modal strong {
-    color: var(--modal-strong) !important;
-}
-
-#mobile-device-modal .modal-footer-note,
-#tablet-orientation-modal .modal-footer-note,
-#info-modal-content .modal-footer-note {
-    color: var(--modal-muted) !important;
 }
 
 body.theme-light #ui-panel footer a,

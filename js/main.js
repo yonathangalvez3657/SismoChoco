@@ -3225,8 +3225,8 @@ const modalData = {
                     🗺️
                 </div>
                 <div>
-                    <h2 style="margin:0; color:var(--modal-title); font-size:var(--fs-lg); font-weight:700;">¿Cómo usar SismoChocó?</h2>
-                    <span class="modal-subtitle" style="font-size:var(--fs-xs); color:var(--modal-subtitle); font-weight:600;">Guía rápida y sencilla para explorar la plataforma</span>
+                    <h2 style="margin:0; font-size:var(--fs-lg); font-weight:700;">¿Cómo usar SismoChocó?</h2>
+                    <span style="font-size:var(--fs-xs); color:#0284C7; font-weight:600;">Guía rápida y sencilla para explorar la plataforma</span>
                 </div>
             </div>
         </div>
@@ -3266,7 +3266,7 @@ const modalData = {
         </div>
 
         <div style="background:rgba(148,163,184,0.08); border:1px solid rgba(148,163,184,0.22); border-radius:14px; padding:16px; margin-bottom:16px;">
-            <h3 style="color:var(--modal-subtitle); font-size:var(--fs-md); margin:0 0 10px 0;">1. Elige lo que quieres consultar (3 pestañas arriba)</h3>
+            <h3 style="color:#0284C7; font-size:var(--fs-md); margin:0 0 10px 0;">1. Elige lo que quieres consultar (3 pestañas arriba)</h3>
             <div style="display:grid; grid-template-columns:1fr; gap:10px;">
                 <div style="background:rgba(10,132,255,0.08); border-left:3px solid #0A84FF; padding:10px 12px; border-radius:6px;">
                     <strong>🌋 Sismo Geología:</strong>
@@ -3290,7 +3290,7 @@ const modalData = {
         </div>
 
         <div style="background:rgba(148,163,184,0.08); border:1px solid rgba(148,163,184,0.22); border-radius:14px; padding:16px; margin-bottom:16px;">
-            <h3 style="color:var(--modal-subtitle); font-size:var(--fs-md); margin:0 0 10px 0;">2. Cómo moverte por el mapa</h3>
+            <h3 style="color:#0284C7; font-size:var(--fs-md); margin:0 0 10px 0;">2. Cómo moverte por el mapa</h3>
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size:var(--fs-sm);">
                 <div style="background:rgba(148,163,184,0.06); padding:8px 10px; border-radius:8px;">
                     <strong>🖱️ Clic izquierdo y arrastrar:</strong><br>Mover el mapa hacia cualquier lado.
@@ -3309,7 +3309,7 @@ const modalData = {
 
         <div style="background:rgba(16,185,129,0.10); border:1px solid #10B981; border-radius:14px; padding:14px 16px; margin-bottom:18px;">
             <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; margin-bottom:8px;">
-                <h3 style="color:var(--modal-subtitle); font-size:var(--fs-md); margin:0;">3. Atajos rápidos (si usas computador)</h3>
+                <h3 style="color:#059669; font-size:var(--fs-md); margin:0;">3. Atajos rápidos (si usas computador)</h3>
             </div>
             <p style="font-size:var(--fs-sm); line-height:1.5; margin:0 0 10px 0;">
                 Con las teclas numéricas y las flechas puedes cambiar de vista sin buscar botones:
@@ -3332,7 +3332,7 @@ const modalData = {
         </div>
     `,
     'vis_espacial': `
-        <h2 style="margin-top:0; color:var(--modal-title); font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Formas de ver los sismos en el mapa</h2>
+        <h2 style="margin-top:0; color:#0A84FF; font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Formas de ver los sismos en el mapa</h2>
         <p style="font-size:var(--fs-base); line-height:1.6; margin-bottom:14px;">
             Esta sección te deja elegir cómo dibujar los temblores en el mapa. Todos los modos usan los mismos sismos, solo cambia la forma de mostrarlos para que sea más fácil entenderlos:
         </p>
@@ -3356,7 +3356,7 @@ const modalData = {
         </div>
     `,
     'filtros_parametricos': `
-        <h2 style="margin-top:0; color:var(--modal-title); font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Filtros para elegir qué sismos ver</h2>
+        <h2 style="margin-top:0; color:#0A84FF; font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Filtros para elegir qué sismos ver</h2>
         <p style="font-size:var(--fs-base); line-height:1.6; margin-bottom:14px;">
             Como hay miles de temblores registrados, estas tres barras te permiten mostrar solo los que te interesa analizar:
         </p>
@@ -3374,7 +3374,7 @@ const modalData = {
         </div>
     `,
     'capas_avanzadas': `
-        <h2 style="margin-top:0; color:var(--modal-title); font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Capas de información extra sobre el mapa</h2>
+        <h2 style="margin-top:0; color:#0A84FF; font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Capas de información extra sobre el mapa</h2>
         <p style="font-size:var(--fs-base); line-height:1.6; margin-bottom:14px;">
             Cada interruptor de esta lista enciende o apaga una capa adicional encima del mapa del Chocó. Puedes activar solo la que necesites para no llenar demasiado la pantalla:
         </p>
@@ -3394,7 +3394,7 @@ const modalData = {
         </div>
     `,
     'rtd': `
-        <h2 style="margin-top:0; color:var(--modal-title); font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">¿Qué significa "RtD"? (Sobre este proyecto)</h2>
+        <h2 style="margin-top:0; color:#0A84FF; font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">¿Qué significa "RtD"? (Sobre este proyecto)</h2>
         <p style="font-size:var(--fs-base); line-height:1.6; margin-bottom:12px;">
             Las siglas <strong>RtD</strong> significan <em>Investigación a través del Diseño</em> (en inglés, <em>Research through Design</em>). Es la forma en que se creó esta herramienta: en lugar de dejar los datos sísmicos en tablas difíciles de entender, se diseñó un mapa visual interactivo para probar cómo las personas comprenden mejor el riesgo en su territorio.
         </p>
@@ -3410,7 +3410,7 @@ const modalData = {
         </div>
     `,
     'magnitud': `
-        <h2 style="margin-top:0; color:var(--modal-title); font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Magnitud: ¿qué tan fuerte fue el temblor?</h2>
+        <h2 style="margin-top:0; color:#0A84FF; font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Magnitud: ¿qué tan fuerte fue el temblor?</h2>
         <p style="font-size:var(--fs-base); line-height:1.55; margin-bottom:10px;">
             Esta barra oculta los temblores más pequeños para que en el mapa solo queden los que alcanzan o superan el tamaño que tú elijas (desde <strong>0.0</strong> hasta <strong>8.0</strong>).
         </p>
@@ -3428,7 +3428,7 @@ const modalData = {
         </div>
     `,
     'anio': `
-        <h2 style="margin-top:0; color:var(--modal-title); font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Año de inicio y reproducción en el tiempo</h2>
+        <h2 style="margin-top:0; color:#0A84FF; font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Año de inicio y reproducción en el tiempo</h2>
         <p style="font-size:var(--fs-base); line-height:1.55; margin-bottom:10px;">
             Te permite elegir desde qué año quieres consultar el historial de temblores en el Chocó (entre <strong>1993</strong> y <strong>2026</strong>).
         </p>
@@ -3444,7 +3444,7 @@ const modalData = {
         </div>
     `,
     'puntos': `
-        <h2 style="margin-top:0; color:var(--modal-title); font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Eventos Individuales (Ver cada sismo como un punto)</h2>
+        <h2 style="margin-top:0; color:#0A84FF; font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Eventos Individuales (Ver cada sismo como un punto)</h2>
         <p style="font-size:var(--fs-base); line-height:1.55; margin-bottom:12px;">
             Dibuja cada temblor registrado como un círculo en el lugar exacto donde ocurrió. Pasa el ratón por encima de cualquier punto para ver su fecha, tamaño y municipio más cercano.
         </p>
@@ -3460,7 +3460,7 @@ const modalData = {
         </div>
     `,
     'calor': `
-        <h2 style="margin-top:0; color:var(--modal-title); font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Mapa de Calor (¿Dónde tiembla más seguido?)</h2>
+        <h2 style="margin-top:0; color:#0A84FF; font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Mapa de Calor (¿Dónde tiembla más seguido?)</h2>
         <p style="font-size:var(--fs-base); line-height:1.55; margin-bottom:12px;">
             En lugar de dibujar miles de puntos encima uno del otro, esta vista pinta manchas de color sobre las zonas donde se han juntado más sismos fuertes o frecuentes.
         </p>
@@ -3475,7 +3475,7 @@ const modalData = {
         </div>
     `,
     'hex': `
-        <h2 style="margin-top:0; color:var(--modal-title); font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Hexbins 3D (Torres de cantidad de sismos)</h2>
+        <h2 style="margin-top:0; color:#0A84FF; font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Hexbins 3D (Torres de cantidad de sismos)</h2>
         <p style="font-size:var(--fs-base); line-height:1.55; margin-bottom:12px;">
             Divide el departamento en zonas hexagonales (como un panal de abejas) y levanta columnas en 3D para comparar rápidamente dónde ha temblado más:
         </p>
@@ -3494,7 +3494,7 @@ const modalData = {
         </div>
     `,
     'grafico': `
-        <h2 style="margin-top:0; color:var(--modal-title); font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Gráfica: ¿Cuántos sismos grandes vs. pequeños ocurren?</h2>
+        <h2 style="margin-top:0; color:#0A84FF; font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Gráfica: ¿Cuántos sismos grandes vs. pequeños ocurren?</h2>
         <p style="font-size:var(--fs-base); line-height:1.55; margin-bottom:12px;">
             En la naturaleza casi siempre ocurren <strong>muchos temblores pequeños y muy pocos terremotos grandes</strong>. Esta gráfica resume esa relación con los sismos visibles en pantalla:
         </p>
@@ -3515,7 +3515,7 @@ const modalData = {
         </div>
     `,
     'calidad': `
-        <h2 style="margin-top:0; color:var(--modal-title); font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Sismos de Alta Precisión (Filtrar solo los mejor medidos)</h2>
+        <h2 style="margin-top:0; color:#0A84FF; font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Sismos de Alta Precisión (Filtrar solo los mejor medidos)</h2>
         <p style="font-size:var(--fs-base); line-height:1.55; margin-bottom:10px;">
             Cuando un temblor ocurre muy lejos de los sensores o solo lo captan pocas estaciones, su posición exacta en el mapa puede tener algo de margen de error.
         </p>
@@ -3530,11 +3530,11 @@ const modalData = {
         </div>
     `,
     'fallas': `
-        <h2 style="margin-top:0; color:var(--modal-title); font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Fallas Geológicas (Fracturas del terreno)</h2>
+        <h2 style="margin-top:0; color:#0A84FF; font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Fallas Geológicas (Fracturas del terreno)</h2>
         <p style="font-size:var(--fs-base); line-height:1.55; margin-bottom:12px;">
             Las fallas geológicas son grandes grietas profundas en la corteza terrestre donde los bloques de roca se empujan o se deslizan entre sí. Cuando una falla se destraba de golpe, produce un sismo.
         </p>
-        <h3 style="color:var(--modal-subtitle); font-size:var(--fs-md); margin:0 0 8px 0;">¿Qué significan los colores de las líneas?</h3>
+        <h3 style="font-size:var(--fs-md); margin:0 0 8px 0;">¿Qué significan los colores de las líneas?</h3>
         <ul style="font-size:var(--fs-sm); line-height:1.55; margin:0 0 14px 0; padding-left:18px;">
             <li style="margin-bottom:6px;"><strong style="color:#0284C7;">Azul claro:</strong> Zona del océano donde la placa del Pacífico se hunde debajo del continente colombiano.</li>
             <li style="margin-bottom:6px;"><strong style="color:#D97706;">Amarillo / Ámbar:</strong> Fracturas donde un bloque de terreno se desliza de lado frente al otro (como la Falla de Murindó).</li>
@@ -3548,7 +3548,7 @@ const modalData = {
         </div>
     `,
     'ml': `
-        <h2 style="margin-top:0; color:var(--modal-title); font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Zonas donde se agrupan muchos sismos (Enjambres)</h2>
+        <h2 style="margin-top:0; color:#0A84FF; font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Zonas donde se agrupan muchos sismos (Enjambres)</h2>
         <p style="font-size:var(--fs-base); line-height:1.55; margin-bottom:10px;">
             A veces ocurren decenas de temblores casi en el mismo sitio (lo que se conoce como un <em>enjambre sísmico</em> o serie de réplicas tras un sismo principal).
         </p>
@@ -3563,7 +3563,7 @@ const modalData = {
         </div>
     `,
     'sgc': `
-        <h2 style="margin-top:0; color:var(--modal-title); font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Sismos recientes en tiempo real (Telemetría FDSN Live)</h2>
+        <h2 style="margin-top:0; color:#0A84FF; font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Sismos recientes en tiempo real (Telemetría FDSN Live)</h2>
         <p style="font-size:var(--fs-base); line-height:1.55; margin-bottom:10px;">
             Conecta el mapa por internet con reportes sísmicos internacionales (<strong>EMSC</strong> y <strong>USGS</strong>) para mostrar los temblores de magnitud ≥ 3.5 ocurridos durante los <strong>últimos 14 días</strong> en la región.
         </p>
@@ -3578,11 +3578,11 @@ const modalData = {
         </div>
     `,
     'sgc_wms': `
-        <h2 style="margin-top:0; color:var(--modal-title); font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Mapa Oficial de Amenaza Sísmica de Colombia (SGC)</h2>
+        <h2 style="margin-top:0; color:#0A84FF; font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Mapa Oficial de Amenaza Sísmica de Colombia (SGC)</h2>
         <p style="font-size:var(--fs-base); line-height:1.55; margin-bottom:12px;">
             Esta capa trae directamente las imágenes oficiales del <strong>Servicio Geológico Colombiano (SGC)</strong> para mostrar con qué fuerza máxima se espera que tiemble la roca firme en cada lugar del país (referencia a 475 años usada en las normas de construcción).
         </p>
-        <h3 style="color:var(--modal-subtitle); font-size:var(--fs-md); margin:0 0 8px 0;">¿Qué significan los colores sobre el mapa?</h3>
+        <h3 style="font-size:var(--fs-md); margin:0 0 8px 0;">¿Qué significan los colores sobre el mapa?</h3>
         <ul style="font-size:var(--fs-sm); line-height:1.55; margin:0 0 14px 0; padding-left:18px;">
             <li style="margin-bottom:5px;"><strong>Verde oscuro a verde claro:</strong> Amenaza baja (sacudida esperada leve en roca firme).</li>
             <li style="margin-bottom:5px;"><strong>Amarillo pálido:</strong> Amenaza intermedia (sacudida moderada; en suelos blandos puede sentirse más fuerte).</li>
@@ -3598,7 +3598,7 @@ const modalData = {
         </div>
     `,
     'benioff': `
-        <h2 style="margin-top:0; color:var(--modal-title); font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Corte 3D del Subsuelo (¿Por qué hay sismos a distintas profundidades?)</h2>
+        <h2 style="margin-top:0; color:#0A84FF; font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Corte 3D del Subsuelo (¿Por qué hay sismos a distintas profundidades?)</h2>
         <p style="font-size:var(--fs-base); line-height:1.55; margin-bottom:12px;">
             Bajo el océano Pacífico hay una gran placa de roca marina (la <strong>Placa de Nazca</strong>) que se está deslizando lentamente por debajo de Colombia. Esta vista inclina el mapa de lado para que puedas mirar debajo del suelo como si cortaras una tajada de la Tierra:
         </p>
@@ -3616,11 +3616,11 @@ const modalData = {
         </div>
     `,
     'nsr10_info': `
-        <h2 style="margin-top:0; color:var(--modal-title); font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Norma Colombiana de Construcción Segura (NSR-10)</h2>
+        <h2 style="margin-top:0; color:#0A84FF; font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Norma Colombiana de Construcción Segura (NSR-10)</h2>
         <p style="font-size:var(--fs-base); line-height:1.55; margin-bottom:12px;">
             La <strong>NSR-10</strong> es el reglamento obligatorio en Colombia que dice qué tan fuertes deben construirse las casas, colegios, puentes y hospitales para que no colapsen durante un terremoto.
         </p>
-        <h3 style="color:var(--modal-subtitle); font-size:var(--fs-md); margin:0 0 8px 0;">¿Qué ves en estos campos en términos sencillos?</h3>
+        <h3 style="font-size:var(--fs-md); margin:0 0 8px 0;">¿Qué ves en estos campos en términos sencillos?</h3>
         <ul style="font-size:var(--fs-sm); line-height:1.55; margin:0 0 14px 0; padding-left:18px;">
             <li style="margin-bottom:6px;"><strong>Municipio:</strong> Cada municipio tiene asignada una fuerza base de sacudida según qué tan cerca esté de fallas y zonas sísmicas (en casi todo el Chocó es <em>Alta</em>).</li>
             <li style="margin-bottom:6px;"><strong>Tipo de suelo (A hasta F):</strong> No es igual construir sobre roca dura (A) que sobre barro o rellenos junto a un río (E o F), donde la sacudida se amplifica como si fuera gelatina.</li>
@@ -3634,7 +3634,7 @@ const modalData = {
         </div>
     `,
     'geotecnia_info': `
-        <h2 style="margin-top:0; color:var(--modal-title); font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">El suelo del lugar y el peligro de licuación</h2>
+        <h2 style="margin-top:0; color:#0A84FF; font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">El suelo del lugar y el peligro de licuación</h2>
         <p style="font-size:var(--fs-base); line-height:1.55; margin-bottom:12px;">
             La seguridad de una casa no depende solo de sus columnas y ladrillos, sino también de la tierra sobre la que se apoya. En muchas cabeceras del Chocó cerca de ríos (Atrato, San Juan, Baudó) o del mar hay suelos húmedos y blandos.
         </p>
@@ -3650,7 +3650,7 @@ const modalData = {
         </div>
     `,
     'pot_info': `
-        <h2 style="margin-top:0; color:var(--modal-title); font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Diagnóstico Municipal para Ordenamiento Territorial (POT)</h2>
+        <h2 style="margin-top:0; color:#0A84FF; font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Diagnóstico Municipal para Ordenamiento Territorial (POT)</h2>
         <p style="font-size:var(--fs-base); line-height:1.55; margin-bottom:12px;">
             Un <strong>POT (Plan de Ordenamiento Territorial)</strong> es la regla del municipio que define en qué zonas es seguro construir barrios, escuelas u hospitales y dónde conviene evitar urbanizaciones por peligro sísmico o inundación.
         </p>
@@ -3667,7 +3667,7 @@ const modalData = {
         </div>
     `,
     'espectro_info': `
-        <h2 style="margin-top:0; color:var(--modal-title); font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Gráfica de Fuerza para Construir Edificios (Espectro NSR-10)</h2>
+        <h2 style="margin-top:0; color:#0A84FF; font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Gráfica de Fuerza para Construir Edificios (Espectro NSR-10)</h2>
         <p style="font-size:var(--fs-base); line-height:1.55; margin-bottom:12px;">
             Durante un terremoto no todas las construcciones vibran igual: una casa de 1 o 2 pisos se mueve muy rápido (hacia la izquierda de la gráfica), mientras que un edificio alto se balancea más lento (hacia la derecha).
         </p>
@@ -3684,7 +3684,7 @@ const modalData = {
         </div>
     `,
     'shakemap_info': `
-        <h2 style="margin-top:0; color:var(--modal-title); font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Simulador de Terremotos (ShakeMap)</h2>
+        <h2 style="margin-top:0; color:#ff453a; font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Simulador de Terremotos (ShakeMap)</h2>
         <p style="font-size:var(--fs-base); line-height:1.55; margin-bottom:12px;">
             Te permite simular cómo viajaría el temblor por el Chocó si ocurriera hoy alguno de cinco escenarios históricos o posibles:
         </p>
@@ -3705,7 +3705,7 @@ const modalData = {
         </div>
     `,
     'profundidad': `
-        <h2 style="margin-top:0; color:var(--modal-title); font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Profundidad Máxima: ¿Qué tan hondo ocurrió el sismo?</h2>
+        <h2 style="margin-top:0; color:#c084fc; font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Profundidad Máxima: ¿Qué tan hondo ocurrió el sismo?</h2>
         <p style="font-size:var(--fs-base); line-height:1.55; margin-bottom:12px;">
             No todos los terremotos nacen a la misma profundidad bajo el suelo. Entre más cerca esté de la superficie, más fuerte suele sentirse justo encima:
         </p>
@@ -3723,7 +3723,7 @@ const modalData = {
         </div>
     `,
     'infra_info': `
-        <h2 style="margin-top:0; color:var(--modal-title); font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Infraestructura Crítica y Líneas Vitales</h2>
+        <h2 style="margin-top:0; color:#0284C7; font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Infraestructura Crítica y Líneas Vitales</h2>
         <p style="font-size:var(--fs-base); line-height:1.55; margin-bottom:12px;">
             Muestra sobre el mapa los caminos, ríos, pistas aéreas, puertos y hospitales esenciales para atender una emergencia o evitar que un municipio quede incomunicado tras un terremoto:
         </p>
@@ -4609,7 +4609,7 @@ function openFichaPOTModal() {
     body.innerHTML = `
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px;">
             <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:12px;">
-                <h4 style="margin:0 0 8px 0; font-size:var(--fs-xs); color:var(--modal-subtitle); text-transform:uppercase; letter-spacing:0.04em;">1. Localización y Capacidad Institucional</h4>
+                <h4 style="margin:0 0 8px 0; font-size:var(--fs-xs); color:#38bdf8; text-transform:uppercase; letter-spacing:0.04em;">1. Localización y Capacidad Institucional</h4>
                 <p style="margin:0 0 4px 0; font-size:var(--fs-xs);"><strong>Municipio:</strong> ${escapeHtml(m.nombre)} (${escapeHtml(m.departamento)})</p>
                 <p style="margin:0 0 4px 0; font-size:var(--fs-xs);"><strong>Categoría Ley 617/2000:</strong> ${escapeHtml(m.categoria_ley617 || 'Referencia')}</p>
                 <p style="margin:0 0 4px 0; font-size:var(--fs-xs);"><strong>Población de Referencia:</strong> ${(m.poblacion || 0).toLocaleString()} habitantes</p>
@@ -4618,16 +4618,16 @@ function openFichaPOTModal() {
             </div>
 
             <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:12px;">
-                <h4 style="margin:0 0 8px 0; font-size:var(--fs-xs); color:var(--modal-subtitle); text-transform:uppercase; letter-spacing:0.04em;">2. Parámetros Oficiales NSR-10</h4>
+                <h4 style="margin:0 0 8px 0; font-size:var(--fs-xs); color:#38bdf8; text-transform:uppercase; letter-spacing:0.04em;">2. Parámetros Oficiales NSR-10</h4>
                 <p style="margin:0 0 4px 0; font-size:var(--fs-xs);"><strong>Zona de Amenaza Sísmica:</strong> <span class="status-pill critico">🔴 ${escapeHtml(m.zona)}</span></p>
                 <p style="margin:0 0 4px 0; font-size:var(--fs-xs);"><strong>Coeficientes de Aceleración:</strong> Aa = ${m.aa.toFixed(2)} g | Av = ${m.av.toFixed(2)} g</p>
                 <p style="margin:0 0 4px 0; font-size:var(--fs-xs);"><strong>Perfil de Suelo Referencial:</strong> Tipo ${escapeHtml(m.suelo_defecto || 'E')} (Fa=${factors.Fa}, Fv=${factors.Fv})</p>
-                <p style="margin:0; font-size:var(--fs-xs);"><strong>PGA Esperado en Superficie:</strong> <strong style="color:var(--modal-subtitle);">${pgaDiseno} g</strong></p>
+                <p style="margin:0; font-size:var(--fs-xs);"><strong>PGA Esperado en Superficie:</strong> <strong style="color:#38bdf8;">${pgaDiseno} g</strong></p>
             </div>
         </div>
 
         <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:12px; margin-bottom:14px;">
-            <h4 style="margin:0 0 8px 0; font-size:var(--fs-xs); color:var(--modal-subtitle); text-transform:uppercase; letter-spacing:0.04em;">3. Contexto Sismotectónico y Exposición de Líneas Vitales</h4>
+            <h4 style="margin:0 0 8px 0; font-size:var(--fs-xs); color:#38bdf8; text-transform:uppercase; letter-spacing:0.04em;">3. Contexto Sismotectónico y Exposición de Líneas Vitales</h4>
             <p style="margin:0 0 5px 0; font-size:var(--fs-xs);"><strong>Geología Local:</strong> ${escapeHtml(m.geologia)}</p>
             <p style="margin:0 0 5px 0; font-size:var(--fs-xs);"><strong>Sismos Instrumentales en 50 km:</strong> ${sismos50km} eventos (Magnitud máx: ${maxMag50km > 0 ? maxMag50km.toFixed(1) : 's/d'})</p>
             <p style="margin:0 0 5px 0; font-size:var(--fs-xs);"><strong>Eventos Históricos de Referencia:</strong> ${escapeHtml(m.ultimo_destructor)}</p>
@@ -4636,7 +4636,7 @@ function openFichaPOTModal() {
         </div>
 
         <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:12px; margin-bottom:14px;">
-            <h4 style="margin:0 0 8px 0; font-size:var(--fs-xs); color:var(--modal-subtitle); text-transform:uppercase; letter-spacing:0.04em;">4. Matriz Cualitativa de Fenómenos Concomitantes</h4>
+            <h4 style="margin:0 0 8px 0; font-size:var(--fs-xs); color:#ff7b72; text-transform:uppercase; letter-spacing:0.04em;">4. Matriz Cualitativa de Fenómenos Concomitantes</h4>
             <table class="ficha-pot-table">
                 <thead>
                     <tr>
@@ -4666,7 +4666,7 @@ function openFichaPOTModal() {
         </div>
 
         <div style="background:rgba(10,132,255,0.08); border:1px solid rgba(10,132,255,0.25); border-radius:10px; padding:12px;">
-            <h4 style="margin:0 0 8px 0; font-size:var(--fs-xs); color:var(--modal-subtitle); text-transform:uppercase; letter-spacing:0.04em;">5. Lineamientos Técnicos Orientadores (No Vinculantes)</h4>
+            <h4 style="margin:0 0 8px 0; font-size:var(--fs-xs); color:#70b5ff; text-transform:uppercase; letter-spacing:0.04em;">5. Lineamientos Técnicos Orientadores (No Vinculantes)</h4>
             <ol style="margin:0; padding-left:18px; font-size:var(--fs-xs); color:var(--text-secondary); line-height:1.5;">
                 <li style="margin-bottom:4px;">${directrizTerritorial}</li>
                 <li style="margin-bottom:4px;"><strong>Articulación Decreto 1807 de 2014 (Dec. 1077/2015):</strong> Esta ficha constituye un insumo orientador preliminar y no reemplaza los Estudios Básicos ni Detallados ni las competencias de asistencia técnica de CODECHOCÓ.</li>

@@ -13,7 +13,6 @@ const getApiEndpoints = () => {
         API_URL: `${httpProto}//${host}/api/sismos`,
         SGC_API: `${httpProto}//${host}/api/live_sgc`,
         ML_API: `${httpProto}//${host}/api/ml_clusters`,
-        OQ_API: `${httpProto}//${host}/api/openquake_mock`,
         FALLAS_API: `${httpProto}//${host}/api/fallas`,
         MUNICIPIOS_API: `${httpProto}//${host}/api/municipios_nsr10`,
         INFRA_API: `${httpProto}//${host}/api/infraestructura`,
@@ -26,14 +25,12 @@ const ENDPOINTS = getApiEndpoints();
 const API_URL = ENDPOINTS.API_URL;
 const SGC_API = ENDPOINTS.SGC_API;
 const ML_API = ENDPOINTS.ML_API;
-const OQ_API = ENDPOINTS.OQ_API;
 const MUNICIPIOS_API = ENDPOINTS.MUNICIPIOS_API;
 const INFRA_API = ENDPOINTS.INFRA_API;
 
 let mapData = { features: [] };
 let sgcData = { features: [] };
 let mlData = { features: [] };
-let oqData = { features: [] };
 let infraData = null;
 let faultData = null;
 let chocoBaseData = null;
@@ -86,19 +83,6 @@ function getInfraPixelOffset(feature, allPoints) {
     if (tipo === 'aeropuerto') return [16, -6];
     if (tipo === 'hospital') return [12, 10];
     return [0, 0];
-}
-
-function getOqContourLevels() {
-    return [
-        { threshold: [0.04, 0.06], color: [34, 197, 94, 55], zIndex: 0 },
-        { threshold: [0.06, 0.08], color: [234, 179, 8, 70], zIndex: 1 },
-        { threshold: [0.08, 0.10], color: [249, 115, 22, 85], zIndex: 2 },
-        { threshold: [0.10, 0.12], color: [239, 68, 68, 100], zIndex: 3 },
-        { threshold: 0.05, color: [22, 163, 74, 210], strokeWidth: 2, zIndex: 4 },
-        { threshold: 0.07, color: [202, 138, 4, 220], strokeWidth: 2, zIndex: 5 },
-        { threshold: 0.09, color: [234, 88, 12, 230], strokeWidth: 2.5, zIndex: 6 },
-        { threshold: 0.11, color: [220, 38, 38, 245], strokeWidth: 3, zIndex: 7 }
-    ];
 }
 
 function tileToMercatorBbox(x, y, z) {
@@ -457,7 +441,6 @@ let showFaultBuffer = false;
 let showLiveSGC = false;
 let showSgcWms = false;
 let showML = false;
-let showOQ = false;
 
 // Variables de Estado (NSR-10, POT, Benioff, ShakeMap, Time-Lapse)
 let currentProfile = 'sismologia';
@@ -727,12 +710,7 @@ function handleHover(info) {
         tooltip.style.display = 'block';
         tooltip.style.left = `${info.x}px`; tooltip.style.top = `${info.y}px`;
         
-        if (p.pga !== undefined) {
-            tooltip.innerHTML = `<h4>Malla OpenQuake (Demo Simplificada)</h4>
-                                 <p><strong>PGA Referencial:</strong> ${escapeHtml(p.pga)} g</p>
-                                 <p><strong>Periodo de Retorno (Tr):</strong> ${escapeHtml(p.retorno)} años</p>
-                                 <p style="font-size: var(--fs-2xs); margin-top: 6px; line-height: 1.3;">Modelo ilustrativo BooreAtkinson2008 sobre fuente rectangular simplificada. No sustituye el Modelo Nacional de Amenaza Sísmica del SGC.</p>`;
-        } else if (p.cluster_id !== undefined) {
+        if (p.cluster_id !== undefined) {
             const col = getClusterColor(p.cluster_id);
             const colorHex = `rgb(${col[0]},${col[1]},${col[2]})`;
             const magTxt = p.magnitud ? `${p.magnitud.toFixed(1)} M` : '≥ 4.0 M';
@@ -1262,7 +1240,7 @@ function renderLayers(options = {}) {
     }
     window.currentFilteredData = filteredData;
 
-    if (!showOQ && !showLiveSGC) {
+    if (!showLiveSGC) {
         if (viewMode === 'puntos') {
             layers.push(new deck.ScatterplotLayer({
                 id: 'sismos-3d',
@@ -1435,29 +1413,6 @@ function renderLayers(options = {}) {
             stroked: true,
             getLineColor: d => d.properties.esHoy ? [255, 255, 255, 255] : [204, 251, 241, 180],
             lineWidthMinPixels: 2,
-            pickable: true,
-            onHover: handleHover
-        }));
-    }
-
-    if (showOQ && oqData.features.length > 0) {
-        layers.push(new deck.ContourLayer({
-            id: 'oq-hazard',
-            data: oqData.features,
-            getPosition: d => d.geometry.coordinates,
-            getWeight: d => d.properties.pga,
-            cellSize: 13500,
-            aggregation: 'MEAN',
-            gpuAggregation: false,
-            contours: getOqContourLevels(),
-            zOffset: 0.005
-        }));
-        layers.push(new deck.ScatterplotLayer({
-            id: 'oq-hover',
-            data: oqData.features,
-            getPosition: d => d.geometry.coordinates,
-            getRadius: 5500,
-            getFillColor: [0, 0, 0, 0],
             pickable: true,
             onHover: handleHover
         }));
@@ -2109,20 +2064,6 @@ function renderLayers(options = {}) {
                 </div>
                 <a href="https://amenazasismica.sgc.gov.co/" target="_blank" rel="noopener noreferrer" style="color:var(--accent); font-size: var(--fs-xs); font-weight:600;">Consultar visor oficial SGC ↗</a>
             `;
-        } else if (showOQ) {
-            legend.style.display = 'block';
-            legend.innerHTML = `
-                <h4 style="margin: 0 0 8px 0; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-primary);">OpenQuake Demo · Isolíneas (No Oficial)</h4>
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:5px 10px; color:var(--text-secondary); font-size:var(--fs-2xs); margin-bottom:6px;">
-                    <div style="display:flex; align-items:center; gap:5px;"><span style="display:inline-block; width:14px; height:3px; background:#16a34a; border-radius:2px;"></span><span>0.05 g (0.04–0.06)</span></div>
-                    <div style="display:flex; align-items:center; gap:5px;"><span style="display:inline-block; width:14px; height:3px; background:#ca8a04; border-radius:2px;"></span><span>0.07 g (0.06–0.08)</span></div>
-                    <div style="display:flex; align-items:center; gap:5px;"><span style="display:inline-block; width:14px; height:3px; background:#ea580c; border-radius:2px;"></span><span>0.09 g (0.08–0.10)</span></div>
-                    <div style="display:flex; align-items:center; gap:5px;"><span style="display:inline-block; width:14px; height:3px; background:#dc2626; border-radius:2px;"></span><span>≥ 0.11 g (Máx. Demo)</span></div>
-                </div>
-                <div style="font-size: var(--fs-2xs); color: var(--text-tertiary); line-height: 1.35;">
-                    Curvas de nivel (ContourLayer) · Escenario simplificado BooreAtkinson2008. Pasa el cursor para ver el PGA puntual.
-                </div>
-            `;
         } else if (showInfra) {
             legend.style.display = 'block';
             legend.innerHTML = `
@@ -2159,7 +2100,7 @@ function renderLayers(options = {}) {
         }
 
         // Si hay una capa sismica activa y ademas estan visibles las lineas vitales, concatenar sub-leyenda compacta
-        if (showInfra && (viewMode !== 'none' || showSgcWms || showOQ || (isSimulatorActive && currentShakemapData))) {
+        if (showInfra && (viewMode !== 'none' || showSgcWms || (isSimulatorActive && currentShakemapData))) {
             legend.innerHTML += `
                 <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.12);">
                     <div style="font-size: var(--fs-2xs); font-weight: 700; text-transform: uppercase; color: #38bdf8; margin-bottom: 5px;">Líneas Vitales</div>
@@ -2277,9 +2218,8 @@ document.getElementById('btn-reset-capas').addEventListener('click', () => {
     showLiveSGC = false;
     showSgcWms = false;
     showML = false;
-    showOQ = false;
     
-    const checks = ['check-calidad', 'check-fallas', 'check-infra', 'check-live-sgc', 'check-sgc-wms', 'check-ml', 'check-oq', 'check-fallas-buffer'];
+    const checks = ['check-calidad', 'check-fallas', 'check-infra', 'check-live-sgc', 'check-sgc-wms', 'check-ml', 'check-fallas-buffer'];
     checks.forEach(id => {
         const el = document.getElementById(id);
         if(el) el.checked = false;
@@ -2878,14 +2818,6 @@ document.getElementById('check-ml').addEventListener('change', async e => {
     }
     renderLayers();
 });
-document.getElementById('check-oq').addEventListener('change', async e => {
-    showOQ = e.target.checked;
-    if (showOQ && oqData.features.length === 0) {
-        const d = await fetchJsonWithFallback(OQ_API, './data/oq_resultados.geojson', 5500);
-        if (d && d.features) oqData = d;
-    }
-    renderLayers();
-});
 
 // Selector Dinámico de Mapas Base y Tema Claro del Panel
 document.querySelectorAll('.basemap-btn[data-style]').forEach(btn => {
@@ -3028,7 +2960,6 @@ document.getElementById('btn-print').addEventListener('click', () => {
         if (showLiveSGC) activeCapas.push('Telemetría Live');
         if (showSgcWms) activeCapas.push('SGC Oficial PGA Tr=475a');
         if (showML) activeCapas.push('Zonas Anómalas (IA)');
-        if (showOQ) activeCapas.push('Malla OpenQuake (Demo)');
         
         const countStr = window.currentFilteredData ? window.currentFilteredData.length.toLocaleString() : '0';
         printFilters.innerText = `Ventana: ${currentTime}-2026 | M ≥ ${currentMag.toFixed(1)} | Prof ≤ ${currentMaxDepth} km | Muestra: ${countStr} eventos | Modo: ${visModeNames[viewMode] || viewMode}${activeCapas.length > 0 ? ' | Capas: ' + activeCapas.join(', ') : ''}`;
@@ -3452,8 +3383,7 @@ const modalData = {
             <li style="margin-bottom:6px;"><strong>Fallas Geológicas:</strong> Dibuja las principales fracturas del terreno donde nacen muchos terremotos y te deja consultar una por una.</li>
             <li style="margin-bottom:6px;"><strong>Zonas donde se agrupan sismos (IA):</strong> Resalta con colores grupos de muchos temblores ocurridos cerca entre sí.</li>
             <li style="margin-bottom:6px;"><strong>Telemetría FDSN Live:</strong> Consulta temblores recientes reportados en los últimos días por redes internacionales.</li>
-            <li style="margin-bottom:6px;"><strong>Modelo SGC Oficial (OGC):</strong> Pinta el mapa oficial de amenaza sísmica de Colombia y te explica qué significa cada color al pasar el ratón.</li>
-            <li><strong>Malla OpenQuake (Demo):</strong> Muestra un ejemplo educativo simplificado de cómo se calcula la fuerza de un sismo en roca.</li>
+            <li><strong>Modelo SGC Oficial (OGC):</strong> Pinta el mapa oficial de amenaza sísmica de Colombia y te explica qué significa cada color al pasar el ratón.</li>
         </ul>
         <div style="background:rgba(245,158,11,0.12); border:1.5px solid #F59E0B; border-radius:12px; padding:12px 14px;">
             <strong style="font-size:var(--fs-sm);">¿Cómo usar y apagar todo rápido?</strong>
@@ -3665,21 +3595,6 @@ const modalData = {
                 <li><strong>Pasa el ratón por encima de cualquier color:</strong> Verás de inmediato un cuadro con el nivel de amenaza y qué implica en palabras sencillas.</li>
                 <li><strong>Haz clic sobre el mapa (o en "Consultar cabecera"):</strong> Obtendrás los números exactos oficiales del SGC para ese punto.</li>
             </ul>
-        </div>
-    `,
-    'oq': `
-        <h2 style="margin-top:0; color:var(--modal-title); font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Malla de Demostración OpenQuake (Solo ejemplo educativo)</h2>
-        <div style="background: rgba(245, 158, 11, 0.12); border: 1px solid #F59E0B; border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; font-size: var(--fs-sm); line-height: 1.45;">
-            <strong>Importante:</strong> Esta capa es únicamente una <strong>demostración simplificada</strong> para fines educativos (valores entre 0.04 g y 0.11 g). Para diseñar obras o revisar normas municipales, usa siempre la capa <strong>Modelo SGC Oficial (OGC)</strong> y la pestaña <strong>NSR-10</strong>.
-        </div>
-        <p style="font-size:var(--fs-sm); line-height:1.55; margin-bottom:14px;">
-            Las curvas y franjas de nivel muestran cómo disminuye suavemente la aceleración desde la zona central (<strong>0.11 g</strong> en línea roja) hacia la periferia (<strong>0.05 g</strong> en línea verde). En estudios reales, estos cálculos se estiman para un periodo de retorno de 475 años (10 % de probabilidad de superarse en 50 años).
-        </p>
-        <div style="background:rgba(245,158,11,0.12); border:1.5px solid #F59E0B; border-radius:12px; padding:12px 14px;">
-            <strong style="font-size:var(--fs-sm);">¿Cómo activarla y ocultarla?</strong>
-            <p style="margin:6px 0 0 0; font-size:var(--fs-sm); line-height:1.45;">
-                Enciende el interruptor para ver las isolíneas de atenuación y pasa el cursor por encima para consultar el dato en cada punto. Apágalo o pulsa <strong>↺</strong> en <em>Capas Avanzadas</em> para retirarla.
-            </p>
         </div>
     `,
     'benioff': `

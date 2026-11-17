@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sismo-choco-v60';
+const CACHE_NAME = 'sismo-choco-v61';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -12,7 +12,6 @@ const ASSETS_TO_CACHE = [
   './sismicidad_choco_consolidado.geojson',
   './data/choco_base_offline.geojson',
   './data/fallas.geojson',
-  './data/oq_resultados.geojson',
   './data/municipios_choco_nsr10.json',
   './data/vias_infraestructura.geojson',
   './data/ml_clusters_fallback.json',
@@ -25,8 +24,7 @@ const API_OFFLINE_FALLBACKS = {
   '/api/fallas': './data/fallas.geojson',
   '/api/municipios_nsr10': './data/municipios_choco_nsr10.json',
   '/api/infraestructura': './data/vias_infraestructura.geojson',
-  '/api/ml_clusters': './data/ml_clusters_fallback.json',
-  '/api/openquake_mock': './data/oq_resultados.geojson'
+  '/api/ml_clusters': './data/ml_clusters_fallback.json'
 };
 
 self.addEventListener('install', event => {

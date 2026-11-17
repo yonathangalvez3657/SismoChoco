@@ -592,17 +592,6 @@
                         </div>
                     </div>
 
-                    <div class="switch-container" style="display: flex; align-items: flex-start; justify-content: space-between;">
-                        <label for="check-oq" style="flex: 1; margin-right: 16px; cursor: pointer;">
-                            <strong style="margin-bottom: 2px;">Malla OpenQuake (Demo)</strong>
-                            Escenario demostrativo simplificado (No oficial)
-                        </label>
-                        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 8px; flex-shrink: 0;">
-                            <button type="button" class="info-btn" data-info="oq" aria-label="Instrucciones: Malla Demostrativa OpenQuake" title="Instrucciones de uso: Malla OpenQuake (Demostrativa)">?</button>
-                            <label class="switch" aria-label="Activar Malla Demostrativa OpenQuake"><input type="checkbox" id="check-oq"><span class="slider"></span></label>
-                        </div>
-                    </div>
-
                 </div>
             </section>
 
@@ -1246,7 +1235,7 @@
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js?v=60')
+                navigator.serviceWorker.register('sw.js?v=61')
                     .then(reg => {
                         reg.update();
                     })

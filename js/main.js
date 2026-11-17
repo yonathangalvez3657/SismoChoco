@@ -286,6 +286,7 @@ function handleSgcRasterHover(info) {
     }
 
     tooltip.dataset.sgcHover = '1';
+    applyTooltipContext('sgc', cls.bandColor);
     tooltip.style.display = 'block';
     tooltip.innerHTML = `
         <h4 style="display:flex; align-items:center; gap:8px;">
@@ -702,6 +703,27 @@ function getClusterColor(id, alpha = 220) {
 }
 
 const tooltip = document.getElementById('tooltip');
+const TOOLTIP_CTX_CLASSES = [
+    'tooltip-ctx-sismo', 'tooltip-ctx-benioff', 'tooltip-ctx-calor', 'tooltip-ctx-hex',
+    'tooltip-ctx-falla', 'tooltip-ctx-ml', 'tooltip-ctx-fdsn', 'tooltip-ctx-shakemap',
+    'tooltip-ctx-nsr', 'tooltip-ctx-pot', 'tooltip-ctx-sgc'
+];
+
+function applyTooltipContext(ctxName, customAccentHex = null, customDarkTitleHex = null, customLightTitleHex = null) {
+    if (!tooltip) return;
+    tooltip.classList.remove(...TOOLTIP_CTX_CLASSES);
+    if (ctxName) tooltip.classList.add(`tooltip-ctx-${ctxName}`);
+    if (customAccentHex) {
+        tooltip.style.setProperty('--tooltip-accent', customAccentHex);
+        tooltip.style.setProperty('--tooltip-title-dark', customDarkTitleHex || customAccentHex);
+        tooltip.style.setProperty('--tooltip-title-light', customLightTitleHex || customAccentHex);
+    } else {
+        tooltip.style.removeProperty('--tooltip-accent');
+        tooltip.style.removeProperty('--tooltip-title-dark');
+        tooltip.style.removeProperty('--tooltip-title-light');
+    }
+}
+
 function handleHover(info) {
     if (info.object) {
         const p = info.object.properties;
@@ -713,6 +735,7 @@ function handleHover(info) {
         if (p.cluster_id !== undefined) {
             const col = getClusterColor(p.cluster_id);
             const colorHex = `rgb(${col[0]},${col[1]},${col[2]})`;
+            applyTooltipContext('ml', colorHex);
             const magTxt = p.magnitud ? `${p.magnitud.toFixed(1)} M` : '≥ 4.0 M';
             const munTxt = escapeHtml(p.municipio ? p.municipio.replace(/_/g, ' ') : 'Chocó, Colombia');
             const profTxt = (p.profundidad !== undefined && p.profundidad !== null) ? `<p><strong>Profundidad:</strong> ${escapeHtml(p.profundidad)} km</p>` : '';
@@ -725,6 +748,16 @@ function handleHover(info) {
                                  ${fechaTxt}
                                  <p style="font-size: var(--fs-2xs); margin-top: 6px; line-height: 1.3;">Agrupación de alta densidad espacial (≥4.0 M) detectada en radio geodésico de 15 km mediante algoritmo DBSCAN sobre el catálogo sísmico.</p>`;
         } else if (p.tipo && ['vial', 'fluvial', 'maritimo', 'aeropuerto', 'hospital', 'puerto'].includes(p.tipo)) {
+            const infraPalette = INFRA_COLORS[p.tipo] || INFRA_COLORS.fluvial;
+            const lightTitleMap = {
+                vial: '#B45309',
+                fluvial: '#0369A1',
+                maritimo: '#0F766E',
+                aeropuerto: '#1D4ED8',
+                hospital: '#BE123C',
+                puerto: '#7E22CE'
+            };
+            applyTooltipContext('sgc', infraPalette.hex, infraPalette.textHex, lightTitleMap[p.tipo] || '#0F172A');
             const iconMap = {
                 aeropuerto: '✈️',
                 hospital: '🏥',
@@ -745,19 +778,24 @@ function handleHover(info) {
         } else if (p.nombre) {
             let desc = "";
             if (p.nombre.includes("Nazca")) {
+                applyTooltipContext('benioff');
                 desc = `<p style="font-size: var(--fs-2xs); margin-top: 6px; line-height: 1.3;">Límite de colisión tectónica (Margen Convergente o Fosa) donde la placa oceánica de Nazca se subduce bajo la placa continental Sudamericana, responsable de la sismicidad más destructiva de la región.</p>`;
+            } else {
+                const fColor = p.tipo === 'inversa' ? '#EF4444' : (p.tipo === 'subduccion' ? '#38BDF8' : '#F59E0B');
+                applyTooltipContext('falla', fColor, p.tipo === 'inversa' ? '#F87171' : fColor, p.tipo === 'inversa' ? '#B91C1C' : '#B45309');
             }
             tooltip.innerHTML = `<h4>Estructura Geológica</h4>
                                  <p><strong>Falla:</strong> ${escapeHtml(p.nombre.replace(' (Margen)', ''))}</p>
                                  ${desc}`;
         } else if (p.fuente && (p.fuente.includes('SGC') || p.fuente.includes('Telemétrica') || p.fuente.includes('USGS') || p.fuente.includes('EMSC'))) {
+            applyTooltipContext('fdsn');
             const depthStr = p.profundidad < 30 ? 'Superficial' : (p.profundidad < 70 ? 'Intermedio' : 'Profundo');
             const magVal = (p.mag !== undefined ? p.mag : p.magnitud) || 0;
             const tiempoBadge = p.esHoy
                 ? `<span style="background:rgba(16,185,129,0.25); color:#34d399; border:1px solid #10b981; border-radius:4px; padding:1px 6px; font-size:var(--fs-2xs); font-weight:700;">● HOY (${escapeHtml(p.diffHours || 0)}h)</span>`
                 : `<span style="background:rgba(148,163,184,0.15); color:#cbd5e1; border:1px solid #64748b; border-radius:4px; padding:1px 6px; font-size:var(--fs-2xs);">Reciente (${escapeHtml(p.diffHours ? Math.round(p.diffHours/24) + 'd atrás' : 'Telemétrico')})</span>`;
 
-            tooltip.innerHTML = `<h4 style="color:#34d399; display:flex; align-items:center; justify-content:space-between; gap:6px;">
+            tooltip.innerHTML = `<h4 style="display:flex; align-items:center; justify-content:space-between; gap:6px;">
                                     <span style="display:flex; align-items:center; gap:6px;">
                                         <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#10b981; box-shadow:0 0 8px #10b981;"></span>
                                         📡 Telemetría FDSN: ${escapeHtml(p.fecha)}
@@ -770,6 +808,7 @@ function handleHover(info) {
                                  <p style="color:#a7f3d0; font-size:var(--fs-xs); margin-top:4px;"><strong>Agencia / Red:</strong> ${escapeHtml(p.fuente)}</p>
                                  ${p.rms ? `<p style="color:#94a3b8; font-size:var(--fs-2xs);">RMS: ${escapeHtml(p.rms)}s | Gap: ${escapeHtml(p.gap)}°</p>` : ''}`;
         } else {
+            applyTooltipContext(isBenioffMode ? 'benioff' : 'sismo');
             const depthStr = p.profundidad < 30 ? 'Superficial' : (p.profundidad < 70 ? 'Intermedio' : 'Profundo');
             const fuenteInfo = (p.fuente) ? `<span style="color:#38bdf8; font-weight:600;">[${escapeHtml(p.fuente)}]</span> ` : '';
             let benioffExtra = '';
@@ -826,6 +865,7 @@ function handleStandardCalorHover(info) {
             }
         }
 
+        applyTooltipContext('calor');
         tooltip.innerHTML = `<h4>Foco de Acumulación Sísmica</h4>
                              <p><strong>Ubicación:</strong> ${escapeHtml(mainLocation)}</p>
                              <p>Total sismos acumulados: <strong>${totalSismos} eventos</strong></p>
@@ -860,6 +900,7 @@ function handleStandardHexHover(info) {
             }
         }
 
+        applyTooltipContext('hex');
         tooltip.innerHTML = `<h4>Agrupación Espacial 3D</h4>
                              <p><strong>Ubicación:</strong> ${escapeHtml(mainLocation)}</p>
                              <p>Eventos registrados: <strong>${info.object.points.length}</strong></p>`;
@@ -883,6 +924,7 @@ function handleBenioffCalorHover(info) {
         tooltip.style.display = 'block';
         tooltip.style.left = `${info.x}px`;
         tooltip.style.top = `${info.y}px`;
+        applyTooltipContext('calor');
         tooltip.innerHTML = `
             <h4>Concentración de Energía Sísmica 3D</h4>
             <p><strong>Ubicación:</strong> ${escapeHtml(p.municipio || 'Chocó - Región Pacífica')}</p>
@@ -907,6 +949,7 @@ function handleBenioffHexHover(info) {
         if (d.count >= 15) nivel = '🔥 Enjambre Sísmico Denso';
         else if (d.count >= 5) nivel = '⚡ Concentración Moderada';
 
+        applyTooltipContext('hex');
         tooltip.innerHTML = `
             <h4>Agrupación Espacial 3D (Cúmulo de Subducción)</h4>
             <p><strong>Sector:</strong> ${escapeHtml(d.municipio || 'Sector Benioff')}</p>
@@ -1607,6 +1650,7 @@ function renderLayers(options = {}) {
             onHover: (info) => {
                 if (info.object) {
                     if (tooltip.dataset) tooltip.dataset.sgcHover = '';
+                    applyTooltipContext('shakemap');
                     tooltip.style.display = 'block';
                     tooltip.innerHTML = formatShakemapFaultTraceTooltip(info.object, currentShakemapData);
                     positionTooltip(tooltip, info.x, info.y);
@@ -1699,6 +1743,7 @@ function renderLayers(options = {}) {
             onHover: (info) => {
                 if (info.object) {
                     if (tooltip.dataset) tooltip.dataset.sgcHover = '';
+                    applyTooltipContext('shakemap');
                     tooltip.style.display = 'block';
                     tooltip.innerHTML = formatShakemapIsoseistaTooltip(info.object);
                     positionTooltip(tooltip, info.x, info.y);
@@ -1755,6 +1800,7 @@ function renderLayers(options = {}) {
                 onHover: (info) => {
                     if (info.object) {
                         if (tooltip.dataset) tooltip.dataset.sgcHover = '';
+                        applyTooltipContext('benioff');
                         tooltip.style.display = 'block';
                         tooltip.innerHTML = formatShakemapWavePTooltip(info.object, WAVE_VEL_P_KMS);
                         positionTooltip(tooltip, info.x, info.y);
@@ -1784,6 +1830,7 @@ function renderLayers(options = {}) {
                 onHover: (info) => {
                     if (info.object) {
                         if (tooltip.dataset) tooltip.dataset.sgcHover = '';
+                        applyTooltipContext('shakemap');
                         tooltip.style.display = 'block';
                         tooltip.innerHTML = formatShakemapWaveSTooltip(info.object, WAVE_VEL_S_KMS);
                         positionTooltip(tooltip, info.x, info.y);
@@ -1830,6 +1877,7 @@ function renderLayers(options = {}) {
             onHover: (info) => {
                 if (info.object) {
                     if (tooltip.dataset) tooltip.dataset.sgcHover = '';
+                    applyTooltipContext('shakemap');
                     tooltip.style.display = 'block';
                     tooltip.innerHTML = formatShakemapEpicentroTooltip(info.object);
                     positionTooltip(tooltip, info.x, info.y);
@@ -1900,6 +1948,7 @@ function renderLayers(options = {}) {
                 if (info.object) {
                     const obj = info.object;
                     const m = obj.m;
+                    applyTooltipContext('nsr');
                     tooltip.style.display = 'block';
                     tooltip.style.left = `${info.x}px`;
                     tooltip.style.top = `${info.y}px`;
@@ -1955,6 +2004,7 @@ function renderLayers(options = {}) {
             onHover: (info) => {
                 if (info.object) {
                     const m = info.object.m;
+                    applyTooltipContext('pot');
                     tooltip.style.display = 'block';
                     tooltip.style.left = `${info.x}px`;
                     tooltip.style.top = `${info.y}px`;
@@ -3460,7 +3510,7 @@ const modalData = {
         </div>
     `,
     'calor': `
-        <h2 style="margin-top:0; color:#0A84FF; font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Mapa de Calor (¿Dónde tiembla más seguido?)</h2>
+        <h2 style="margin-top:0; color:#FF2D55; font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Mapa de Calor (¿Dónde tiembla más seguido?)</h2>
         <p style="font-size:var(--fs-base); line-height:1.55; margin-bottom:12px;">
             En lugar de dibujar miles de puntos encima uno del otro, esta vista pinta manchas de color sobre las zonas donde se han juntado más sismos fuertes o frecuentes.
         </p>
@@ -3475,7 +3525,7 @@ const modalData = {
         </div>
     `,
     'hex': `
-        <h2 style="margin-top:0; color:#0A84FF; font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Hexbins 3D (Torres de cantidad de sismos)</h2>
+        <h2 style="margin-top:0; color:#10B981; font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Hexbins 3D (Torres de cantidad de sismos)</h2>
         <p style="font-size:var(--fs-base); line-height:1.55; margin-bottom:12px;">
             Divide el departamento en zonas hexagonales (como un panal de abejas) y levanta columnas en 3D para comparar rápidamente dónde ha temblado más:
         </p>
@@ -3530,7 +3580,7 @@ const modalData = {
         </div>
     `,
     'fallas': `
-        <h2 style="margin-top:0; color:#0A84FF; font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Fallas Geológicas (Fracturas del terreno)</h2>
+        <h2 style="margin-top:0; color:#F59E0B; font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Fallas Geológicas (Fracturas del terreno)</h2>
         <p style="font-size:var(--fs-base); line-height:1.55; margin-bottom:12px;">
             Las fallas geológicas son grandes grietas profundas en la corteza terrestre donde los bloques de roca se empujan o se deslizan entre sí. Cuando una falla se destraba de golpe, produce un sismo.
         </p>
@@ -3548,7 +3598,7 @@ const modalData = {
         </div>
     `,
     'ml': `
-        <h2 style="margin-top:0; color:#0A84FF; font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Zonas donde se agrupan muchos sismos (Enjambres)</h2>
+        <h2 style="margin-top:0; color:#C084FC; font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Zonas donde se agrupan muchos sismos (Enjambres)</h2>
         <p style="font-size:var(--fs-base); line-height:1.55; margin-bottom:10px;">
             A veces ocurren decenas de temblores casi en el mismo sitio (lo que se conoce como un <em>enjambre sísmico</em> o serie de réplicas tras un sismo principal).
         </p>
@@ -3563,7 +3613,7 @@ const modalData = {
         </div>
     `,
     'sgc': `
-        <h2 style="margin-top:0; color:#0A84FF; font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Sismos recientes en tiempo real (Telemetría FDSN Live)</h2>
+        <h2 style="margin-top:0; color:#10B981; font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Sismos recientes en tiempo real (Telemetría FDSN Live)</h2>
         <p style="font-size:var(--fs-base); line-height:1.55; margin-bottom:10px;">
             Conecta el mapa por internet con reportes sísmicos internacionales (<strong>EMSC</strong> y <strong>USGS</strong>) para mostrar los temblores de magnitud ≥ 3.5 ocurridos durante los <strong>últimos 14 días</strong> en la región.
         </p>
@@ -3578,7 +3628,7 @@ const modalData = {
         </div>
     `,
     'sgc_wms': `
-        <h2 style="margin-top:0; color:#0A84FF; font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Mapa Oficial de Amenaza Sísmica de Colombia (SGC)</h2>
+        <h2 style="margin-top:0; color:#0284C7; font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Mapa Oficial de Amenaza Sísmica de Colombia (SGC)</h2>
         <p style="font-size:var(--fs-base); line-height:1.55; margin-bottom:12px;">
             Esta capa trae directamente las imágenes oficiales del <strong>Servicio Geológico Colombiano (SGC)</strong> para mostrar con qué fuerza máxima se espera que tiemble la roca firme en cada lugar del país (referencia a 475 años usada en las normas de construcción).
         </p>
@@ -3598,7 +3648,7 @@ const modalData = {
         </div>
     `,
     'benioff': `
-        <h2 style="margin-top:0; color:#0A84FF; font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Corte 3D del Subsuelo (¿Por qué hay sismos a distintas profundidades?)</h2>
+        <h2 style="margin-top:0; color:#0284C7; font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Corte 3D del Subsuelo (¿Por qué hay sismos a distintas profundidades?)</h2>
         <p style="font-size:var(--fs-base); line-height:1.55; margin-bottom:12px;">
             Bajo el océano Pacífico hay una gran placa de roca marina (la <strong>Placa de Nazca</strong>) que se está deslizando lentamente por debajo de Colombia. Esta vista inclina el mapa de lado para que puedas mirar debajo del suelo como si cortaras una tajada de la Tierra:
         </p>
@@ -3616,7 +3666,7 @@ const modalData = {
         </div>
     `,
     'nsr10_info': `
-        <h2 style="margin-top:0; color:#0A84FF; font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Norma Colombiana de Construcción Segura (NSR-10)</h2>
+        <h2 style="margin-top:0; color:#10B981; font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Norma Colombiana de Construcción Segura (NSR-10)</h2>
         <p style="font-size:var(--fs-base); line-height:1.55; margin-bottom:12px;">
             La <strong>NSR-10</strong> es el reglamento obligatorio en Colombia que dice qué tan fuertes deben construirse las casas, colegios, puentes y hospitales para que no colapsen durante un terremoto.
         </p>
@@ -3634,7 +3684,7 @@ const modalData = {
         </div>
     `,
     'geotecnia_info': `
-        <h2 style="margin-top:0; color:#0A84FF; font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">El suelo del lugar y el peligro de licuación</h2>
+        <h2 style="margin-top:0; color:#0284C7; font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">El suelo del lugar y el peligro de licuación</h2>
         <p style="font-size:var(--fs-base); line-height:1.55; margin-bottom:12px;">
             La seguridad de una casa no depende solo de sus columnas y ladrillos, sino también de la tierra sobre la que se apoya. En muchas cabeceras del Chocó cerca de ríos (Atrato, San Juan, Baudó) o del mar hay suelos húmedos y blandos.
         </p>
@@ -3650,7 +3700,7 @@ const modalData = {
         </div>
     `,
     'pot_info': `
-        <h2 style="margin-top:0; color:#0A84FF; font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Diagnóstico Municipal para Ordenamiento Territorial (POT)</h2>
+        <h2 style="margin-top:0; color:#F59E0B; font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Diagnóstico Municipal para Ordenamiento Territorial (POT)</h2>
         <p style="font-size:var(--fs-base); line-height:1.55; margin-bottom:12px;">
             Un <strong>POT (Plan de Ordenamiento Territorial)</strong> es la regla del municipio que define en qué zonas es seguro construir barrios, escuelas u hospitales y dónde conviene evitar urbanizaciones por peligro sísmico o inundación.
         </p>
@@ -3744,7 +3794,30 @@ const modalData = {
     `
 };
 
+const INFO_MODAL_ACCENTS = {
+    calor: '#E11D48',
+    hex: '#059669',
+    sgc: '#059669',
+    nsr10_info: '#059669',
+    benioff: '#0284C7',
+    sgc_wms: '#0284C7',
+    infra_info: '#0284C7',
+    geotecnia_info: '#0284C7',
+    fallas: '#D97706',
+    pot_info: '#D97706',
+    profundidad: '#9333EA',
+    ml: '#9333EA',
+    shakemap_info: '#DC2626'
+};
+
 if (infoModal && closeInfoModal) {
+    const infoModalDialog = infoModal.querySelector(':scope > div');
+    const applyModalContextBorder = (key) => {
+        if (!infoModalDialog) return;
+        const accent = INFO_MODAL_ACCENTS[key] || '#0052CC';
+        infoModalDialog.style.borderTop = `4px solid ${accent}`;
+    };
+
     document.addEventListener('click', (e) => {
         const btn = e.target.closest('.info-btn');
         if (!btn) return;
@@ -3752,6 +3825,7 @@ if (infoModal && closeInfoModal) {
         e.stopPropagation();
         const key = btn.getAttribute('data-info');
         if (modalData[key] && infoContent) {
+            applyModalContextBorder(key);
             infoContent.innerHTML = modalData[key];
             infoModal.style.display = 'flex';
             setTimeout(() => infoModal.style.opacity = '1', 10);
@@ -3781,6 +3855,7 @@ if (infoModal && closeInfoModal) {
             // Solo auto-abrir la primera vez por sesión para respetar preferencia en recargas y modo offline
             if (sessionStorage.getItem('sismochoco_guia_seen')) return;
             sessionStorage.setItem('sismochoco_guia_seen', '1');
+            applyModalContextBorder('guia');
             infoContent.innerHTML = modalData['guia'];
             infoModal.style.display = 'flex';
             requestAnimationFrame(() => {

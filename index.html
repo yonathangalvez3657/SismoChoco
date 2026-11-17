@@ -1104,9 +1104,9 @@
         <div class="ficha-pot-container" style="background: #161a23; border: 1px solid rgba(255,255,255,0.15); border-radius: 16px; width: 92%; max-width: 820px; max-height: 90vh; overflow-y: auto; color: #f5f5f7; box-shadow: 0 25px 60px rgba(0,0,0,0.7); position: relative; padding: 24px;">
             <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 12px;">
                 <div>
-                    <span style="font-size: var(--fs-2xs); color: #38bdf8; text-transform: uppercase; font-weight: 700; letter-spacing: 0.08em;">República de Colombia — Sistema de Gestión del Riesgo</span>
-                    <h2 id="ficha-pot-titulo" style="margin: 2px 0 0 0; font-size: var(--fs-lg); color: #fff;">Ficha Técnica de Diagnóstico Sísmico</h2>
-                    <span id="ficha-pot-subtitulo" style="font-size: var(--fs-xs); color: var(--text-secondary);">Directrices de Amenaza Sísmica para POT / PBOT / EOT</span>
+                    <span class="modal-subtitle" style="font-size: var(--fs-2xs); color: var(--modal-subtitle); text-transform: uppercase; font-weight: 700; letter-spacing: 0.08em;">República de Colombia — Sistema de Gestión del Riesgo</span>
+                    <h2 id="ficha-pot-titulo" style="margin: 2px 0 0 0; font-size: var(--fs-lg); color: var(--modal-title);">Ficha Técnica de Diagnóstico Sísmico</h2>
+                    <span id="ficha-pot-subtitulo" class="modal-subtitle" style="display:block; margin-top:2px; font-size: var(--fs-xs); color: var(--modal-subtitle);">Directrices de Amenaza Sísmica para POT / PBOT / EOT</span>
                 </div>
                 <div style="display: flex; gap: 8px; align-items: center;">
                     <button id="btn-ficha-print-action" class="btn-secondary" style="background: #0052CC; color: #fff; border: none; padding: 6px 14px; font-size: var(--fs-xs); font-weight: 600; border-radius: 8px; cursor: pointer;">🖨️ Imprimir / Guardar PDF</button>
@@ -1120,12 +1120,12 @@
     </div>
     <!-- Modal Emergente Elegante: Sugerencia de Visualización en PC para Dispositivos Móviles y Tablets -->
     <div id="mobile-device-modal" role="dialog" aria-modal="true" aria-label="Visualización recomendada en PC" style="display: none; position: fixed; inset: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.78); z-index: 100000; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); justify-content: center; align-items: center; opacity: 0; transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1);">
-        <div style="background: rgba(22, 26, 35, 0.95); border: 1px solid rgba(255,255,255,0.18); border-radius: 24px; padding: 26px 22px; width: 88%; max-width: 430px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.85); color: #F5F5F7; text-align: center; position: relative;">
+        <div style="background: rgba(22, 26, 35, 0.95); border: 1px solid rgba(255,255,255,0.18); border-radius: 24px; padding: 26px 22px; width: 88%; max-width: 430px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.85); color: var(--modal-text); text-align: center; position: relative;">
             <div style="width: 58px; height: 58px; margin: 0 auto 16px auto; border-radius: 50%; background: rgba(10,132,255,0.15); border: 1px solid rgba(10,132,255,0.35); display: flex; align-items: center; justify-content: center; font-size: var(--fs-xl);">
                 💻
             </div>
-            <h3 style="margin: 0 0 10px 0; font-size: var(--fs-lg); font-weight: 700; color: #FFF; border-bottom: none; padding-bottom: 0;">Visualización recomendada en PC</h3>
-            <p id="device-modal-text" style="font-size: var(--fs-sm); color: #A1A1A6; line-height: 1.5; margin: 0 0 20px 0;">
+            <h3 style="margin: 0 0 10px 0; font-size: var(--fs-lg); font-weight: 700; color: var(--modal-title); border-bottom: none; padding-bottom: 0;">Visualización recomendada en PC</h3>
+            <p id="device-modal-text" style="font-size: var(--fs-sm); color: var(--modal-text); line-height: 1.5; margin: 0 0 20px 0;">
                 Para explorar en detalle los mapas interactivos, las gráficas y las herramientas de análisis con mayor comodidad, sugerimos acceder desde un <strong>computador (PC o portátil)</strong>.
             </p>
             <div style="display: flex; flex-direction: column; gap: 8px;">
@@ -1136,7 +1136,7 @@
                     <span>🧹 Limpiar Caché y Forzar Recarga</span>
                 </button>
             </div>
-            <div style="margin-top: 14px; font-size: var(--fs-xs); color: #CBD5E1;">
+            <div class="modal-footer-note" style="margin-top: 14px; font-size: var(--fs-xs); color: var(--modal-muted);">
                 Plataforma de Investigación en Diseño — U. de Caldas
             </div>
         </div>
@@ -1144,12 +1144,12 @@
 
     <!-- Modal Emergente Elegante: Sugerencia de Orientación Horizontal en Tablet -->
     <div id="tablet-orientation-modal" role="dialog" aria-modal="true" aria-label="Sugerencia de orientación horizontal" style="display: none; position: fixed; inset: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.78); z-index: 100000; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); justify-content: center; align-items: center; opacity: 0; transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1);">
-        <div style="background: rgba(22, 26, 35, 0.95); border: 1px solid rgba(255,255,255,0.18); border-radius: 24px; padding: 26px 22px; width: 88%; max-width: 440px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.85); color: #F5F5F7; text-align: center; position: relative;">
+        <div style="background: rgba(22, 26, 35, 0.95); border: 1px solid rgba(255,255,255,0.18); border-radius: 24px; padding: 26px 22px; width: 88%; max-width: 440px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.85); color: var(--modal-text); text-align: center; position: relative;">
             <div style="width: 58px; height: 58px; margin: 0 auto 16px auto; border-radius: 50%; background: rgba(56,189,248,0.15); border: 1px solid rgba(56,189,248,0.35); display: flex; align-items: center; justify-content: center; font-size: var(--fs-xl); animation: rotateDevice 2.2s ease-in-out infinite alternate;">
                 🔄
             </div>
-            <h3 style="margin: 0 0 10px 0; font-size: var(--fs-lg); font-weight: 700; color: #FFF; border-bottom: none; padding-bottom: 0;">Girar a Pantalla Horizontal</h3>
-            <p style="font-size: var(--fs-sm); color: #A1A1A6; line-height: 1.5; margin: 0 0 20px 0;">
+            <h3 style="margin: 0 0 10px 0; font-size: var(--fs-lg); font-weight: 700; color: var(--modal-title); border-bottom: none; padding-bottom: 0;">Girar a Pantalla Horizontal</h3>
+            <p style="font-size: var(--fs-sm); color: var(--modal-text); line-height: 1.5; margin: 0 0 20px 0;">
                 Para una mejor visualización y navegación de los datos en tu tablet, te sugerimos usar la <strong>orientación horizontal</strong>. De este modo podrás explorar el mapa tridimensional y los paneles de análisis con mayor comodidad y sin superposiciones.
             </p>
             <div style="display: flex; flex-direction: column; gap: 10px;">
@@ -1157,7 +1157,7 @@
                     Entendido / Continuar
                 </button>
             </div>
-            <div style="margin-top: 14px; font-size: var(--fs-xs); color: #CBD5E1;">
+            <div class="modal-footer-note" style="margin-top: 14px; font-size: var(--fs-xs); color: var(--modal-muted);">
                 SismoChocó — Optimizado para Tablet en formato apaisado
             </div>
         </div>
@@ -1246,7 +1246,7 @@
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js?v=56')
+                navigator.serviceWorker.register('sw.js?v=57')
                     .then(reg => {
                         reg.update();
                     })

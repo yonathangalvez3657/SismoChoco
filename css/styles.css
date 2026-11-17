@@ -36,9 +36,10 @@
     --fs-xl: 1.45rem;
 
     /* Colores estandarizados para títulos, subtítulos y párrafos en modales */
-    --modal-title: #F8FAFC;
+    --modal-title: #0A84FF;
     --modal-subtitle: #38BDF8;
     --modal-text: #CBD5E1;
+    --modal-strong: #F8FAFC;
     --modal-muted: #94A3B8;
 }
 
@@ -63,9 +64,10 @@ body.theme-light {
     --accent: #0052CC;
     --accent-ui: #0052CC;
     --focus-ring: #0052CC;
-    --modal-title: #0F172A;
-    --modal-subtitle: #0052CC;
+    --modal-title: #0052CC;
+    --modal-subtitle: #0369A1;
     --modal-text: #334155;
+    --modal-strong: #0F172A;
     --modal-muted: #475569;
     --shadow-float: 0 18px 38px -10px rgba(15, 23, 42, 0.25);
 }
@@ -132,7 +134,7 @@ body.theme-light #tooltip span:not(.status-pill) {
 #ficha-pot-body strong:not([style*="color"]),
 #mobile-device-modal strong,
 #tablet-orientation-modal strong {
-    color: var(--modal-title) !important;
+    color: var(--modal-strong) !important;
 }
 
 #mobile-device-modal .modal-footer-note,

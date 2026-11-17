@@ -51,6 +51,43 @@ const INFRA_COLORS = {
     puerto:     { rgba: [168, 85, 247, 240],  hex: '#A855F7', textHex: '#C084FC' }
 };
 
+function buildInfraSvgDataUrl(bgHex, glyphSvg) {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64"><circle cx="32" cy="32" r="27" fill="${bgHex}" stroke="#FFFFFF" stroke-width="5"/>${glyphSvg}</svg>`;
+    return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}
+
+const INFRA_ICON_URLS = {
+    puerto: buildInfraSvgDataUrl(
+        INFRA_COLORS.puerto.hex,
+        '<circle cx="32" cy="18" r="3.8" fill="none" stroke="#FFFFFF" stroke-width="3.2"/><line x1="32" y1="22" x2="32" y2="47" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="round"/><line x1="23" y1="28" x2="41" y2="28" stroke="#FFFFFF" stroke-width="3.2" stroke-linecap="round"/><path d="M18 37 C18 46, 25 49, 32 49 C39 49, 46 46, 46 37" fill="none" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="round"/><polyline points="15,40 18,35 22,39" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><polyline points="42,39 46,35 49,40" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>'
+    ),
+    hospital: buildInfraSvgDataUrl(
+        INFRA_COLORS.hospital.hex,
+        '<rect x="28" y="18" width="8" height="28" rx="1.8" fill="#FFFFFF"/><rect x="18" y="28" width="28" height="8" rx="1.8" fill="#FFFFFF"/>'
+    ),
+    aeropuerto: buildInfraSvgDataUrl(
+        INFRA_COLORS.aeropuerto.hex,
+        '<path d="M32 16 L35 28 L47 34 L47 38 L35 35 L35 43 L40 46 L40 49 L32 47 L24 49 L24 46 L29 43 L29 35 L17 38 L17 34 L29 28 Z" fill="#FFFFFF"/>'
+    )
+};
+
+function getInfraPixelOffset(feature, allPoints) {
+    if (!feature || !feature.geometry || !feature.properties) return [0, 0];
+    const tipo = feature.properties.tipo;
+    const [lng, lat] = feature.geometry.coordinates;
+    const hasNearbyPeer = Array.isArray(allPoints) && allPoints.some(other => {
+        if (!other || other === feature || !other.geometry || !other.properties) return false;
+        if (other.properties.tipo === tipo) return false;
+        const [olng, olat] = other.geometry.coordinates;
+        return Math.abs(lng - olng) < 0.03 && Math.abs(lat - olat) < 0.03;
+    });
+    if (!hasNearbyPeer) return [0, 0];
+    if (tipo === 'puerto') return [-16, -6];
+    if (tipo === 'aeropuerto') return [16, -6];
+    if (tipo === 'hospital') return [12, 10];
+    return [0, 0];
+}
+
 function tileToMercatorBbox(x, y, z) {
     const MAX_EXTENT = 20037508.342789244;
     const tileSpan = (2 * MAX_EXTENT) / Math.pow(2, z);
@@ -1528,22 +1565,44 @@ function renderLayers(options = {}) {
         }
 
         if (puntosInfra.length > 0) {
+            const ordenPrioridad = { hospital: 0, aeropuerto: 1, puerto: 2 };
+            const puntosOrdenados = [...puntosInfra].sort(
+                (a, b) => (ordenPrioridad[a.properties?.tipo] ?? 1) - (ordenPrioridad[b.properties?.tipo] ?? 1)
+            );
             layers.push(new deck.ScatterplotLayer({
                 id: 'infra-puntos',
-                data: puntosInfra,
+                data: puntosOrdenados,
                 getPosition: d => [d.geometry.coordinates[0], d.geometry.coordinates[1], 20],
                 radiusUnits: 'pixels',
-                getRadius: d => d.properties.tipo === 'hospital' ? 13 : (d.properties.tipo === 'puerto' ? 10 : 12),
+                getRadius: 5,
                 getFillColor: d => {
                     const st = INFRA_COLORS[d.properties.tipo] || INFRA_COLORS.aeropuerto;
                     return st.rgba;
                 },
                 stroked: true,
-                getLineColor: [255, 255, 255, 255],
-                lineWidthMinPixels: 2.2,
+                getLineColor: [255, 255, 255, 230],
+                lineWidthMinPixels: 1.5,
+                pickable: false
+            }));
+
+            layers.push(new deck.IconLayer({
+                id: 'infra-iconos',
+                data: puntosOrdenados,
+                billboard: true,
+                sizeUnits: 'pixels',
+                getPosition: d => [d.geometry.coordinates[0], d.geometry.coordinates[1], 32],
+                getIcon: d => ({
+                    url: INFRA_ICON_URLS[d.properties.tipo] || INFRA_ICON_URLS.aeropuerto,
+                    width: 64,
+                    height: 64,
+                    anchorX: 32,
+                    anchorY: 32
+                }),
+                getSize: d => d.properties.tipo === 'puerto' ? 28 : (d.properties.tipo === 'aeropuerto' ? 26 : 26),
+                getPixelOffset: d => getInfraPixelOffset(d, puntosOrdenados),
                 pickable: true,
                 autoHighlight: true,
-                highlightColor: [255, 255, 255, 240],
+                highlightColor: [255, 255, 255, 220],
                 onHover: handleHover
             }));
         }

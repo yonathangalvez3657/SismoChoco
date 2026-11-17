@@ -20,7 +20,7 @@ function extractTopLevelFunction(source, fnName) {
     return rest.slice(0, endMatch.index + 2);
 }
 
-const context = vm.createContext({ Math, Number, String, Array, Object, Set, Infinity, parseFloat, isNaN });
+const context = vm.createContext({ Math, Number, String, Array, Object, Set, Infinity, parseFloat, isNaN, encodeURIComponent });
 const fns = [
     'getFactoresSitioNSR10',
     'calcularEspectroNSR10',
@@ -33,15 +33,20 @@ const fns = [
     'tileToMercatorBbox',
     'lngLatToTilePixel',
     'classifySgcRasterColor',
+    'buildInfraSvgDataUrl',
+    'getInfraPixelOffset',
 ];
 const infraMatch = /const INFRA_COLORS = \{[\s\S]*?\n\};/.exec(mainJs);
 assert.ok(infraMatch, 'No se encontró INFRA_COLORS en main.js');
+const infraIconsMatch = /const INFRA_ICON_URLS = \{[\s\S]*?\n\};/.exec(mainJs);
+assert.ok(infraIconsMatch, 'No se encontró INFRA_ICON_URLS en main.js');
 const sgcRampMatch = /const SGC_PGA_COLOR_RAMP = \[[\s\S]*?\n\];/.exec(mainJs);
 assert.ok(sgcRampMatch, 'No se encontró SGC_PGA_COLOR_RAMP en main.js');
 vm.runInContext(
     `${infraMatch[0].replace(/^const /, 'var ')}\n\n` +
     `${sgcRampMatch[0].replace(/^const /, 'var ')}\n\n` +
-    fns.map(name => extractTopLevelFunction(mainJs, name)).join('\n\n'),
+    fns.map(name => extractTopLevelFunction(mainJs, name)).join('\n\n') + '\n\n' +
+    `${infraIconsMatch[0].replace(/^const /, 'var ')}\n\n`,
     context
 );
 
@@ -168,4 +173,24 @@ test('Todos los botones de ayuda (data-info) cuentan con explicación en modalDa
         const pattern = new RegExp(`'${key}'\\s*:\\s*\``);
         assert.ok(pattern.test(mainJs), `Falta modalData['${key}'] en js/main.js`);
     }
+});
+
+test('Puertos DIMAR en vías e infraestructura tienen ícono SVG válido y separación ante hospitales colindantes', () => {
+    const infraGeo = JSON.parse(fs.readFileSync(path.join(APP_DIR, 'data', 'vias_infraestructura.geojson'), 'utf8'));
+    const pts = infraGeo.features.filter(f => f.geometry.type === 'Point');
+    const puertos = pts.filter(f => f.properties.tipo === 'puerto');
+    assert.equal(puertos.length, 7);
+
+    for (const tipo of ['puerto', 'hospital', 'aeropuerto']) {
+        const url = context.INFRA_ICON_URLS[tipo];
+        assert.ok(url && url.startsWith('data:image/svg+xml;charset=utf-8,'));
+        assert.ok(!url.includes('#'), `La URL SVG de ${tipo} no debe contener # sin codificar`);
+    }
+
+    const acandiPuerto = puertos.find(f => f.properties.id === 'puerto_acandi');
+    const acandiHosp = pts.find(f => f.properties.tipo === 'hospital' && f.properties.ciudad === 'Acandí');
+    assert.ok(acandiPuerto && acandiHosp);
+    const offPuerto = Array.from(context.getInfraPixelOffset(acandiPuerto, pts));
+    const offHosp = Array.from(context.getInfraPixelOffset(acandiHosp, pts));
+    assert.notDeepEqual(offPuerto, offHosp);
 });

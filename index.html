@@ -189,8 +189,14 @@
         </button>
         
         <section class="header-section">
-            <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px;">
-                <h2 style="margin: 0;">Sismicidad Chocó</h2>
+            <h2 style="margin: 0;">Sismicidad Chocó</h2>
+            <div class="panel-theme-row">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <button type="button" id="btn-theme-toggle" class="panel-theme-btn" aria-pressed="false" title="Conmutar tema claro de alto contraste del panel para lectura en campo u oficina">☀️ Claro</button>
+                    <span id="server-status-badge" style="display:inline-flex; align-items:center; gap:5px; font-size:var(--fs-xs); color:#32D74B; background:rgba(50,215,75,0.12); padding:4px 10px; border-radius:8px; border:1px solid rgba(50,215,75,0.25); line-height:1; box-sizing:border-box;" title="Servidor Backend Conectado">
+                        <span style="width:6px; height:6px; border-radius:50%; background:#32D74B; box-shadow:0 0 6px #32D74B;"></span> Online
+                    </span>
+                </div>
                 <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
                     <button type="button" class="info-btn rtd-pill-btn" data-info="rtd" aria-label="Marco Epistemológico: Research through Design" title="Marco Epistemológico: Research through Design (RtD)">RtD</button>
                     <button type="button" class="info-btn" data-info="guia" aria-label="Guía de uso de la plataforma" title="Guía de uso de la plataforma">?</button>
@@ -204,12 +210,6 @@
                         </span>
                     </button>
                 </div>
-            </div>
-            <div class="panel-theme-row">
-                <button type="button" id="btn-theme-toggle" class="panel-theme-btn" aria-pressed="false" title="Conmutar tema claro de alto contraste del panel para lectura en campo u oficina">☀️ Claro</button>
-                <span id="server-status-badge" style="display:inline-flex; align-items:center; gap:5px; font-size:var(--fs-xs); color:#32D74B; background:rgba(50,215,75,0.12); padding:4px 10px; border-radius:8px; border:1px solid rgba(50,215,75,0.25); line-height:1; box-sizing:border-box;" title="Servidor Backend Conectado">
-                    <span style="width:6px; height:6px; border-radius:50%; background:#32D74B; box-shadow:0 0 6px #32D74B;"></span> Online
-                </span>
             </div>
             <span class="subtitle">Research through Design en sismicidad (1993-2026).<br>Catálogo estructurado: <strong id="count" style="color:var(--text-primary)">0</strong> eventos.</span>
             
@@ -1250,7 +1250,7 @@
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js?v=54')
+                navigator.serviceWorker.register('sw.js?v=55')
                     .then(reg => {
                         reg.update();
                     })

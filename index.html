@@ -189,9 +189,11 @@
         </button>
         
         <section class="header-section">
-            <h2 style="margin: 0;">Sismicidad Chocó</h2>
-            <div class="panel-theme-row">
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+                <h2 style="margin: 0;">Sismicidad Chocó</h2>
                 <button type="button" id="btn-theme-toggle" class="panel-theme-btn" aria-pressed="false" title="Conmutar tema claro de alto contraste del panel para lectura en campo u oficina">☀️ Claro</button>
+            </div>
+            <div class="panel-theme-row">
                 <span id="server-status-badge" style="display:inline-flex; align-items:center; gap:5px; font-size:var(--fs-xs); color:#32D74B; background:rgba(50,215,75,0.12); padding:4px 10px; border-radius:8px; border:1px solid rgba(50,215,75,0.25); line-height:1; box-sizing:border-box;" title="Servidor Backend Conectado">
                     <span style="width:6px; height:6px; border-radius:50%; background:#32D74B; box-shadow:0 0 6px #32D74B;"></span> Online
                 </span>
@@ -1235,7 +1237,7 @@
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js?v=62')
+                navigator.serviceWorker.register('sw.js?v=63')
                     .then(reg => {
                         reg.update();
                     })

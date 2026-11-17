@@ -176,12 +176,10 @@
         </div>
     </header>
 
-    <!-- Selector de Mapa Base y Accesibilidad Flotante -->
-    <div id="basemap-selector" role="toolbar" aria-label="Estilo del mapa base y accesibilidad">
+    <!-- Selector de Mapa Base Flotante -->
+    <div id="basemap-selector" role="toolbar" aria-label="Estilo del mapa base">
         <button type="button" class="basemap-btn active" data-style="voy" title="Mapa Físico / Relieve Topográfico">🏔️ Relieve</button>
         <button type="button" class="basemap-btn" data-style="dark" title="Modo Oscuro / Contraste Sísmico">🌙 Oscuro</button>
-        <button type="button" id="btn-theme-toggle" class="basemap-btn" aria-pressed="false" title="Conmutar Tema Claro de Alto Contraste para lectura en campo u oficina">☀️ Claro</button>
-        <button type="button" id="btn-lowbw-toggle" class="basemap-btn" aria-pressed="false" title="Activar modo ligero de bajo consumo (desactiva desenfoque GPU y efectos pesados)">⚡ Ligero</button>
     </div>
 
 
@@ -213,6 +211,9 @@
                 </div>
             </div>
             <span class="subtitle">Research through Design en sismicidad (1993-2026).<br>Catálogo estructurado: <strong id="count" style="color:var(--text-primary)">0</strong> eventos.</span>
+            <div class="panel-theme-row">
+                <button type="button" id="btn-theme-toggle" class="panel-theme-btn" aria-pressed="false" title="Conmutar tema claro de alto contraste del panel para lectura en campo u oficina">☀️ Claro</button>
+            </div>
             
             <!-- Banner contextual Mobile/Tablet: Sugerencia de visualización en PC -->
             <div id="mobile-device-advice" class="mobile-device-banner" role="note" aria-label="Sugerencia de visualización">
@@ -1223,7 +1224,7 @@
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js?v=49')
+                navigator.serviceWorker.register('sw.js?v=50')
                     .then(reg => {
                         reg.update();
                     })

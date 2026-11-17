@@ -2325,7 +2325,7 @@ document.getElementById('check-oq').addEventListener('change', async e => {
     renderLayers();
 });
 
-// Selector Dinámico de Mapas Base, Tema Claro y Modo Ligero
+// Selector Dinámico de Mapas Base y Tema Claro del Panel
 document.querySelectorAll('.basemap-btn[data-style]').forEach(btn => {
     btn.addEventListener('click', function() {
         document.querySelectorAll('.basemap-btn[data-style]').forEach(b => b.classList.remove('active'));
@@ -2345,16 +2345,6 @@ if (btnThemeToggle) {
         const isLight = document.body.classList.toggle('theme-light');
         btnThemeToggle.classList.toggle('active', isLight);
         btnThemeToggle.setAttribute('aria-pressed', String(isLight));
-        savePreferences();
-    });
-}
-
-const btnLowBwToggle = document.getElementById('btn-lowbw-toggle');
-if (btnLowBwToggle) {
-    btnLowBwToggle.addEventListener('click', () => {
-        const isLow = document.body.classList.toggle('low-bandwidth');
-        btnLowBwToggle.classList.toggle('active', isLow);
-        btnLowBwToggle.setAttribute('aria-pressed', String(isLow));
         savePreferences();
     });
 }
@@ -3609,7 +3599,6 @@ function savePreferences() {
     try {
         const prefs = {
             themeLight: document.body.classList.contains('theme-light'),
-            lowBw: document.body.classList.contains('low-bandwidth'),
             mapStyleKey: Object.keys(BASEMAP_STYLES).find(k => BASEMAP_STYLES[k] === currentMapStyle) || 'voy',
             profile: currentProfile,
             mag: currentMag,
@@ -3636,11 +3625,6 @@ function restoreSavedPreferences() {
             document.body.classList.add('theme-light');
             const tBtn = document.getElementById('btn-theme-toggle');
             if (tBtn) { tBtn.classList.add('active'); tBtn.setAttribute('aria-pressed', 'true'); }
-        }
-        if (prefs.lowBw) {
-            document.body.classList.add('low-bandwidth');
-            const lBtn = document.getElementById('btn-lowbw-toggle');
-            if (lBtn) { lBtn.classList.add('active'); lBtn.setAttribute('aria-pressed', 'true'); }
         }
         if (prefs.mapStyleKey && BASEMAP_STYLES[prefs.mapStyleKey]) {
             currentMapStyle = BASEMAP_STYLES[prefs.mapStyleKey];

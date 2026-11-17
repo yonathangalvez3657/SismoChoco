@@ -131,14 +131,37 @@ body.theme-light .info-btn[data-info="rtd"] {
     color: #0052CC !important;
 }
 
-/* Modo Ligero / Bajo Ancho de Banda */
-body.low-bandwidth #ui-panel,
-body.low-bandwidth #basemap-selector,
-body.low-bandwidth #map-legend,
-body.low-bandwidth #tooltip {
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-    --blur: none;
+.panel-theme-row {
+    display: flex;
+    align-items: center;
+    margin-top: 10px;
+}
+
+.panel-theme-btn {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-secondary);
+    border-radius: 8px;
+    padding: 5px 12px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.panel-theme-btn:hover {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.14);
+}
+
+.panel-theme-btn.active,
+body.theme-light .panel-theme-btn.active {
+    background: #0052CC;
+    border-color: #0052CC;
+    color: #FFFFFF !important;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(0, 82, 204, 0.35);
 }
 
 body {

@@ -233,6 +233,27 @@ const ctx = document.getElementById('gr-chart').getContext('2d');
 Chart.defaults.color = '#94a3b8';
 Chart.defaults.font.family = 'Inter';
 
+function applyThemeToCharts(isLight) {
+    const tickColor = isLight ? '#334155' : '#94a3b8';
+    const gridColor = isLight ? 'rgba(15, 23, 42, 0.10)' : 'rgba(255, 255, 255, 0.06)';
+    Chart.defaults.color = tickColor;
+
+    [chartInstance, nsrEspectroChart].forEach(ch => {
+        if (!ch || !ch.options || !ch.options.scales) return;
+        ['x', 'y'].forEach(axis => {
+            const sc = ch.options.scales[axis];
+            if (!sc) return;
+            if (sc.grid) sc.grid.color = gridColor;
+            if (sc.ticks) sc.ticks.color = tickColor;
+            if (sc.title) sc.title.color = tickColor;
+        });
+        if (ch.options.plugins && ch.options.plugins.legend && ch.options.plugins.legend.labels) {
+            ch.options.plugins.legend.labels.color = tickColor;
+        }
+        ch.update('none');
+    });
+}
+
 // ============================================================================
 // LEY DE GUTENBERG-RICHTER: Log10(N) = a - b * Mw (Máxima Verosimilitud Aki-Utsu)
 // ============================================================================
@@ -374,6 +395,7 @@ function updateChart(filteredData) {
             }
         }
     });
+    applyThemeToCharts(document.body.classList.contains('theme-light'));
 }
 
 // ============================================================================
@@ -2508,6 +2530,7 @@ if (btnThemeToggle) {
         const isLight = document.body.classList.toggle('theme-light');
         btnThemeToggle.classList.toggle('active', isLight);
         btnThemeToggle.setAttribute('aria-pressed', String(isLight));
+        applyThemeToCharts(isLight);
         savePreferences();
     });
 }
@@ -3790,6 +3813,7 @@ function restoreSavedPreferences() {
             document.body.classList.add('theme-light');
             const tBtn = document.getElementById('btn-theme-toggle');
             if (tBtn) { tBtn.classList.add('active'); tBtn.setAttribute('aria-pressed', 'true'); }
+            applyThemeToCharts(true);
         }
         if (prefs.mapStyleKey && BASEMAP_STYLES[prefs.mapStyleKey]) {
             currentMapStyle = BASEMAP_STYLES[prefs.mapStyleKey];
@@ -4189,6 +4213,7 @@ function updateNSREspectroChart() {
                 }
             }
         });
+        applyThemeToCharts(document.body.classList.contains('theme-light'));
     }
 
     window.currentSpectrumData = {

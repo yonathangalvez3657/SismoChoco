@@ -71,30 +71,125 @@ body.theme-light #ui-panel .val-display,
 body.theme-light #ui-panel span:not(.status-pill):not(.slider),
 body.theme-light .ficha-pot-container,
 body.theme-light .ficha-pot-container h2,
+body.theme-light .ficha-pot-container h3,
 body.theme-light .ficha-pot-container h4,
 body.theme-light .ficha-pot-container strong,
 body.theme-light .ficha-pot-container p,
+body.theme-light .ficha-pot-container li,
 body.theme-light .ficha-pot-container span,
 body.theme-light .ficha-pot-container div,
-body.theme-light .ficha-pot-table td {
+body.theme-light .ficha-pot-table td,
+body.theme-light #info-modal-content,
+body.theme-light #info-modal-content h2,
+body.theme-light #info-modal-content h3,
+body.theme-light #info-modal-content h4,
+body.theme-light #info-modal-content p,
+body.theme-light #info-modal-content li,
+body.theme-light #info-modal-content strong,
+body.theme-light #info-modal-content span,
+body.theme-light #info-modal-content div,
+body.theme-light #mobile-device-modal h3,
+body.theme-light #mobile-device-modal p,
+body.theme-light #mobile-device-modal div,
+body.theme-light #tablet-orientation-modal h3,
+body.theme-light #tablet-orientation-modal p,
+body.theme-light #tablet-orientation-modal div,
+body.theme-light #ux-telemetry-hud,
+body.theme-light #ux-telemetry-hud strong,
+body.theme-light #ux-telemetry-hud span,
+body.theme-light #live-seismic-alert-banner,
+body.theme-light #live-seismic-alert-banner strong,
+body.theme-light #live-seismic-alert-banner div,
+body.theme-light #live-seismic-alert-banner span,
+body.theme-light #shortcut-quick-toast span,
+body.theme-light #tooltip h4,
+body.theme-light #tooltip p,
+body.theme-light #tooltip strong,
+body.theme-light #tooltip span:not(.status-pill) {
     color: #0F172A !important;
 }
 
 body.theme-light #ui-panel footer a,
-body.theme-light .ficha-pot-table th {
+body.theme-light #info-modal-content a,
+body.theme-light #map-legend a,
+body.theme-light .ficha-pot-table th,
+body.theme-light #btn-sgc-query-municipio,
+body.theme-light #btn-nsr-locate,
+body.theme-light #btn-pot-locate,
+body.theme-light #btn-pot-summary-toggle,
+body.theme-light #btn-clear-cache-banner,
+body.theme-light #btn-clear-cache-mobile-modal,
+body.theme-light #btn-clear-cache-mobile {
     color: #0052CC !important;
+}
+
+/* Botones primarios con fondo azul sólido conservan texto blanco en modo claro */
+body.theme-light #btn-entendido-guia,
+body.theme-light #btn-entendido-guia span,
+body.theme-light #btn-ficha-print-action,
+body.theme-light #btn-continue-mobile,
+body.theme-light #btn-continue-tablet,
+body.theme-light #btn-pot-print,
+body.theme-light #btn-pot-print span,
+body.theme-light #btn-export-telemetry-hud,
+body.theme-light #btn-export-telemetry-hud span,
+body.theme-light #btn-timelapse-play,
+body.theme-light #btn-timelapse-play span,
+body.theme-light .profile-tab.active,
+body.theme-light .profile-tab.active span,
+body.theme-light .toggle-btn.active,
+body.theme-light .basemap-btn.active,
+body.theme-light .panel-theme-btn.active {
+    color: #FFFFFF !important;
+}
+
+body.theme-light #info-modal > div,
+body.theme-light #modal-ficha-pot .ficha-pot-container,
+body.theme-light #mobile-device-modal > div,
+body.theme-light #tablet-orientation-modal > div,
+body.theme-light #ux-telemetry-hud,
+body.theme-light #live-seismic-alert-banner,
+body.theme-light #shortcut-quick-toast,
+body.theme-light #tooltip,
+body.theme-light #loader-overlay {
+    background: rgba(255, 255, 255, 0.97) !important;
+    color: #0F172A !important;
+    border-color: rgba(15, 23, 42, 0.2) !important;
+    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.22) !important;
+}
+
+body.theme-light #close-info-modal,
+body.theme-light #btn-ficha-close-action,
+body.theme-light #btn-close-ux-hud,
+body.theme-light #btn-close-alert-banner,
+body.theme-light #btn-reset-telemetry-hud,
+body.theme-light #btn-home,
+body.theme-light #btn-reset-capas {
+    background: rgba(15, 23, 42, 0.08) !important;
+    border: 1px solid rgba(15, 23, 42, 0.2) !important;
+    color: #0F172A !important;
+}
+
+body.theme-light #close-info-modal:hover,
+body.theme-light #btn-ficha-close-action:hover,
+body.theme-light #btn-home:hover,
+body.theme-light #btn-reset-capas:hover {
+    background: #0052CC !important;
+    color: #FFFFFF !important;
+    border-color: #0052CC !important;
 }
 
 body.theme-light #basemap-selector,
 body.theme-light #map-legend {
-    background: rgba(255, 255, 255, 0.94) !important;
+    background: rgba(255, 255, 255, 0.95) !important;
     color: #0F172A !important;
     border-color: rgba(15, 23, 42, 0.2) !important;
 }
 
 body.theme-light #map-legend h4,
 body.theme-light #map-legend div,
-body.theme-light #map-legend span {
+body.theme-light #map-legend span,
+body.theme-light #map-legend strong {
     color: #0F172A !important;
 }
 
@@ -104,6 +199,18 @@ body.theme-light input[type="range"] {
     color: #0F172A;
     background-color: #FFFFFF;
     border-color: rgba(15, 23, 42, 0.22);
+}
+
+body.theme-light input[type="range"]::-webkit-slider-runnable-track {
+    background: rgba(15, 23, 42, 0.18);
+}
+
+body.theme-light .slider {
+    background-color: rgba(15, 23, 42, 0.24);
+}
+
+body.theme-light .switch-container {
+    border-bottom-color: rgba(15, 23, 42, 0.12);
 }
 
 body.theme-light .profile-tabs {
@@ -121,28 +228,86 @@ body.theme-light .profile-tab.active {
 
 body.theme-light .toggle-btn,
 body.theme-light .btn-secondary {
-    color: #0F172A;
-    background: rgba(15, 23, 42, 0.06);
-    border-color: rgba(15, 23, 42, 0.18);
+    color: #0F172A !important;
+    background: rgba(15, 23, 42, 0.06) !important;
+    border-color: rgba(15, 23, 42, 0.18) !important;
+}
+
+body.theme-light #btn-toggle-shakemap,
+body.theme-light #btn-clear-shakemap {
+    color: #B91C1C !important;
+    background: rgba(220, 38, 38, 0.08) !important;
+    border-color: rgba(220, 38, 38, 0.35) !important;
 }
 
 body.theme-light .toggle-btn.active {
-    background: #0052CC;
-    color: #FFFFFF;
+    background: #0052CC !important;
+    color: #FFFFFF !important;
 }
 
 body.theme-light .metric-card,
+body.theme-light #chart-container,
 body.theme-light #gr-recurrence-box,
 body.theme-light #nsr-geotecnia-feedback,
 body.theme-light #infra-convenciones,
 body.theme-light #benioff-controls,
+body.theme-light #benioff-controls > div[style*="background"],
 body.theme-light #fallas-interactive-panel,
+body.theme-light #falla-info-card,
 body.theme-light #sgc-alert-settings,
 body.theme-light #sgc-wms-query-box,
-body.theme-light #pot-tabular-summary {
+body.theme-light #sgc-wms-identify-result div[style*="background"],
+body.theme-light #shakemap-wave-controls,
+body.theme-light #shakemap-impact-box,
+body.theme-light #panel-alcaldia section > div[style*="rgba(0,0,0"],
+body.theme-light #pot-tabular-summary,
+body.theme-light #ui-panel footer,
+body.theme-light #info-modal-content div[style*="background"],
+body.theme-light #ficha-pot-body div[style*="background"],
+body.theme-light #ux-telemetry-hud div[style*="background"],
+body.theme-light .friendly-card,
+body.theme-light .concept-card,
+body.theme-light .backpack-item {
     background: rgba(15, 23, 42, 0.04) !important;
     color: #0F172A !important;
     border-color: rgba(15, 23, 42, 0.14) !important;
+}
+
+body.theme-light .ficha-pot-table th {
+    background: #EFF6FF !important;
+    border-color: #CBD5E1 !important;
+}
+
+body.theme-light .ficha-pot-table td {
+    border-color: #CBD5E1 !important;
+}
+
+body.theme-light #info-modal-content kbd {
+    background: #E2E8F0 !important;
+    color: #0F172A !important;
+    border: 1px solid #94A3B8 !important;
+}
+
+body.theme-light .status-pill.critico,
+body.theme-light .status-pill.danger {
+    background: rgba(220, 38, 38, 0.12) !important;
+    color: #B91C1C !important;
+    border-color: rgba(220, 38, 38, 0.35) !important;
+}
+
+body.theme-light .status-pill.alerta,
+body.theme-light .status-pill.warning {
+    background: rgba(217, 119, 6, 0.14) !important;
+    color: #B45309 !important;
+    border-color: rgba(217, 119, 6, 0.35) !important;
+}
+
+body.theme-light .status-pill.seguro,
+body.theme-light .status-pill.success,
+body.theme-light .status-pill.normal {
+    background: rgba(5, 150, 105, 0.12) !important;
+    color: #047857 !important;
+    border-color: rgba(5, 150, 105, 0.35) !important;
 }
 
 body.theme-light .info-btn[data-info="rtd"] {

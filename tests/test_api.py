@@ -95,6 +95,39 @@ def test_public_geodata_endpoints_and_static_assets(client):
         assert r.status_code == 200, f"Missing static asset {static_path}"
 
 
+from datetime import datetime, timezone
+from unittest.mock import patch
+
+
+def test_live_sgc_window_and_metadata(client):
+    now_utc = datetime.now(timezone.utc)
+    sample_feat = backend._build_live_feature(
+        event_id="evt-test-1",
+        dt_utc=now_utc,
+        now_utc=now_utc,
+        lon=-76.66,
+        lat=5.69,
+        depth=18.5,
+        mag=4.2,
+        municipio="Quibdó (Chocó) · EMSC FDSN",
+        fuente="EMSC FDSN Real-Time",
+        rms=0.3,
+        gap=90.0,
+    )
+    assert sample_feat["properties"]["esHoy"] is True
+    assert sample_feat["properties"]["diffHours"] == 0.0
+
+    with patch.object(backend, "fetch_real_sgc_telemetry", return_value=[sample_feat]):
+        res = client.get("/api/live_sgc")
+        assert res.status_code == 200
+        body = res.json()
+        assert body["ventana_dias"] == 14
+        assert body["eventos_24h"] == 1
+        assert body["eventos_ventana"] == 1
+        assert body["ultimo_evento_fecha"] == sample_feat["properties"]["fecha"]
+        assert "consultado_utc5" in body and "fuente_nota" in body
+
+
 def test_admin_endpoints_fail_closed_without_secret_or_on_get(client):
     assert client.get("/api/sismos/reload").status_code in (404, 405)
     assert client.get("/api/sismos/sync").status_code in (404, 405)

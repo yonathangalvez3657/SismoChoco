@@ -40,7 +40,120 @@ let chocoBaseData = null;
 let municipiosData = [];
 let nsrEspectroChart = null;
 
-const SGC_WMS_TILE_URL = 'https://srvags.sgc.gov.co/arcprod/rest/services/Amenaza_Sismica/Amenaza_Sismica/MapServer/export?bbox={bbox-epsg-3857}&bboxSR=3857&imageSR=3857&size=256,256&layers=show:9&format=png32&transparent=true&f=image';
+const SGC_MAPSERVER_BASE = 'https://srvags.sgc.gov.co/arcprod/rest/services/Amenaza_Sismica/Amenaza_Sismica/MapServer';
+
+const INFRA_COLORS = {
+    vial:       { rgba: [255, 183, 3, 230],   hex: '#FFB703', textHex: '#FFB703' },
+    fluvial:    { rgba: [56, 189, 248, 230],  hex: '#38BDF8', textHex: '#38BDF8' },
+    maritimo:   { rgba: [20, 184, 166, 230],  hex: '#14B8A6', textHex: '#2DD4BF' },
+    aeropuerto: { rgba: [59, 130, 246, 240],  hex: '#3B82F6', textHex: '#60A5FA' },
+    hospital:   { rgba: [255, 45, 85, 245],   hex: '#FF2D55', textHex: '#FF6482' },
+    puerto:     { rgba: [168, 85, 247, 240],  hex: '#A855F7', textHex: '#C084FC' }
+};
+
+function tileToMercatorBbox(x, y, z) {
+    const MAX_EXTENT = 20037508.342789244;
+    const tileSpan = (2 * MAX_EXTENT) / Math.pow(2, z);
+    const minX = -MAX_EXTENT + x * tileSpan;
+    const maxX = minX + tileSpan;
+    const maxY = MAX_EXTENT - y * tileSpan;
+    const minY = maxY - tileSpan;
+    return [minX, minY, maxX, maxY];
+}
+
+function loadSgcWmsTile({ index, signal }) {
+    if (!index || index.x === undefined || index.y === undefined || index.z === undefined) {
+        return Promise.resolve(null);
+    }
+    const [minX, minY, maxX, maxY] = tileToMercatorBbox(index.x, index.y, index.z);
+    const url = `${SGC_MAPSERVER_BASE}/export?bbox=${minX},${minY},${maxX},${maxY}&bboxSR=3857&imageSR=3857&size=256,256&layers=show:9&format=png32&transparent=true&f=image`;
+    return new Promise((resolve) => {
+        if (signal && signal.aborted) {
+            resolve(null);
+            return;
+        }
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        const onAbort = () => {
+            img.src = '';
+            resolve(null);
+        };
+        if (signal) signal.addEventListener('abort', onAbort, { once: true });
+        img.onload = () => {
+            if (signal) signal.removeEventListener('abort', onAbort);
+            resolve(img);
+        };
+        img.onerror = () => {
+            if (signal) signal.removeEventListener('abort', onAbort);
+            resolve(null);
+        };
+        img.src = url;
+    });
+}
+
+let lastSgcIdentifyData = null;
+
+async function querySgcOfficialPoint(lng, lat, customLabel = null) {
+    const resultBox = document.getElementById('sgc-wms-identify-result');
+    const coordTxt = `${Number(lat).toFixed(4)}° N, ${Number(lng).toFixed(4)}°`;
+    const titleLabel = customLabel ? escapeHtml(customLabel) : `Punto (${coordTxt})`;
+    if (resultBox) {
+        resultBox.innerHTML = `<span style="color:#38bdf8;">Consultando servidor OGC SGC para ${titleLabel}...</span>`;
+    }
+    try {
+        const pad = 1.5;
+        const url = `${SGC_MAPSERVER_BASE}/identify?geometry=${lng},${lat}&geometryType=esriGeometryPoint&sr=4326&layers=all:9,10,11&tolerance=2&mapExtent=${lng - pad},${lat - pad},${lng + pad},${lat + pad}&imageDisplay=400,400,96&returnGeometry=false&f=json`;
+        const resp = await fetchWithTimeout(url, 8000);
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const json = await resp.json();
+        const rows = json.results || [];
+        const pickVal = (layerId) => {
+            const r = rows.find(item => item.layerId === layerId);
+            const raw = r && r.attributes ? r.attributes['Classify.Pixel Value'] : null;
+            const num = parseFloat(raw);
+            return Number.isFinite(num) ? num : null;
+        };
+        const pga = pickVal(9);
+        const sa02 = pickVal(10);
+        const sa10 = pickVal(11);
+        lastSgcIdentifyData = { label: customLabel || coordTxt, lat, lng, pga, sa02, sa10 };
+
+        if (pga === null && sa02 === null && sa10 === null) {
+            if (resultBox) {
+                resultBox.innerHTML = `<strong>${titleLabel}:</strong> Sin cobertura de malla SGC en esta coordenada (fuera del dominio raster nacional).`;
+            }
+            return;
+        }
+        let nsrRefHtml = '';
+        if (municipiosData && municipiosData.length > 0) {
+            let bestM = null;
+            let bestD = Infinity;
+            for (const m of municipiosData) {
+                const d = haversineDistanceKm(lat, lng, m.lat, m.lng);
+                if (d < bestD) { bestD = d; bestM = m; }
+            }
+            if (bestM && bestD <= 60) {
+                nsrRefHtml = `<div style="margin-top:4px; color:var(--text-tertiary);">Ref. NSR-10 (${escapeHtml(bestM.nombre)}): Aa=${bestM.aa.toFixed(2)} g · Av=${bestM.av.toFixed(2)} g</div>`;
+            }
+        }
+        const htmlOut = `
+            <div><strong>${titleLabel}</strong> <span style="color:var(--text-tertiary);">(${coordTxt})</span></div>
+            <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-top:6px;">
+                <div style="background:rgba(255,255,255,0.05); border-radius:6px; padding:4px 6px;"><span style="color:var(--text-tertiary); display:block;">PGA 475a</span><strong style="color:#ffd60a;">${pga !== null ? pga.toFixed(3) + ' g' : '--'}</strong></div>
+                <div style="background:rgba(255,255,255,0.05); border-radius:6px; padding:4px 6px;"><span style="color:var(--text-tertiary); display:block;">Sa(0.2s)</span><strong style="color:#fb923c;">${sa02 !== null ? sa02.toFixed(3) + ' g' : '--'}</strong></div>
+                <div style="background:rgba(255,255,255,0.05); border-radius:6px; padding:4px 6px;"><span style="color:var(--text-tertiary); display:block;">Sa(1.0s)</span><strong style="color:#38bdf8;">${sa10 !== null ? sa10.toFixed(3) + ' g' : '--'}</strong></div>
+            </div>
+            ${nsrRefHtml}
+        `;
+        if (resultBox) resultBox.innerHTML = htmlOut;
+        const legendIdentify = document.getElementById('legend-sgc-identify');
+        if (legendIdentify) legendIdentify.innerHTML = htmlOut;
+    } catch (err) {
+        if (resultBox) {
+            resultBox.innerHTML = `<span style="color:#fca5a5;">No fue posible consultar el servicio OGC del SGC en este momento.</span>`;
+        }
+    }
+}
 
 async function fetchWithTimeout(url, timeoutMs = 6500, options = {}) {
     const controller = new AbortController();
@@ -108,7 +221,12 @@ const deckgl = new deck.DeckGL({
     initialViewState: { longitude: -77.0, latitude: 6.0, zoom: 6.5, pitch: 45, bearing: 15 },
     controller: { dragRotate: true },
     layers: [],
-    getCursor: ({isDragging}) => isDragging ? 'grabbing' : 'default'
+    getCursor: ({isDragging}) => isDragging ? 'grabbing' : 'default',
+    onClick: (info) => {
+        if (showSgcWms && info && info.coordinate && !info.picked) {
+            querySgcOfficialPoint(info.coordinate[0], info.coordinate[1]);
+        }
+    }
 });
 
 const ctx = document.getElementById('gr-chart').getContext('2d');
@@ -289,7 +407,7 @@ function handleHover(info) {
             tooltip.innerHTML = `<h4>Malla OpenQuake (Demo Simplificada)</h4>
                                  <p><strong>PGA Referencial:</strong> ${escapeHtml(p.pga)} g</p>
                                  <p><strong>Periodo de Retorno (Tr):</strong> ${escapeHtml(p.retorno)} años</p>
-                                 <p style="font-size: 0.7rem; margin-top: 6px; line-height: 1.3;">Modelo ilustrativo BooreAtkinson2008 sobre fuente rectangular simplificada. No sustituye el Modelo Nacional de Amenaza Sísmica del SGC.</p>`;
+                                 <p style="font-size: var(--fs-2xs); margin-top: 6px; line-height: 1.3;">Modelo ilustrativo BooreAtkinson2008 sobre fuente rectangular simplificada. No sustituye el Modelo Nacional de Amenaza Sísmica del SGC.</p>`;
         } else if (p.cluster_id !== undefined) {
             const col = getClusterColor(p.cluster_id);
             const colorHex = `rgb(${col[0]},${col[1]},${col[2]})`;
@@ -303,7 +421,7 @@ function handleHover(info) {
                                  <p><strong>Magnitud del Evento:</strong> ${escapeHtml(magTxt)}</p>
                                  ${profTxt}
                                  ${fechaTxt}
-                                 <p style="font-size: 0.7rem; margin-top: 6px; line-height: 1.3;">Agrupación de alta densidad espacial (≥4.0 M) detectada en radio geodésico de 15 km mediante algoritmo DBSCAN sobre el catálogo sísmico.</p>`;
+                                 <p style="font-size: var(--fs-2xs); margin-top: 6px; line-height: 1.3;">Agrupación de alta densidad espacial (≥4.0 M) detectada en radio geodésico de 15 km mediante algoritmo DBSCAN sobre el catálogo sísmico.</p>`;
         } else if (p.tipo && ['vial', 'fluvial', 'maritimo', 'aeropuerto', 'hospital', 'puerto'].includes(p.tipo)) {
             const iconMap = {
                 aeropuerto: '✈️',
@@ -325,7 +443,7 @@ function handleHover(info) {
         } else if (p.nombre) {
             let desc = "";
             if (p.nombre.includes("Nazca")) {
-                desc = `<p style="font-size: 0.7rem; margin-top: 6px; line-height: 1.3;">Límite de colisión tectónica (Margen Convergente o Fosa) donde la placa oceánica de Nazca se subduce bajo la placa continental Sudamericana, responsable de la sismicidad más destructiva de la región.</p>`;
+                desc = `<p style="font-size: var(--fs-2xs); margin-top: 6px; line-height: 1.3;">Límite de colisión tectónica (Margen Convergente o Fosa) donde la placa oceánica de Nazca se subduce bajo la placa continental Sudamericana, responsable de la sismicidad más destructiva de la región.</p>`;
             }
             tooltip.innerHTML = `<h4>Estructura Geológica</h4>
                                  <p><strong>Falla:</strong> ${escapeHtml(p.nombre.replace(' (Margen)', ''))}</p>
@@ -334,8 +452,8 @@ function handleHover(info) {
             const depthStr = p.profundidad < 30 ? 'Superficial' : (p.profundidad < 70 ? 'Intermedio' : 'Profundo');
             const magVal = (p.mag !== undefined ? p.mag : p.magnitud) || 0;
             const tiempoBadge = p.esHoy
-                ? `<span style="background:rgba(16,185,129,0.25); color:#34d399; border:1px solid #10b981; border-radius:4px; padding:1px 6px; font-size:0.68rem; font-weight:700;">● HOY (${escapeHtml(p.diffHours || 0)}h)</span>`
-                : `<span style="background:rgba(148,163,184,0.15); color:#cbd5e1; border:1px solid #64748b; border-radius:4px; padding:1px 6px; font-size:0.68rem;">Reciente (${escapeHtml(p.diffHours ? Math.round(p.diffHours/24) + 'd atrás' : 'Telemétrico')})</span>`;
+                ? `<span style="background:rgba(16,185,129,0.25); color:#34d399; border:1px solid #10b981; border-radius:4px; padding:1px 6px; font-size:var(--fs-2xs); font-weight:700;">● HOY (${escapeHtml(p.diffHours || 0)}h)</span>`
+                : `<span style="background:rgba(148,163,184,0.15); color:#cbd5e1; border:1px solid #64748b; border-radius:4px; padding:1px 6px; font-size:var(--fs-2xs);">Reciente (${escapeHtml(p.diffHours ? Math.round(p.diffHours/24) + 'd atrás' : 'Telemétrico')})</span>`;
 
             tooltip.innerHTML = `<h4 style="color:#34d399; display:flex; align-items:center; justify-content:space-between; gap:6px;">
                                     <span style="display:flex; align-items:center; gap:6px;">
@@ -347,17 +465,17 @@ function handleHover(info) {
                                  <p><strong>Magnitud:</strong> <span style="color:#ffd60a; font-weight:bold;">${escapeHtml(magVal)} M</span></p>
                                  <p><strong>Profundidad Hipocentral:</strong> ${escapeHtml(p.profundidad)} km (${depthStr})</p>
                                  <p><strong>Ubicación:</strong> ${escapeHtml(p.municipio)}</p>
-                                 <p style="color:#a7f3d0; font-size:0.72rem; margin-top:4px;"><strong>Agencia / Red:</strong> ${escapeHtml(p.fuente)}</p>
-                                 ${p.rms ? `<p style="color:#94a3b8; font-size:0.7rem;">RMS: ${escapeHtml(p.rms)}s | Gap: ${escapeHtml(p.gap)}°</p>` : ''}`;
+                                 <p style="color:#a7f3d0; font-size:var(--fs-xs); margin-top:4px;"><strong>Agencia / Red:</strong> ${escapeHtml(p.fuente)}</p>
+                                 ${p.rms ? `<p style="color:#94a3b8; font-size:var(--fs-2xs);">RMS: ${escapeHtml(p.rms)}s | Gap: ${escapeHtml(p.gap)}°</p>` : ''}`;
         } else {
             const depthStr = p.profundidad < 30 ? 'Superficial' : (p.profundidad < 70 ? 'Intermedio' : 'Profundo');
             const fuenteInfo = (p.fuente) ? `<span style="color:#38bdf8; font-weight:600;">[${escapeHtml(p.fuente)}]</span> ` : '';
             let benioffExtra = '';
             if (isBenioffMode) {
                 const zVisual = (p.profundidad * benioffExaggeration).toFixed(1);
-                benioffExtra = `<p style="color:#38bdf8; font-size:0.72rem; margin-top:4px;">📐 <strong>Corte Benioff:</strong> Profundidad Z: -${zVisual} km (${benioffExaggeration.toFixed(2)}x)</p>`;
+                benioffExtra = `<p style="color:#38bdf8; font-size:var(--fs-xs); margin-top:4px;">📐 <strong>Corte Benioff:</strong> Profundidad Z: -${zVisual} km (${benioffExaggeration.toFixed(2)}x)</p>`;
             }
-            tooltip.innerHTML = `<h4>${escapeHtml(p.fecha)}</h4><p><strong>Magnitud:</strong> ${escapeHtml(p.magnitud)} M <span style="font-size:0.7rem;color:#94a3b8;">(ML/Mw/mb)</span></p><p><strong>Profundidad:</strong> ${escapeHtml(p.profundidad)} km (${depthStr})</p><p><strong>Ubicación:</strong> ${fuenteInfo}${escapeHtml(p.municipio)}</p>${benioffExtra}`;
+            tooltip.innerHTML = `<h4>${escapeHtml(p.fecha)}</h4><p><strong>Magnitud:</strong> ${escapeHtml(p.magnitud)} M <span style="font-size:var(--fs-2xs);color:#94a3b8;">(ML/Mw/mb)</span></p><p><strong>Profundidad:</strong> ${escapeHtml(p.profundidad)} km (${depthStr})</p><p><strong>Ubicación:</strong> ${fuenteInfo}${escapeHtml(p.municipio)}</p>${benioffExtra}`;
         }
     } else {
         tooltip.style.display = 'none';
@@ -465,7 +583,7 @@ function handleBenioffCalorHover(info) {
             <p><strong>Magnitud:</strong> <span style="color:#fbbf24; font-weight:bold;">${mag.toFixed(1)} M</span></p>
             <p><strong>Profundidad Hipocentral:</strong> ${prof.toFixed(1)} km (${estrato})</p>
             <p><strong>Energía Radiada:</strong> <span style="color:#f97316; font-weight:700;">${joules.toExponential(2)} Joules</span></p>
-            <p style="font-size:0.72rem; color:var(--text-secondary); margin-top:4px; line-height:1.3;">Equivalente detonante: ≈ ${tonsTnt < 1 ? (tonsTnt * 1000).toFixed(0) + ' kg TNT' : tonsTnt.toFixed(1) + ' Toneladas TNT'}.</p>
+            <p style="font-size:var(--fs-xs); color:var(--text-secondary); margin-top:4px; line-height:1.3;">Equivalente detonante: ≈ ${tonsTnt < 1 ? (tonsTnt * 1000).toFixed(0) + ' kg TNT' : tonsTnt.toFixed(1) + ' Toneladas TNT'}.</p>
         `;
     } else {
         tooltip.style.display = 'none';
@@ -489,7 +607,7 @@ function handleBenioffHexHover(info) {
             <p><strong>Profundidad Media:</strong> ${d.avgProf.toFixed(1)} km</p>
             <p><strong>Sismos Agrupados en Celda:</strong> <span style="color:#34d399; font-weight:bold;">${d.count} eventos</span></p>
             <p><strong>Rango de Magnitud:</strong> ${d.minMag.toFixed(1)} - ${d.maxMag.toFixed(1)} M</p>
-            <p style="font-size:0.72rem; color:var(--text-secondary); margin-top:4px; line-height:1.3;">Nivel: ${nivel}. Prisma 3D anclado a la losa subducente.</p>
+            <p style="font-size:var(--fs-xs); color:var(--text-secondary); margin-top:4px; line-height:1.3;">Nivel: ${nivel}. Prisma 3D anclado a la losa subducente.</p>
         `;
     } else {
         tooltip.style.display = 'none';
@@ -631,14 +749,14 @@ function handleFaultHover(info) {
 
         tooltip.innerHTML = `
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-                <h4 style="margin:0; font-size:0.85rem; color:#fff;">${escapeHtml(p.nombre)}</h4>
+                <h4 style="margin:0; font-size:var(--fs-sm); color:#fff;">${escapeHtml(p.nombre)}</h4>
             </div>
-            <p style="margin:2px 0;"><span style="display:inline-block; padding:1px 6px; border-radius:4px; font-size:0.68rem; font-weight:bold; background:rgba(255,255,255,0.1); color:${colorBadge};">${escapeHtml(tipoBadge)}</span></p>
+            <p style="margin:2px 0;"><span style="display:inline-block; padding:1px 6px; border-radius:4px; font-size:var(--fs-2xs); font-weight:bold; background:rgba(255,255,255,0.1); color:${colorBadge};">${escapeHtml(tipoBadge)}</span></p>
             <p style="margin:2px 0;"><strong>Sistema:</strong> ${escapeHtml(p.sistema || 'Falla Activa')}</p>
             <p style="margin:2px 0;"><strong>Tasa de Desplazamiento:</strong> ${escapeHtml(p.tasa_mm_ano || 2.0)} mm/año</p>
             <p style="margin:2px 0;"><strong>Potencial Sismogénico:</strong> <span style="color:#ef4444; font-weight:bold;">${escapeHtml(p.m_max || 7.0)} Mw</span></p>
             <p style="margin:2px 0;"><strong>Longitud de Traza:</strong> ${escapeHtml(p.longitud_km || 100)} km</p>
-            ${p.sismo_historico ? `<p style="margin:2px 0; color:#fbbf24; font-size:0.72rem;"><strong>Sismo Destructor:</strong> ${escapeHtml(p.sismo_historico)}</p>` : ''}
+            ${p.sismo_historico ? `<p style="margin:2px 0; color:#fbbf24; font-size:var(--fs-xs);"><strong>Sismo Destructor:</strong> ${escapeHtml(p.sismo_historico)}</p>` : ''}
         `;
     } else {
         tooltip.style.display = 'none';
@@ -774,18 +892,19 @@ function renderLayers(options = {}) {
     if (showSgcWms) {
         layers.push(new deck.TileLayer({
             id: 'sgc-official-pga-wms',
-            data: SGC_WMS_TILE_URL,
+            extent: [-81.8, -4.3, -66.8, 13.5],
             minZoom: 4,
             maxZoom: 13,
             tileSize: 256,
-            opacity: 0.62,
+            opacity: 0.68,
+            getTileData: loadSgcWmsTile,
             renderSubLayers: props => {
-                const { boundingBox } = props.tile;
-                if (!props.data || !boundingBox) return null;
+                const { bbox } = props.tile || {};
+                if (!props.data || !bbox) return null;
                 return new deck.BitmapLayer(props, {
                     data: null,
                     image: props.data,
-                    bounds: [boundingBox[0][0], boundingBox[0][1], boundingBox[1][0], boundingBox[1][1]]
+                    bounds: [bbox.west, bbox.south, bbox.east, bbox.north]
                 });
             }
         }));
@@ -1120,10 +1239,8 @@ function renderLayers(options = {}) {
                 getWidth: d => d.properties.tipo === 'vial' ? 4 : (d.properties.tipo === 'maritimo' ? 3 : 5),
                 widthUnits: 'pixels',
                 getColor: d => {
-                    const t = d.properties.tipo;
-                    if (t === 'vial') return [255, 183, 3, 230];
-                    if (t === 'maritimo') return [20, 184, 166, 225];
-                    return [56, 189, 248, 230];
+                    const st = INFRA_COLORS[d.properties.tipo] || INFRA_COLORS.fluvial;
+                    return st.rgba;
                 },
                 pickable: true,
                 autoHighlight: true,
@@ -1140,10 +1257,8 @@ function renderLayers(options = {}) {
                 radiusUnits: 'pixels',
                 getRadius: d => d.properties.tipo === 'hospital' ? 13 : (d.properties.tipo === 'puerto' ? 10 : 12),
                 getFillColor: d => {
-                    const t = d.properties.tipo;
-                    if (t === 'hospital') return [255, 45, 85, 240];
-                    if (t === 'puerto') return [20, 184, 166, 240];
-                    return [10, 132, 255, 240];
+                    const st = INFRA_COLORS[d.properties.tipo] || INFRA_COLORS.aeropuerto;
+                    return st.rgba;
                 },
                 stroked: true,
                 getLineColor: [255, 255, 255, 255],
@@ -1466,7 +1581,7 @@ function renderLayers(options = {}) {
                                          <p><strong>Grupo de Uso:</strong> I = ${obj.curI.toFixed(2)}</p>
                                          <p><strong>PGA Terreno:</strong> <strong style="color:#38bdf8;">${obj.curPga} g</strong> (Aa=${m.aa.toFixed(2)}g)</p>
                                          <p><strong>Sa Máx Meseta (Diseño):</strong> <strong style="color:#ff453a;">${obj.curSaMax.toFixed(2)} g</strong></p>
-                                         <p style="font-size:0.75rem; margin-top:4px; color:#A1A1A6;">${escapeHtml(m.geologia)}</p>`;
+                                         <p style="font-size:var(--fs-xs); margin-top:4px; color:#A1A1A6;">${escapeHtml(m.geologia)}</p>`;
                 } else {
                     tooltip.style.display = 'none';
                 }
@@ -1520,7 +1635,7 @@ function renderLayers(options = {}) {
                                          <p><strong>Población Expuesta:</strong> ${(m.poblacion || 0).toLocaleString()} hab.</p>
                                          <p><strong>Aceleración Aa:</strong> <strong style="color:#ffd60a;">${escapeHtml(m.aa)} g</strong></p>
                                          <p><strong>Radio de Análisis:</strong> 30 km circundantes</p>
-                                         <p style="font-size:0.75rem; margin-top:4px; color:#A1A1A6;">${escapeHtml(m.geologia || '')}</p>`;
+                                         <p style="font-size:var(--fs-xs); margin-top:4px; color:#A1A1A6;">${escapeHtml(m.geologia || '')}</p>`;
                 } else {
                     tooltip.style.display = 'none';
                 }
@@ -1538,10 +1653,10 @@ function renderLayers(options = {}) {
             legend.style.display = 'block';
             legend.innerHTML = `
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; border-bottom:1px solid rgba(255,255,255,0.12); padding-bottom:5px;">
-                    <h4 style="margin:0; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:#fff; font-size:0.8rem;">ShakeMap: Demanda MMI</h4>
-                    <span style="font-size:0.68rem; color:#ffd60a; font-weight:600;">${currentShakemapData.mw} Mw</span>
+                    <h4 style="margin:0; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:#fff; font-size:var(--fs-sm);">ShakeMap: Demanda MMI</h4>
+                    <span style="font-size:var(--fs-2xs); color:#ffd60a; font-weight:600;">${currentShakemapData.mw} Mw</span>
                 </div>
-                <div style="display:flex; flex-direction:column; gap:5px; color:#A1A1A6; font-size:0.73rem; font-weight:500;">
+                <div style="display:flex; flex-direction:column; gap:5px; color:#A1A1A6; font-size:var(--fs-xs); font-weight:500;">
                     <div style="display:flex; align-items:center; gap:8px;"><span style="display:block; width:12px; height:12px; border-radius:50%; background:rgb(255,59,48); border:1px solid #fff;"></span> <strong>MMI VIII - IX</strong> (≥ 0.50g - Severo)</div>
                     <div style="display:flex; align-items:center; gap:8px;"><span style="display:block; width:12px; height:12px; border-radius:50%; background:rgb(255,140,0); border:1px solid #ffb703;"></span> <strong>MMI VII</strong> (0.25 - 0.50g - Daño Mod.)</div>
                     <div style="display:flex; align-items:center; gap:8px;"><span style="display:block; width:12px; height:12px; border-radius:50%; background:rgb(255,214,10); border:1px solid #ffe600;"></span> <strong>MMI V - VI</strong> (0.10 - 0.25g - Fuerte)</div>
@@ -1552,7 +1667,7 @@ function renderLayers(options = {}) {
             legend.style.display = 'block';
             legend.innerHTML = `
                 <h4 style="margin: 0 0 10px 0; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #F5F5F7;">Profundidad</h4>
-                <div style="display: flex; flex-direction: column; gap: 6px; color: #A1A1A6; font-size: 0.75rem; font-weight: 500;">
+                <div style="display: flex; flex-direction: column; gap: 6px; color: #A1A1A6; font-size: var(--fs-xs); font-weight: 500;">
                     <div style="display:flex; align-items:center; gap: 8px;"><span style="display:block; width:12px; height:12px; border-radius:50%; background:rgb(235,150,0);"></span> &lt; 30 km (Superficial)</div>
                     <div style="display:flex; align-items:center; gap: 8px;"><span style="display:block; width:12px; height:12px; border-radius:50%; background:rgb(255,105,180);"></span> 30 - 70 km (Intermedio)</div>
                     <div style="display:flex; align-items:center; gap: 8px;"><span style="display:block; width:12px; height:12px; border-radius:50%; background:rgb(75,0,130);"></span> &gt; 70 km (Profundo)</div>
@@ -1564,7 +1679,7 @@ function renderLayers(options = {}) {
                 legend.innerHTML = `
                     <h4 style="margin: 0 0 10px 0; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #F5F5F7;">Energía Radiada 3D</h4>
                     <div style="display: flex; align-items: center; justify-content: space-between; height: 12px; border-radius: 6px; margin-bottom: 5px; background: linear-gradient(to right, rgb(101,21,110), rgb(159,42,99), rgb(212,72,66), rgb(250,193,39), rgb(255,255,220));"></div>
-                    <div style="display: flex; justify-content: space-between; color: #A1A1A6; font-size: 0.75rem; font-weight: 500;">
+                    <div style="display: flex; justify-content: space-between; color: #A1A1A6; font-size: var(--fs-xs); font-weight: 500;">
                         <span>10¹⁰ J (M3)</span>
                         <span>10¹⁵ J (M7+)</span>
                     </div>
@@ -1573,7 +1688,7 @@ function renderLayers(options = {}) {
                 legend.innerHTML = `
                     <h4 style="margin: 0 0 10px 0; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #F5F5F7;">Densidad Térmica</h4>
                     <div style="display: flex; align-items: center; justify-content: space-between; height: 12px; border-radius: 6px; margin-bottom: 5px; background: linear-gradient(to right, rgb(0,0,4), rgb(101,21,110), rgb(159,42,99), rgb(212,72,66), rgb(250,193,39), rgb(252,253,191));"></div>
-                    <div style="display: flex; justify-content: space-between; color: #A1A1A6; font-size: 0.75rem; font-weight: 500;">
+                    <div style="display: flex; justify-content: space-between; color: #A1A1A6; font-size: var(--fs-xs); font-weight: 500;">
                         <span>Baja</span>
                         <span>Alta</span>
                     </div>
@@ -1585,7 +1700,7 @@ function renderLayers(options = {}) {
                 legend.innerHTML = `
                     <h4 style="margin: 0 0 10px 0; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #F5F5F7;">Cúmulos 3D (Subducción)</h4>
                     <div style="display: flex; align-items: center; justify-content: space-between; height: 12px; border-radius: 6px; margin-bottom: 5px; background: linear-gradient(to right, rgb(68,1,84), rgb(59,82,139), rgb(33,145,140), rgb(94,201,98), rgb(253,231,37));"></div>
-                    <div style="display: flex; justify-content: space-between; color: #A1A1A6; font-size: 0.75rem; font-weight: 500;">
+                    <div style="display: flex; justify-content: space-between; color: #A1A1A6; font-size: var(--fs-xs); font-weight: 500;">
                         <span>1 Sismo</span>
                         <span>20+ Sismos</span>
                     </div>
@@ -1594,7 +1709,7 @@ function renderLayers(options = {}) {
                 legend.innerHTML = `
                     <h4 style="margin: 0 0 10px 0; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #F5F5F7;">Agrupación (8km)</h4>
                     <div style="display: flex; align-items: center; justify-content: space-between; height: 12px; border-radius: 6px; margin-bottom: 5px; background: linear-gradient(to right, rgb(68,1,84), rgb(49,104,142), rgb(53,183,121), rgb(181,222,43), rgb(253,231,37));"></div>
-                    <div style="display: flex; justify-content: space-between; color: #A1A1A6; font-size: 0.75rem; font-weight: 500;">
+                    <div style="display: flex; justify-content: space-between; color: #A1A1A6; font-size: var(--fs-xs); font-weight: 500;">
                         <span>1 Sismo</span>
                         <span>50+ Sismos</span>
                     </div>
@@ -1604,17 +1719,23 @@ function renderLayers(options = {}) {
             legend.style.display = 'block';
             legend.innerHTML = `
                 <h4 style="margin: 0 0 8px 0; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #F5F5F7;">SGC Oficial · PGA Tr=475a</h4>
-                <div style="font-size: 0.72rem; color: #CBD5E1; line-height: 1.4;">
-                    Modelo Nacional de Amenaza Sísmica (SGC, 10% exc. en 50 años, roca firme).<br>
-                    <a href="https://amenazasismica.sgc.gov.co/" target="_blank" rel="noopener noreferrer" style="color:#38bdf8;">Consultar visor oficial SGC ↗</a>
+                <div style="height: 12px; border-radius: 6px; margin-bottom: 5px; background: linear-gradient(to right, #d1fae5, #fef08a, #f97316, #dc2626, #9333ea);"></div>
+                <div style="display: flex; justify-content: space-between; color: #CBD5E1; font-size: var(--fs-xs); font-weight: 500; margin-bottom: 6px;">
+                    <span>0.0 g (Muy baja)</span>
+                    <span>0.30–0.50 g</span>
+                    <span>≥ 1.0 g (Extrema)</span>
                 </div>
+                <div id="legend-sgc-identify" style="font-size: var(--fs-xs); color: #CBD5E1; line-height: 1.4; margin-bottom: 6px;">
+                    Haz clic en el mapa para consultar PGA, Sa(0.2s) y Sa(1.0s) del SGC (10% exc. en 50 años, roca).
+                </div>
+                <a href="https://amenazasismica.sgc.gov.co/" target="_blank" rel="noopener noreferrer" style="color:#38bdf8; font-size: var(--fs-xs);">Consultar visor oficial SGC ↗</a>
             `;
         } else if (showOQ) {
             legend.style.display = 'block';
             legend.innerHTML = `
                 <h4 style="margin: 0 0 8px 0; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #F5F5F7;">OpenQuake Demo (No Oficial)</h4>
                 <div style="display: flex; align-items: center; justify-content: space-between; height: 12px; border-radius: 6px; margin-bottom: 5px; background: linear-gradient(to right, rgb(255,255,178), rgb(254,204,92), rgb(253,141,60), rgb(240,59,32), rgb(189,0,38));"></div>
-                <div style="display: flex; justify-content: space-between; color: #CBD5E1; font-size: 0.72rem; font-weight: 500;">
+                <div style="display: flex; justify-content: space-between; color: #CBD5E1; font-size: var(--fs-xs); font-weight: 500;">
                     <span>0.04 g (Ref.)</span>
                     <span>0.11 g (Demo B&amp;A 2008)</span>
                 </div>
@@ -1623,30 +1744,30 @@ function renderLayers(options = {}) {
             legend.style.display = 'block';
             legend.innerHTML = `
                 <h4 style="margin: 0 0 10px 0; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #F5F5F7;">Conectividad y Líneas Vitales</h4>
-                <div style="display: flex; flex-direction: column; gap: 7px; color: #CBD5E1; font-size: 0.74rem; font-weight: 500;">
+                <div style="display: flex; flex-direction: column; gap: 7px; color: #CBD5E1; font-size: var(--fs-xs); font-weight: 500;">
                     <div style="display:flex; align-items:center; gap: 8px;">
-                        <span style="display:inline-block; width:16px; height:4px; border-radius:2px; background:#FFB703;"></span>
-                        <span>🛣️ <strong style="color:#FFB703;">Red Vial Primaria</strong></span>
+                        <span style="display:inline-block; width:16px; height:4px; border-radius:2px; background:${INFRA_COLORS.vial.hex};"></span>
+                        <span>🛣️ <strong style="color:${INFRA_COLORS.vial.textHex};">Red Vial Primaria</strong></span>
                     </div>
                     <div style="display:flex; align-items:center; gap: 8px;">
-                        <span style="display:inline-block; width:16px; height:5px; border-radius:2px; background:#38BDF8;"></span>
-                        <span>🚢 <strong style="color:#38BDF8;">Corredor Fluvial</strong></span>
+                        <span style="display:inline-block; width:16px; height:5px; border-radius:2px; background:${INFRA_COLORS.fluvial.hex};"></span>
+                        <span>🚢 <strong style="color:${INFRA_COLORS.fluvial.textHex};">Corredor Fluvial</strong></span>
                     </div>
                     <div style="display:flex; align-items:center; gap: 8px;">
-                        <span style="display:inline-block; width:16px; height:3px; border-radius:2px; background:#14B8A6;"></span>
-                        <span>⛵ <strong style="color:#2DD4BF;">Ruta Marítima</strong></span>
+                        <span style="display:inline-block; width:16px; height:3px; border-radius:2px; background:${INFRA_COLORS.maritimo.hex};"></span>
+                        <span>⛵ <strong style="color:${INFRA_COLORS.maritimo.textHex};">Ruta Marítima</strong></span>
                     </div>
                     <div style="display:flex; align-items:center; gap: 8px;">
-                        <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#0A84FF; border:1.5px solid #fff;"></span>
-                        <span>✈️ <strong style="color:#60A5FA;">Terminal Aéreo</strong></span>
+                        <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:${INFRA_COLORS.aeropuerto.hex}; border:1.5px solid #fff;"></span>
+                        <span>✈️ <strong style="color:${INFRA_COLORS.aeropuerto.textHex};">Terminal Aéreo</strong></span>
                     </div>
                     <div style="display:flex; align-items:center; gap: 8px;">
-                        <span style="display:inline-block; width:11px; height:11px; border-radius:50%; background:#FF2D55; border:1.5px solid #fff;"></span>
-                        <span>🏥 <strong style="color:#FF6482;">Centro Asistencial</strong></span>
+                        <span style="display:inline-block; width:11px; height:11px; border-radius:50%; background:${INFRA_COLORS.hospital.hex}; border:1.5px solid #fff;"></span>
+                        <span>🏥 <strong style="color:${INFRA_COLORS.hospital.textHex};">Centro Asistencial</strong></span>
                     </div>
                     <div style="display:flex; align-items:center; gap: 8px;">
-                        <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#14B8A6; border:1.5px solid #fff;"></span>
-                        <span>⚓ <strong style="color:#2DD4BF;">Muelle / Puerto</strong></span>
+                        <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:${INFRA_COLORS.puerto.hex}; border:1.5px solid #fff;"></span>
+                        <span>⚓ <strong style="color:${INFRA_COLORS.puerto.textHex};">Muelle / Puerto</strong></span>
                     </div>
                 </div>
             `;
@@ -1658,14 +1779,14 @@ function renderLayers(options = {}) {
         if (showInfra && (viewMode !== 'none' || showSgcWms || showOQ || (isSimulatorActive && currentShakemapData))) {
             legend.innerHTML += `
                 <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.12);">
-                    <div style="font-size: 0.68rem; font-weight: 700; text-transform: uppercase; color: #38bdf8; margin-bottom: 5px;">Líneas Vitales</div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; font-size: 0.67rem; color: #D1D5DB;">
-                        <div style="display:flex; align-items:center; gap:5px;"><span style="width:12px; height:3px; background:#FFB703; display:inline-block; border-radius:1px;"></span> 🛣️ Vías</div>
-                        <div style="display:flex; align-items:center; gap:5px;"><span style="width:12px; height:4px; background:#38BDF8; display:inline-block; border-radius:1px;"></span> 🚢 Fluvial</div>
-                        <div style="display:flex; align-items:center; gap:5px;"><span style="width:12px; height:3px; background:#14B8A6; display:inline-block; border-radius:1px;"></span> ⛵ Marítimo</div>
-                        <div style="display:flex; align-items:center; gap:5px;"><span style="width:8px; height:8px; border-radius:50%; background:#0A84FF; border:1px solid #fff; display:inline-block;"></span> ✈️ Aéreo</div>
-                        <div style="display:flex; align-items:center; gap:5px;"><span style="width:8px; height:8px; border-radius:50%; background:#FF2D55; border:1px solid #fff; display:inline-block;"></span> 🏥 Salud</div>
-                        <div style="display:flex; align-items:center; gap:5px;"><span style="width:8px; height:8px; border-radius:50%; background:#14B8A6; border:1px solid #fff; display:inline-block;"></span> ⚓ Puertos</div>
+                    <div style="font-size: var(--fs-2xs); font-weight: 700; text-transform: uppercase; color: #38bdf8; margin-bottom: 5px;">Líneas Vitales</div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; font-size: var(--fs-2xs); color: #D1D5DB;">
+                        <div style="display:flex; align-items:center; gap:5px;"><span style="width:12px; height:3px; background:${INFRA_COLORS.vial.hex}; display:inline-block; border-radius:1px;"></span> 🛣️ Vías</div>
+                        <div style="display:flex; align-items:center; gap:5px;"><span style="width:12px; height:4px; background:${INFRA_COLORS.fluvial.hex}; display:inline-block; border-radius:1px;"></span> 🚢 Fluvial</div>
+                        <div style="display:flex; align-items:center; gap:5px;"><span style="width:12px; height:3px; background:${INFRA_COLORS.maritimo.hex}; display:inline-block; border-radius:1px;"></span> ⛵ Marítimo</div>
+                        <div style="display:flex; align-items:center; gap:5px;"><span style="width:8px; height:8px; border-radius:50%; background:${INFRA_COLORS.aeropuerto.hex}; border:1px solid #fff; display:inline-block;"></span> ✈️ Aéreo</div>
+                        <div style="display:flex; align-items:center; gap:5px;"><span style="width:8px; height:8px; border-radius:50%; background:${INFRA_COLORS.hospital.hex}; border:1px solid #fff; display:inline-block;"></span> 🏥 Salud</div>
+                        <div style="display:flex; align-items:center; gap:5px;"><span style="width:8px; height:8px; border-radius:50%; background:${INFRA_COLORS.puerto.hex}; border:1px solid #fff; display:inline-block;"></span> ⚓ Puertos</div>
                     </div>
                 </div>
             `;
@@ -1772,6 +1893,9 @@ document.getElementById('btn-reset-capas').addEventListener('click', () => {
 
     const fallasPanel = document.getElementById('fallas-interactive-panel');
     if (fallasPanel) fallasPanel.style.display = 'none';
+
+    const sgcQueryBox = document.getElementById('sgc-wms-query-box');
+    if (sgcQueryBox) sgcQueryBox.style.display = 'none';
 
     document.querySelectorAll('.falla-tipo-btn').forEach(b => {
         b.classList.remove('active');
@@ -2026,91 +2150,100 @@ async function loadRealSgcHttp() {
     }
 
     try {
-        // 1. Intento primario: Endpoint de telemetría del servidor local/nube (EMSC + USGS)
+        // 1. Intento primario: Endpoint de telemetría en vivo sin caché (EMSC + USGS, ventana móvil 14d)
         const resp = await fetchWithTimeout(ENDPOINTS.SGC_API, 6000, { cache: 'no-store' });
         if (resp.ok) {
             const data = await resp.json();
-            if (data.features && data.features.length > 0) {
-                sgcData.features = data.features;
-                updateSgcLiveBadge(data.features.length, 'FDSN Live (EMSC/USGS)');
-                if (showLiveSGC) queueRender();
-                return;
-            }
+            const feats = Array.isArray(data.features) ? data.features : [];
+            sgcData.features = feats;
+            const eventos24h = (typeof data.eventos_24h === 'number')
+                ? data.eventos_24h
+                : feats.filter(f => f.properties && f.properties.esHoy).length;
+            const ultimoFecha = data.ultimo_evento_fecha || (feats[0] && feats[0].properties ? feats[0].properties.fecha : null);
+            updateSgcLiveBadge(feats.length, 'FDSN Live (EMSC/USGS)', {
+                eventos24h,
+                ultimoFecha,
+                ventanaDias: data.ventana_dias || 14
+            });
+            if (showLiveSGC) queueRender();
+            return;
         }
     } catch (err) {
         console.warn("Backend no disponible para telemetría FDSN. Consultando feed directo USGS...", err);
     }
 
-    // 2. Consulta directa a la API FDSN oficial de USGS
+    // 2. Consulta directa a la API FDSN oficial de USGS (misma ventana de 14 días)
     try {
         const dNow = new Date();
-        const dStart = new Date(dNow.getTime() - (7 * 24 * 60 * 60 * 1000));
+        const dStart = new Date(dNow.getTime() - (14 * 24 * 60 * 60 * 1000));
         const startIso = dStart.toISOString().split('T')[0];
         const usgsUrl = `https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&minlatitude=3.0&maxlatitude=8.8&minlongitude=-78.5&maxlongitude=-74.5&starttime=${startIso}&limit=30`;
         const usgsResp = await fetchWithTimeout(usgsUrl, 6000, { cache: 'no-store' });
         if (usgsResp.ok) {
             const usgsData = await usgsResp.json();
-            if (usgsData.features && usgsData.features.length > 0) {
-                const nowMs = Date.now();
-                const parsedFeatures = usgsData.features.map(item => {
-                    const p = item.properties || {};
-                    const c = (item.geometry && item.geometry.coordinates) || [0, 0, 0];
-                    const lon = c[0];
-                    const lat = c[1];
-                    const depth = Math.abs(c[2] || 10.0);
-                    
-                    // Conversión precisa a Hora Legal de Colombia (UTC-5)
-                    const dUtc = new Date(p.time);
-                    const dCol = new Date(dUtc.getTime() - (5 * 60 * 60 * 1000));
-                    const fechaStr = dCol.toISOString().replace('T', ' ').substring(0, 19);
-                    const diffHours = (nowMs - p.time) / (1000 * 60 * 60);
+            const rawList = Array.isArray(usgsData.features) ? usgsData.features : [];
+            const nowMs = Date.now();
+            const parsedFeatures = rawList.map(item => {
+                const p = item.properties || {};
+                const c = (item.geometry && item.geometry.coordinates) || [0, 0, 0];
+                const lon = c[0];
+                const lat = c[1];
+                const depth = Math.abs(c[2] || 10.0);
 
-                    // Identificación de municipio más cercano si existen datos municipales
-                    let nearestName = p.place || 'Chocó / Pacífico';
-                    if (municipiosData && municipiosData.length > 0) {
-                        let minDist = Infinity;
-                        for (const m of municipiosData) {
-                            const dLat = (lat - m.lat) * (Math.PI / 180);
-                            const dLon = (lon - m.lng) * (Math.PI / 180);
-                            const a = Math.sin(dLat/2)*Math.sin(dLat/2) + Math.cos(lat*Math.PI/180)*Math.cos(m.lat*Math.PI/180)*Math.sin(dLon/2)*Math.sin(dLon/2);
-                            const distKm = 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-                            if (distKm < minDist) {
-                                minDist = distKm;
-                                nearestName = `${m.nombre} (${m.departamento}) [~${Math.round(distKm)} km]`;
-                            }
+                // Conversión precisa a Hora Legal de Colombia (UTC-5)
+                const dUtc = new Date(p.time);
+                const dCol = new Date(dUtc.getTime() - (5 * 60 * 60 * 1000));
+                const fechaStr = dCol.toISOString().replace('T', ' ').substring(0, 19);
+                const diffHours = (nowMs - p.time) / (1000 * 60 * 60);
+
+                let nearestName = p.place || 'Chocó / Pacífico';
+                if (municipiosData && municipiosData.length > 0) {
+                    let minDist = Infinity;
+                    for (const m of municipiosData) {
+                        const dLat = (lat - m.lat) * (Math.PI / 180);
+                        const dLon = (lon - m.lng) * (Math.PI / 180);
+                        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lat * Math.PI / 180) * Math.cos(m.lat * Math.PI / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+                        const distKm = 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+                        if (distKm < minDist) {
+                            minDist = distKm;
+                            nearestName = `${m.nombre} (${m.departamento}) [~${Math.round(distKm)} km]`;
                         }
                     }
+                }
 
-                    return {
-                        type: "Feature",
-                        geometry: {
-                            type: "Point",
-                            coordinates: [lon, lat, -depth * 1000]
-                        },
-                        properties: {
-                            id: item.id || p.code,
-                            fecha: fechaStr,
-                            timestampMs: p.time,
-                            diffHours: parseFloat(diffHours.toFixed(1)),
-                            esHoy: diffHours <= 24,
-                            anio: dCol.getFullYear(),
-                            magnitud: Math.round((p.mag || 0.0) * 10) / 10,
-                            profundidad: Math.round(depth * 10) / 10,
-                            municipio: nearestName,
-                            fuente: diffHours <= 24 ? "USGS FDSN Live (Últimas 24h)" : "USGS FDSN Reciente (7d)",
-                            rms: p.rms || 0.0,
-                            gap: p.gap || 0.0
-                        }
-                    };
-                });
+                return {
+                    type: "Feature",
+                    geometry: {
+                        type: "Point",
+                        coordinates: [lon, lat, -depth * 1000]
+                    },
+                    properties: {
+                        id: item.id || p.code,
+                        fecha: fechaStr,
+                        timestampMs: p.time,
+                        diffHours: parseFloat(diffHours.toFixed(1)),
+                        esHoy: diffHours <= 24,
+                        anio: dCol.getFullYear(),
+                        magnitud: Math.round((p.mag || 0.0) * 10) / 10,
+                        profundidad: Math.round(depth * 10) / 10,
+                        municipio: nearestName,
+                        fuente: diffHours <= 24 ? "USGS FDSN Live (Últimas 24h)" : "USGS FDSN Reciente (14d)",
+                        rms: p.rms || 0.0,
+                        gap: p.gap || 0.0
+                    }
+                };
+            });
 
-                sgcData.features = parsedFeatures;
-                const rec24h = parsedFeatures.filter(f => f.properties.esHoy).length;
-                const sourceLabel = rec24h > 0 ? `USGS FDSN Live (${rec24h} de hoy)` : 'USGS FDSN Reciente';
-                updateSgcLiveBadge(parsedFeatures.length, sourceLabel);
-                if (showLiveSGC) queueRender();
-                return;
-            }
+            sgcData.features = parsedFeatures;
+            const rec24h = parsedFeatures.filter(f => f.properties.esHoy).length;
+            const ultimoFecha = parsedFeatures[0] && parsedFeatures[0].properties ? parsedFeatures[0].properties.fecha : null;
+            updateSgcLiveBadge(parsedFeatures.length, 'USGS FDSN Directo', {
+                eventos24h: rec24h,
+                ultimoFecha,
+                ventanaDias: 14
+            });
+            if (showLiveSGC) queueRender();
+            return;
         }
     } catch (fdsnErr) {
         console.warn("FDSN directo no accesible. Extrayendo sismos recientes del catálogo consolidado...", fdsnErr);
@@ -2129,18 +2262,37 @@ async function loadRealSgcHttp() {
     }
 }
 
-function updateSgcLiveBadge(count, sourceName) {
+function updateSgcLiveBadge(count, sourceName, meta = {}) {
     const badge = document.getElementById('sgc-live-status-badge');
     const subtext = document.getElementById('sgc-live-subtext');
+    const eventos24h = typeof meta.eventos24h === 'number'
+        ? meta.eventos24h
+        : sgcData.features.filter(f => f.properties && f.properties.esHoy).length;
+    const ventanaDias = meta.ventanaDias || 14;
+    const ultimoStr = meta.ultimoFecha ? String(meta.ultimoFecha).slice(0, 16) : null;
+
     if (badge) {
         badge.style.display = 'inline-block';
-        badge.innerText = `● EN VIVO (${count})`;
-        badge.style.color = '#34d399';
-        badge.style.borderColor = 'rgba(52,211,153,0.4)';
-        badge.style.background = 'rgba(52,211,153,0.15)';
+        if (eventos24h > 0) {
+            badge.innerText = `● HOY: ${eventos24h} (${count} en ${ventanaDias}d)`;
+            badge.style.color = '#34d399';
+            badge.style.borderColor = 'rgba(52,211,153,0.4)';
+            badge.style.background = 'rgba(52,211,153,0.15)';
+        } else {
+            badge.innerText = `● 0 hoy · ${count} (${ventanaDias}d)`;
+            badge.style.color = '#38bdf8';
+            badge.style.borderColor = 'rgba(56,189,248,0.4)';
+            badge.style.background = 'rgba(56,189,248,0.12)';
+        }
     }
     if (subtext) {
-        subtext.innerHTML = `<span style="color:#34d399;">● Conectado: ${escapeHtml(sourceName)}</span> (${count} eventos)`;
+        if (count === 0) {
+            subtext.innerHTML = `<span style="color:#38bdf8;">● ${escapeHtml(sourceName)}:</span> Sin sismos M≥3.5 en últimos ${ventanaDias}d`;
+        } else if (eventos24h > 0) {
+            subtext.innerHTML = `<span style="color:#34d399;">● ${escapeHtml(sourceName)}:</span> ${eventos24h} últimos 24h · Último: ${escapeHtml(ultimoStr || 'hoy')}`;
+        } else {
+            subtext.innerHTML = `<span style="color:#38bdf8;">● ${escapeHtml(sourceName)}:</span> Último ${escapeHtml(ultimoStr || '')} (sin sismos 24h; M≥3.5)`;
+        }
     }
 }
 
@@ -2295,7 +2447,7 @@ document.getElementById('check-live-sgc').addEventListener('change', e => {
         const badge = document.getElementById('sgc-live-status-badge');
         const subtext = document.getElementById('sgc-live-subtext');
         if (badge) badge.style.display = 'none';
-        if (subtext) subtext.innerText = 'Alertas de sismicidad telemétrica';
+        if (subtext) subtext.innerText = 'FDSN en vivo 14d · EMSC / USGS (M≥3.5)';
 
         sgcData.features = [];
         renderLayers();
@@ -2305,7 +2457,18 @@ const checkSgcWms = document.getElementById('check-sgc-wms');
 if (checkSgcWms) {
     checkSgcWms.addEventListener('change', e => {
         showSgcWms = e.target.checked;
+        const sgcQueryBox = document.getElementById('sgc-wms-query-box');
+        if (sgcQueryBox) sgcQueryBox.style.display = showSgcWms ? 'flex' : 'none';
         renderLayers();
+    });
+}
+const btnSgcQueryMunicipio = document.getElementById('btn-sgc-query-municipio');
+if (btnSgcQueryMunicipio) {
+    btnSgcQueryMunicipio.addEventListener('click', () => {
+        const m = selectedNsrMunicipio || selectedPotMunicipio || (municipiosData && municipiosData[0]);
+        if (m && m.lng !== undefined && m.lat !== undefined) {
+            querySgcOfficialPoint(m.lng, m.lat, `${m.nombre} (${m.departamento})`);
+        }
     });
 }
 document.getElementById('check-ml').addEventListener('change', async e => {
@@ -2727,48 +2890,48 @@ const modalData = {
     'guia': `
         <div style="display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.12); padding-bottom:16px; margin-bottom:20px;">
             <div style="display:flex; align-items:center; gap:12px;">
-                <div style="width:42px; height:42px; border-radius:12px; background:linear-gradient(135deg, #0A84FF, #0056B3); display:flex; align-items:center; justify-content:center; font-size:1.35rem; box-shadow:0 4px 14px rgba(10,132,255,0.45);">
+                <div style="width:42px; height:42px; border-radius:12px; background:linear-gradient(135deg, #0A84FF, #0056B3); display:flex; align-items:center; justify-content:center; font-size:var(--fs-lg); box-shadow:0 4px 14px rgba(10,132,255,0.45);">
                     🗺️
                 </div>
                 <div>
-                    <h2 style="margin:0; color:#FFFFFF; font-size:1.35rem; font-weight:700; letter-spacing:-0.02em;">Guía de Uso de la Plataforma</h2>
-                    <span style="font-size:0.75rem; color:#38BDF8; font-weight:600; text-transform:uppercase; letter-spacing:0.06em;">Investigación a través del Diseño (RtD) — U. de Caldas</span>
+                    <h2 style="margin:0; color:#FFFFFF; font-size:var(--fs-lg); font-weight:700; letter-spacing:-0.02em;">Guía de Uso de la Plataforma</h2>
+                    <span style="font-size:var(--fs-xs); color:#38BDF8; font-weight:600; text-transform:uppercase; letter-spacing:0.06em;">Investigación a través del Diseño (RtD) — U. de Caldas</span>
                 </div>
             </div>
         </div>
 
-        <p style="color:#D1D5DB; font-size:0.92rem; line-height:1.6; margin-bottom:18px;">
+        <p style="color:#D1D5DB; font-size:var(--fs-base); line-height:1.6; margin-bottom:18px;">
             Bienvenido a <strong>SismoChocó</strong>, plataforma interactiva de <em>Visual Analytics</em> concebida para explorar y comprender la <strong>acumulación de tensión sísmica, la subducción de la Placa de Nazca y las fallas geológicas activas</strong> en el departamento del Chocó a partir de datos oficiales del Servicio Geológico Colombiano (SGC).
         </p>
 
         <!-- CALLOUT DESTACADO: BOTONES DE AYUDA Y ORIENTACIÓN (?) -->
         <div style="background: linear-gradient(135deg, rgba(10,132,255,0.16), rgba(0,113,227,0.08)); border: 1.5px solid #0A84FF; border-radius: 14px; padding: 14px 16px; margin-bottom: 14px; box-shadow: 0 4px 18px rgba(10,132,255,0.22); display: flex; align-items: flex-start; gap: 14px;">
-            <div style="flex-shrink:0; width: 34px; height: 34px; line-height: 34px; text-align: center; background: #0A84FF; color: white; border-radius: 50%; font-size: 1.15rem; font-weight: bold; box-shadow: 0 2px 10px rgba(10,132,255,0.6);">
+            <div style="flex-shrink:0; width: 34px; height: 34px; line-height: 34px; text-align: center; background: #0A84FF; color: white; border-radius: 50%; font-size: var(--fs-md); font-weight: bold; box-shadow: 0 2px 10px rgba(10,132,255,0.6);">
                 ?
             </div>
             <div>
-                <h4 style="margin: 0 0 4px 0; color: #FFFFFF; font-size: 0.96rem; font-weight: 700; display: flex; align-items: center; gap: 6px;">
+                <h4 style="margin: 0 0 4px 0; color: #FFFFFF; font-size: var(--fs-base); font-weight: 700; display: flex; align-items: center; gap: 6px;">
                     <span>💡 Botones de Ayuda Contextual en Cada Sección</span>
                 </h4>
-                <p style="margin: 0; color: #E0E7FF; font-size: 0.86rem; line-height: 1.5;">
-                    Cada tarjeta, gráfico, filtro o módulo cuenta con un botón circular azul de ayuda (<span style="display:inline-block; width:18px; height:18px; line-height:18px; text-align:center; background:#0A84FF; color:white; border-radius:50%; font-size:0.75rem; font-weight:bold; vertical-align:middle;">?</span>). <strong>Púlsalo en cualquier momento</strong> para abrir una explicación detallada en palabras sencillas que te orientará sobre <em>cómo interpretar los datos técnicos y comprender a fondo su funcionamiento</em>.
+                <p style="margin: 0; color: #E0E7FF; font-size: var(--fs-sm); line-height: 1.5;">
+                    Cada tarjeta, gráfico, filtro o módulo cuenta con un botón circular azul de ayuda (<span style="display:inline-block; width:18px; height:18px; line-height:18px; text-align:center; background:#0A84FF; color:white; border-radius:50%; font-size:var(--fs-xs); font-weight:bold; vertical-align:middle;">?</span>). <strong>Púlsalo en cualquier momento</strong> para abrir una explicación detallada en palabras sencillas que te orientará sobre <em>cómo interpretar los datos técnicos y comprender a fondo su funcionamiento</em>.
                 </p>
             </div>
         </div>
 
         <!-- CALLOUT DESTACADO: BOTONES RESTABLECER (RETIRAR CAMBIOS DE VISUALIZACIÓN) -->
         <div style="background: linear-gradient(135deg, rgba(255,149,0,0.16), rgba(255,107,0,0.08)); border: 1.5px solid #FF9500; border-radius: 14px; padding: 14px 16px; margin-bottom: 18px; box-shadow: 0 4px 18px rgba(255,149,0,0.22); display: flex; align-items: flex-start; gap: 14px;">
-            <div style="flex-shrink:0; width: 34px; height: 34px; line-height: 34px; text-align: center; background: #FF9500; color: white; border-radius: 50%; font-size: 1.15rem; font-weight: bold; box-shadow: 0 2px 10px rgba(255,149,0,0.6);">
+            <div style="flex-shrink:0; width: 34px; height: 34px; line-height: 34px; text-align: center; background: #FF9500; color: white; border-radius: 50%; font-size: var(--fs-md); font-weight: bold; box-shadow: 0 2px 10px rgba(255,149,0,0.6);">
                 🔄
             </div>
             <div>
-                <h4 style="margin: 0 0 4px 0; color: #FFFFFF; font-size: 0.96rem; font-weight: 700; display: flex; align-items: center; gap: 6px;">
+                <h4 style="margin: 0 0 4px 0; color: #FFFFFF; font-size: var(--fs-base); font-weight: 700; display: flex; align-items: center; gap: 6px;">
                     <span>🔄 Botones Restablecer: Retirar Cambios de Visualización y Filtros</span>
                 </h4>
-                <p style="margin: 0 0 8px 0; color: #FFE8CC; font-size: 0.86rem; line-height: 1.5;">
+                <p style="margin: 0 0 8px 0; color: #FFE8CC; font-size: var(--fs-sm); line-height: 1.5;">
                     En cualquier momento puedes <strong>deshacer y retirar los cambios de visualización aplicados</strong> presionando los botones circulares de restablecimiento (<span style="display:inline-block; padding:1px 6px; background:rgba(255,255,255,0.15); border-radius:4px; font-weight:bold;">🔄</span>) situados en la cabecera de cada módulo o en la barra superior:
                 </p>
-                <ul style="margin: 0; padding-left: 18px; color: #FFF; font-size: 0.82rem; line-height: 1.45;">
+                <ul style="margin: 0; padding-left: 18px; color: #FFF; font-size: var(--fs-sm); line-height: 1.45;">
                     <li style="margin-bottom: 4px;"><strong>🔄 Restablecer Visualización Espacial:</strong> Retira de inmediato la capa visual activa (apaga Puntos 3D, Mapa de Calor o Hexbins volumétricos) y desactiva el corte Benioff para dejar el mapa completamente limpio.</li>
                     <li style="margin-bottom: 4px;"><strong>🔄 Restablecer Filtros Paramétricos:</strong> Regresa los deslizadores a sus valores predeterminados (Magnitud ≥ 0.0, Profundidad máxima 250 km y Año 1993), volviendo a mostrar el 100% de los sismos del catálogo.</li>
                     <li style="margin-bottom: 4px;"><strong>🔄 Restablecer Capas Avanzadas:</strong> Desmarca y apaga simultáneamente todos los interruptores activos (Fallas geológicas, Sismos de alta precisión, IA enjambres DBSCAN, SGC Live, OpenQuake e Infraestructura Crítica con sus convenciones).</li>
@@ -2780,28 +2943,28 @@ const modalData = {
 
         <!-- SECCIÓN 1: MODOS DE ANÁLISIS -->
         <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:16px; margin-bottom:16px;">
-            <h3 style="color:#38BDF8; font-size:1.02rem; margin:0 0 10px 0; display:flex; align-items:center; gap:8px;">
+            <h3 style="color:#38BDF8; font-size:var(--fs-md); margin:0 0 10px 0; display:flex; align-items:center; gap:8px;">
                 <span>🎯</span> 1. Tres Modos Especializados de Trabajo
             </h3>
-            <p style="color:#9CA3AF; font-size:0.86rem; line-height:1.5; margin:0 0 12px 0;">
+            <p style="color:#9CA3AF; font-size:var(--fs-sm); line-height:1.5; margin:0 0 12px 0;">
                 En el panel superior izquierdo puedes alternar entre tres perfiles adaptados a tu rol técnico:
             </p>
             <div style="display:grid; grid-template-columns:1fr; gap:10px;">
                 <div style="background:rgba(10,132,255,0.08); border-left:3px solid #0A84FF; padding:10px 12px; border-radius:6px;">
-                    <strong style="color:#60A5FA; font-size:0.88rem;">🌋 Sismo-Geología:</strong>
-                    <div style="color:#E5E7EB; font-size:0.82rem; line-height:1.4; margin-top:3px;">
+                    <strong style="color:#60A5FA; font-size:var(--fs-sm);">🌋 Sismo-Geología:</strong>
+                    <div style="color:#E5E7EB; font-size:var(--fs-sm); line-height:1.4; margin-top:3px;">
                         Análisis sismotectónico regional de recurrencia con la ley de <strong>Gutenberg-Richter</strong> (cálculo dinámico del valor <em>b</em> y periodos de retorno), corte 3D del <strong>plano de subducción de Wadati-Benioff</strong>, trazo de fallas activas y detección de enjambres con inteligencia artificial (DBSCAN).
                     </div>
                 </div>
                 <div style="background:rgba(16,185,129,0.08); border-left:3px solid #10B981; padding:10px 12px; border-radius:6px;">
-                    <strong style="color:#34D399; font-size:0.88rem;">🏗️ Diseño Estructural:</strong>
-                    <div style="color:#E5E7EB; font-size:0.82rem; line-height:1.4; margin-top:3px;">
+                    <strong style="color:#34D399; font-size:var(--fs-sm);">🏗️ Diseño Estructural:</strong>
+                    <div style="color:#E5E7EB; font-size:var(--fs-sm); line-height:1.4; margin-top:3px;">
                         Selecciona entre los 67 municipios del Chocó y el Eje Cafetero, perfil de suelo (A a F) y grupo de uso bajo la norma NSR-10 para generar el <strong>Espectro Elástico de Diseño sísmico (Sa vs. Periodo T)</strong> con exportación directa a formato CSV para software estructural (ETABS / SAP2000).
                     </div>
                 </div>
                 <div style="background:rgba(245,158,11,0.08); border-left:3px solid #F59E0B; padding:10px 12px; border-radius:6px;">
-                    <strong style="color:#FBBF24; font-size:0.88rem;">🏛️ Gestión Territorial:</strong>
-                    <div style="color:#E5E7EB; font-size:0.82rem; line-height:1.4; margin-top:3px;">
+                    <strong style="color:#FBBF24; font-size:var(--fs-sm);">🏛️ Gestión Territorial:</strong>
+                    <div style="color:#E5E7EB; font-size:var(--fs-sm); line-height:1.4; margin-top:3px;">
                         Semáforo de peligro sísmico municipal para ordenamiento territorial (POT), análisis de población expuesta, corredores de retiro de 100 m respecto a fallas activas (Ley 388 de 1997), vulnerabilidad de infraestructura crítica y descarga de la <strong>Ficha Técnica Ejecutiva en PDF</strong>.
                     </div>
                 </div>
@@ -2810,10 +2973,10 @@ const modalData = {
 
         <!-- SECCIÓN 2: NAVEGACIÓN 3D -->
         <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:16px; margin-bottom:16px;">
-            <h3 style="color:#38BDF8; font-size:1.02rem; margin:0 0 10px 0; display:flex; align-items:center; gap:8px;">
+            <h3 style="color:#38BDF8; font-size:var(--fs-md); margin:0 0 10px 0; display:flex; align-items:center; gap:8px;">
                 <span>🌐</span> 2. Navegación en el Mapa Tridimensional (GPU WebGL)
             </h3>
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size:0.84rem; color:#D1D5DB;">
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size:var(--fs-sm); color:#D1D5DB;">
                 <div style="background:rgba(255,255,255,0.03); padding:8px 10px; border-radius:8px;">
                     <strong style="color:#FFF;">🖱️ Clic Izquierdo + Arrastrar:</strong><br>Desplazar la cámara (paneo geográfico).
                 </div>
@@ -2831,13 +2994,13 @@ const modalData = {
 
         <!-- SECCIÓN 3: CORTE 3D BENIOFF -->
         <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:16px; margin-bottom:16px;">
-            <h3 style="color:#38BDF8; font-size:1.02rem; margin:0 0 10px 0; display:flex; align-items:center; gap:8px;">
+            <h3 style="color:#38BDF8; font-size:var(--fs-md); margin:0 0 10px 0; display:flex; align-items:center; gap:8px;">
                 <span>📉</span> 3. Corte Transversal 3D (Subducción de Nazca)
             </h3>
-            <p style="color:#D1D5DB; font-size:0.86rem; line-height:1.5; margin:0 0 10px 0;">
+            <p style="color:#D1D5DB; font-size:var(--fs-sm); line-height:1.5; margin:0 0 10px 0;">
                 Activa el botón <strong>"Corte 3D Benioff"</strong> para seccionar la litosfera del Pacífico. Permite examinar la losa oceánica que subduce a 32° hacia el Este bajo Colombia:
             </p>
-            <ul style="color:#9CA3AF; font-size:0.83rem; line-height:1.5; margin:0; padding-left:18px;">
+            <ul style="color:#9CA3AF; font-size:var(--fs-sm); line-height:1.5; margin:0; padding-left:18px;">
                 <li><strong>Exageración Vertical (0.5x a 3.0x):</strong> Realza visualmente la profundidad hipocentral en el subsuelo.</li>
                 <li><strong>Sectores Latitudinales:</strong> Inspecciona el corte Norte (Murindó), Centro (Quibdó) o Sur (San Juan).</li>
                 <li><strong>Retirar Corte:</strong> Presiona de nuevo el botón para apagar el modo o pulsa 🔄 Restablecer Visualización.</li>
@@ -2846,13 +3009,13 @@ const modalData = {
 
         <!-- SECCIÓN 4: SIMULADOR SHAKEMAP -->
         <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:16px; margin-bottom:20px;">
-            <h3 style="color:#38BDF8; font-size:1.02rem; margin:0 0 10px 0; display:flex; align-items:center; gap:8px;">
+            <h3 style="color:#38BDF8; font-size:var(--fs-md); margin:0 0 10px 0; display:flex; align-items:center; gap:8px;">
                 <span>⚡</span> 4. Simulador ShakeMap de Ruptura
             </h3>
-            <p style="color:#D1D5DB; font-size:0.86rem; line-height:1.5; margin:0 0 8px 0;">
+            <p style="color:#D1D5DB; font-size:var(--fs-sm); line-height:1.5; margin:0 0 8px 0;">
                 Modela escenarios históricos o potenciales de gran destructividad (Murindó Mw 7.3, Megaterremoto de Subducción Mw 8.2 o sismo cortical directo sobre Quibdó Mw 6.8), calculando en tiempo real las ondas de sacudida y la intensidad Mercalli Modificada (MMI).
             </p>
-            <p style="color:#FFE8CC; font-size:0.82rem; margin:0; line-height:1.4;">
+            <p style="color:#FFE8CC; font-size:var(--fs-sm); margin:0; line-height:1.4;">
                 <em>🧹 Limpieza: Puedes retirar la simulación en cualquier momento usando el botón <strong>🧹 Limpiar</strong> junto al disparador de ruptura.</em>
             </p>
         </div>
@@ -2860,63 +3023,63 @@ const modalData = {
         <!-- SECCIÓN 5: ATAJOS DE TECLADO (ACCESIBILIDAD Y CONTROL OPERATIVO RÁPIDO - USO EN COMPUTADOR) -->
         <div style="background:linear-gradient(135deg, rgba(16,185,129,0.12), rgba(6,78,59,0.2)); border:1.5px solid #10b981; border-radius:14px; padding:16px; margin-bottom:20px; box-shadow:0 4px 18px rgba(16,185,129,0.2);">
             <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
-                <h3 style="color:#34d399; font-size:1.02rem; margin:0; display:flex; align-items:center; gap:8px;">
+                <h3 style="color:#34d399; font-size:var(--fs-md); margin:0; display:flex; align-items:center; gap:8px;">
                     <span>⌨️</span> 5. Atajos de Teclado y Control Espacial (Navegación Rápida)
                 </h3>
-                <span style="background:rgba(52,211,153,0.18); color:#34d399; border:1px solid #10b981; border-radius:6px; padding:3px 10px; font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; display:inline-flex; align-items:center; gap:5px;">
+                <span style="background:rgba(52,211,153,0.18); color:#34d399; border:1px solid #10b981; border-radius:6px; padding:3px 10px; font-size:var(--fs-xs); font-weight:700; text-transform:uppercase; letter-spacing:0.5px; display:inline-flex; align-items:center; gap:5px;">
                     💻 Uso en Computador
                 </span>
             </div>
-            <p style="color:#E2E8F0; font-size:0.86rem; line-height:1.5; margin:0 0 12px 0;">
+            <p style="color:#E2E8F0; font-size:var(--fs-sm); line-height:1.5; margin:0 0 12px 0;">
                 Esta funcionalidad está optimizada para su <strong>uso en computador (escritorio o portátil con teclado físico)</strong>. Permite controlar y conmutar las principales funciones analíticas directamente con las teclas del teclado:
             </p>
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; font-size:0.82rem; margin-bottom:12px;">
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; font-size:var(--fs-sm); margin-bottom:12px;">
                 <div style="background:rgba(0,0,0,0.35); padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.08); display:flex; align-items:center; gap:8px;">
-                    <kbd style="background:#1e293b; color:#38bdf8; border:1px solid #38bdf8; border-radius:4px; padding:2px 7px; font-weight:700; font-size:0.85rem; font-family:monospace;">1</kbd>
+                    <kbd style="background:#1e293b; color:#38bdf8; border:1px solid #38bdf8; border-radius:4px; padding:2px 7px; font-weight:700; font-size:var(--fs-sm); font-family: var(--font-mono);">1</kbd>
                     <span>Perfil: <strong>Sismo-Geología</strong></span>
                 </div>
                 <div style="background:rgba(0,0,0,0.35); padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.08); display:flex; align-items:center; gap:8px;">
-                    <kbd style="background:#1e293b; color:#38bdf8; border:1px solid #38bdf8; border-radius:4px; padding:2px 7px; font-weight:700; font-size:0.85rem; font-family:monospace;">2</kbd>
+                    <kbd style="background:#1e293b; color:#38bdf8; border:1px solid #38bdf8; border-radius:4px; padding:2px 7px; font-weight:700; font-size:var(--fs-sm); font-family: var(--font-mono);">2</kbd>
                     <span>Perfil: <strong>Diseño Estructural</strong></span>
                 </div>
                 <div style="background:rgba(0,0,0,0.35); padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.08); display:flex; align-items:center; gap:8px;">
-                    <kbd style="background:#1e293b; color:#38bdf8; border:1px solid #38bdf8; border-radius:4px; padding:2px 7px; font-weight:700; font-size:0.85rem; font-family:monospace;">3</kbd>
+                    <kbd style="background:#1e293b; color:#38bdf8; border:1px solid #38bdf8; border-radius:4px; padding:2px 7px; font-weight:700; font-size:var(--fs-sm); font-family: var(--font-mono);">3</kbd>
                     <span>Perfil: <strong>Gestión Territorial</strong></span>
                 </div>
                 <div style="background:rgba(0,0,0,0.35); padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.08); display:flex; align-items:center; gap:8px;">
-                    <kbd style="background:#1e293b; color:#fbbf24; border:1px solid #fbbf24; border-radius:4px; padding:2px 7px; font-weight:700; font-size:0.85rem; font-family:monospace;">4</kbd>
+                    <kbd style="background:#1e293b; color:#fbbf24; border:1px solid #fbbf24; border-radius:4px; padding:2px 7px; font-weight:700; font-size:var(--fs-sm); font-family: var(--font-mono);">4</kbd>
                     <span>Visualización: <strong>Eventos 3D</strong></span>
                 </div>
                 <div style="background:rgba(0,0,0,0.35); padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.08); display:flex; align-items:center; gap:8px;">
-                    <kbd style="background:#1e293b; color:#fbbf24; border:1px solid #fbbf24; border-radius:4px; padding:2px 7px; font-weight:700; font-size:0.85rem; font-family:monospace;">5</kbd>
+                    <kbd style="background:#1e293b; color:#fbbf24; border:1px solid #fbbf24; border-radius:4px; padding:2px 7px; font-weight:700; font-size:var(--fs-sm); font-family: var(--font-mono);">5</kbd>
                     <span>Visualización: <strong>Mapa de Calor</strong></span>
                 </div>
                 <div style="background:rgba(0,0,0,0.35); padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.08); display:flex; align-items:center; gap:8px;">
-                    <kbd style="background:#1e293b; color:#fbbf24; border:1px solid #fbbf24; border-radius:4px; padding:2px 7px; font-weight:700; font-size:0.85rem; font-family:monospace;">6</kbd>
+                    <kbd style="background:#1e293b; color:#fbbf24; border:1px solid #fbbf24; border-radius:4px; padding:2px 7px; font-weight:700; font-size:var(--fs-sm); font-family: var(--font-mono);">6</kbd>
                     <span>Visualización: <strong>Hexbins 3D</strong></span>
                 </div>
                 <div style="background:rgba(0,0,0,0.35); padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.08); display:flex; align-items:center; gap:8px;">
-                    <kbd style="background:#1e293b; color:#f43f5e; border:1px solid #f43f5e; border-radius:4px; padding:2px 7px; font-weight:700; font-size:0.85rem; font-family:monospace;">7</kbd>
+                    <kbd style="background:#1e293b; color:#f43f5e; border:1px solid #f43f5e; border-radius:4px; padding:2px 7px; font-weight:700; font-size:var(--fs-sm); font-family: var(--font-mono);">7</kbd>
                     <span>Corte: <strong>Perfil 3D Benioff</strong></span>
                 </div>
                 <div style="background:rgba(0,0,0,0.35); padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.08); display:flex; align-items:center; gap:8px;">
-                    <kbd style="background:#1e293b; color:#34d399; border:1px solid #34d399; border-radius:4px; padding:2px 7px; font-weight:700; font-size:0.85rem; font-family:monospace;">8</kbd>
+                    <kbd style="background:#1e293b; color:#34d399; border:1px solid #34d399; border-radius:4px; padding:2px 7px; font-weight:700; font-size:var(--fs-sm); font-family: var(--font-mono);">8</kbd>
                     <span>Capa: <strong>Conexión SGC Live</strong></span>
                 </div>
                 <div style="background:rgba(0,0,0,0.35); padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.08); display:flex; align-items:center; gap:8px;">
-                    <kbd style="background:#1e293b; color:#f59e0b; border:1px solid #f59e0b; border-radius:4px; padding:2px 7px; font-weight:700; font-size:0.85rem; font-family:monospace;">9</kbd>
+                    <kbd style="background:#1e293b; color:#f59e0b; border:1px solid #f59e0b; border-radius:4px; padding:2px 7px; font-weight:700; font-size:var(--fs-sm); font-family: var(--font-mono);">9</kbd>
                     <span>Capa: <strong>Fallas Geológicas</strong></span>
                 </div>
                 <div style="background:rgba(0,0,0,0.35); padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.08); display:flex; align-items:center; gap:8px;">
-                    <kbd style="background:#1e293b; color:#a855f7; border:1px solid #a855f7; border-radius:4px; padding:2px 7px; font-weight:700; font-size:0.85rem; font-family:monospace;">0</kbd>
+                    <kbd style="background:#1e293b; color:#a855f7; border:1px solid #a855f7; border-radius:4px; padding:2px 7px; font-weight:700; font-size:var(--fs-sm); font-family: var(--font-mono);">0</kbd>
                     <span>Acción: <strong>Restablecer Todo</strong></span>
                 </div>
             </div>
 
             <!-- Navegación con Teclas de Flecha y Zoom -->
             <div style="background:rgba(0,0,0,0.4); border:1px solid rgba(56,189,248,0.3); border-radius:10px; padding:10px 12px; margin-bottom:8px;">
-                <strong style="color:#38bdf8; font-size:0.82rem; display:block; margin-bottom:6px;">🧭 Navegación Espacial del Mapa con Teclado:</strong>
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:0.78rem; color:#cbd5e1;">
+                <strong style="color:#38bdf8; font-size:var(--fs-sm); display:block; margin-bottom:6px;">🧭 Navegación Espacial del Mapa con Teclado:</strong>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:var(--fs-xs); color:#cbd5e1;">
                     <div><kbd style="background:#1e293b; color:#fff; border:1px solid #64748b; border-radius:4px; padding:1px 6px;">↑</kbd> <kbd style="background:#1e293b; color:#fff; border:1px solid #64748b; border-radius:4px; padding:1px 6px;">↓</kbd> <kbd style="background:#1e293b; color:#fff; border:1px solid #64748b; border-radius:4px; padding:1px 6px;">←</kbd> <kbd style="background:#1e293b; color:#fff; border:1px solid #64748b; border-radius:4px; padding:1px 6px;">→</kbd> : Desplazar mapa (N, S, O, E)</div>
                     <div><kbd style="background:#1e293b; color:#38bdf8; border:1px solid #38bdf8; border-radius:4px; padding:1px 6px;">+</kbd> / <kbd style="background:#1e293b; color:#38bdf8; border:1px solid #38bdf8; border-radius:4px; padding:1px 6px;">-</kbd> : Acercar / Alejar Zoom directo</div>
                     <div><kbd style="background:#1e293b; color:#facc15; border:1px solid #facc15; border-radius:4px; padding:1px 6px;">⇧ Shift</kbd> + <kbd style="background:#1e293b; color:#fff; border:1px solid #64748b; border-radius:4px; padding:1px 6px;">↑</kbd> <kbd style="background:#1e293b; color:#fff; border:1px solid #64748b; border-radius:4px; padding:1px 6px;">↓</kbd> : Inclinar cámara 3D (Pitch)</div>
@@ -2924,35 +3087,35 @@ const modalData = {
                 </div>
             </div>
 
-            <p style="color:#94A3B8; font-size:0.75rem; margin:10px 0 0 0; line-height:1.4;">
+            <p style="color:#94A3B8; font-size:var(--fs-xs); margin:10px 0 0 0; line-height:1.4;">
                 <em>Nota: Diseñado para navegación en computador mediante teclado. Los atajos se desactivan automáticamente al escribir dentro de cajas de búsqueda o campos de texto.</em>
             </p>
         </div>
 
         <div style="display:flex; justify-content:center;">
-            <button id="btn-entendido-guia" style="background:linear-gradient(135deg, #0052CC, #003E99); color:#FFFFFF; border:none; border-radius:12px; padding:12px 28px; font-size:0.95rem; font-weight:600; cursor:pointer; box-shadow:0 6px 18px rgba(0,82,204,0.45); transition:all 0.2s ease;">
+            <button id="btn-entendido-guia" style="background:linear-gradient(135deg, #0052CC, #003E99); color:#FFFFFF; border:none; border-radius:12px; padding:12px 28px; font-size:var(--fs-base); font-weight:600; cursor:pointer; box-shadow:0 6px 18px rgba(0,82,204,0.45); transition:all 0.2s ease;">
                 ¡Entendido, Explorar la Plataforma!
             </button>
         </div>
     `,
     'vis_espacial': `
         <div style="display:flex; align-items:center; gap:12px; border-bottom:1px solid rgba(255,255,255,0.12); padding-bottom:14px; margin-bottom:18px;">
-            <div style="width:38px; height:38px; border-radius:10px; background:linear-gradient(135deg, #0A84FF, #0056B3); display:flex; align-items:center; justify-content:center; font-size:1.25rem;">
+            <div style="width:38px; height:38px; border-radius:10px; background:linear-gradient(135deg, #0A84FF, #0056B3); display:flex; align-items:center; justify-content:center; font-size:var(--fs-lg);">
                 🌐
             </div>
             <div>
-                <h2 style="margin:0; color:#FFFFFF; font-size:1.3rem; font-weight:700;">Instrucciones: Visualización Espacial</h2>
-                <span style="font-size:0.75rem; color:#38BDF8; font-weight:600; text-transform:uppercase;">Renderizado Tridimensional WebGL (Deck.gl)</span>
+                <h2 style="margin:0; color:#FFFFFF; font-size:var(--fs-lg); font-weight:700;">Instrucciones: Visualización Espacial</h2>
+                <span style="font-size:var(--fs-xs); color:#38BDF8; font-weight:600; text-transform:uppercase;">Renderizado Tridimensional WebGL (Deck.gl)</span>
             </div>
         </div>
 
-        <p style="color:#D1D5DB; font-size:0.92rem; line-height:1.6; margin-bottom:14px;">
+        <p style="color:#D1D5DB; font-size:var(--fs-base); line-height:1.6; margin-bottom:14px;">
             Este módulo transforma los registros tabulares del catálogo sísmico en representaciones visuales espaciales tridimensionales aceleradas por tarjeta gráfica (GPU).
         </p>
 
         <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:14px; margin-bottom:14px;">
-            <h3 style="color:#38BDF8; font-size:0.98rem; margin:0 0 10px 0;">🎯 Modos de Representación Disponibles:</h3>
-            <div style="display:flex; flex-direction:column; gap:10px; font-size:0.85rem; color:#E5E7EB;">
+            <h3 style="color:#38BDF8; font-size:var(--fs-base); margin:0 0 10px 0;">🎯 Modos de Representación Disponibles:</h3>
+            <div style="display:flex; flex-direction:column; gap:10px; font-size:var(--fs-sm); color:#E5E7EB;">
                 <div style="background:rgba(10,132,255,0.08); border-left:3px solid #0A84FF; padding:8px 12px; border-radius:6px;">
                     <strong style="color:#60A5FA;">1. Eventos Individuales (Scatter 3D):</strong> Dibuja cada temblor como una esfera precisa. Su tamaño escala con la magnitud del sismo y su color discrimina la profundidad hipocentral (Naranja: superficial &lt;30 km, Rosa: intermedio 30-70 km, Morado: profundo &gt;70 km).
                 </div>
@@ -2968,36 +3131,36 @@ const modalData = {
         <!-- REGLA EXPLICITA DE RETIRAR CAMBIOS -->
         <div style="background:rgba(255,149,0,0.12); border:1.5px solid #FF9500; border-radius:12px; padding:12px 14px; margin-bottom:14px;">
             <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
-                <span style="font-size:1.1rem;">🔄</span>
-                <strong style="color:#FFD60A; font-size:0.9rem;">¿Cómo retirar o cambiar la visualización?</strong>
+                <span style="font-size:var(--fs-md);">🔄</span>
+                <strong style="color:#FFD60A; font-size:var(--fs-base);">¿Cómo retirar o cambiar la visualización?</strong>
             </div>
-            <p style="margin:0; color:#FFF; font-size:0.83rem; line-height:1.45;">
+            <p style="margin:0; color:#FFF; font-size:var(--fs-sm); line-height:1.45;">
                 Para <strong>retirar la visualización activa</strong> y limpiar el mapa, presiona el botón <span style="display:inline-block; padding:1px 6px; background:rgba(255,255,255,0.2); border-radius:4px; font-weight:bold;">🔄</span> situado en la esquina derecha del título <em>Visualización Espacial</em>. Esto desactivará de inmediato el modo seleccionado y apagará el corte Benioff sin alterar tus filtros numéricos.
             </p>
         </div>
 
-        <p style="color:#9CA3AF; font-size:0.8rem; margin:0; line-height:1.4;">
+        <p style="color:#9CA3AF; font-size:var(--fs-sm); margin:0; line-height:1.4;">
             <em>💡 Tip: También puedes alternar libremente entre los tres botones para comparar cómo cambia la percepción espacial de la sismicidad.</em>
         </p>
     `,
     'filtros_parametricos': `
         <div style="display:flex; align-items:center; gap:12px; border-bottom:1px solid rgba(255,255,255,0.12); padding-bottom:14px; margin-bottom:18px;">
-            <div style="width:38px; height:38px; border-radius:10px; background:linear-gradient(135deg, #0A84FF, #0056B3); display:flex; align-items:center; justify-content:center; font-size:1.25rem;">
+            <div style="width:38px; height:38px; border-radius:10px; background:linear-gradient(135deg, #0A84FF, #0056B3); display:flex; align-items:center; justify-content:center; font-size:var(--fs-lg);">
                 ⚙️
             </div>
             <div>
-                <h2 style="margin:0; color:#FFFFFF; font-size:1.3rem; font-weight:700;">Instrucciones: Filtros Paramétricos</h2>
-                <span style="font-size:0.75rem; color:#38BDF8; font-weight:600; text-transform:uppercase;">Segmentación Analítica Multivariable</span>
+                <h2 style="margin:0; color:#FFFFFF; font-size:var(--fs-lg); font-weight:700;">Instrucciones: Filtros Paramétricos</h2>
+                <span style="font-size:var(--fs-xs); color:#38BDF8; font-weight:600; text-transform:uppercase;">Segmentación Analítica Multivariable</span>
             </div>
         </div>
 
-        <p style="color:#D1D5DB; font-size:0.92rem; line-height:1.6; margin-bottom:14px;">
+        <p style="color:#D1D5DB; font-size:var(--fs-base); line-height:1.6; margin-bottom:14px;">
             Los filtros paramétricos te permiten aislar eventos sísmicos específicos y observar cómo varía la sismicidad según umbrales de energía, profundidad de falla y periodos históricos.
         </p>
 
         <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:14px; margin-bottom:14px;">
-            <h3 style="color:#38BDF8; font-size:0.98rem; margin:0 0 10px 0;">🎛️ Controles del Módulo:</h3>
-            <ul style="margin:0; padding-left:18px; color:#E5E7EB; font-size:0.84rem; line-height:1.5;">
+            <h3 style="color:#38BDF8; font-size:var(--fs-base); margin:0 0 10px 0;">🎛️ Controles del Módulo:</h3>
+            <ul style="margin:0; padding-left:18px; color:#E5E7EB; font-size:var(--fs-sm); line-height:1.5;">
                 <li style="margin-bottom:8px;"><strong>Deslizador de Magnitud (Mw):</strong> Arrastra para definir el límite inferior de magnitud. Al subir a ≥ 5.0 Mw, se aíslan los sismos con potencial de causar daños estructurales.</li>
                 <li style="margin-bottom:8px;"><strong>Profundidad Hipocentral (km):</strong> Permite acotar el rango vertical del subsuelo (sismos superficiales &lt; 30 km asociados a fallas activas, frente a sismos profundos de subducción en la Placa de Nazca).</li>
                 <li style="margin-bottom:8px;"><strong>Ventana de Tiempo y Time-Lapse:</strong> Modifica el año inicial de corte (1993 a 2026) o presiona <strong>▶ Reproducir</strong> para presenciar la animación histórica cronológica año por año.</li>
@@ -3008,32 +3171,32 @@ const modalData = {
         <!-- REGLA EXPLICITA DE RETIRAR CAMBIOS -->
         <div style="background:rgba(255,149,0,0.12); border:1.5px solid #FF9500; border-radius:12px; padding:12px 14px; margin-bottom:14px;">
             <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
-                <span style="font-size:1.1rem;">🔄</span>
-                <strong style="color:#FFD60A; font-size:0.9rem;">¿Cómo retirar o restablecer los filtros?</strong>
+                <span style="font-size:var(--fs-md);">🔄</span>
+                <strong style="color:#FFD60A; font-size:var(--fs-base);">¿Cómo retirar o restablecer los filtros?</strong>
             </div>
-            <p style="margin:0; color:#FFF; font-size:0.83rem; line-height:1.45;">
+            <p style="margin:0; color:#FFF; font-size:var(--fs-sm); line-height:1.45;">
                 Para <strong>retirar todos los filtros paramétricos aplicados</strong> y volver a visualizar la totalidad del catálogo histórico, presiona el botón <span style="display:inline-block; padding:1px 6px; background:rgba(255,255,255,0.2); border-radius:4px; font-weight:bold;">🔄</span> ubicado a la derecha del título <em>Filtros Paramétricos</em>. Al pulsarlo, la magnitud vuelve a 0.0, la profundidad a 250 km y el año a 1993 en un instante.
             </p>
         </div>
     `,
     'capas_avanzadas': `
         <div style="display:flex; align-items:center; gap:12px; border-bottom:1px solid rgba(255,255,255,0.12); padding-bottom:14px; margin-bottom:18px;">
-            <div style="width:38px; height:38px; border-radius:10px; background:linear-gradient(135deg, #0A84FF, #0056B3); display:flex; align-items:center; justify-content:center; font-size:1.25rem;">
+            <div style="width:38px; height:38px; border-radius:10px; background:linear-gradient(135deg, #0A84FF, #0056B3); display:flex; align-items:center; justify-content:center; font-size:var(--fs-lg);">
                 📚
             </div>
             <div>
-                <h2 style="margin:0; color:#FFFFFF; font-size:1.3rem; font-weight:700;">Instrucciones: Capas Avanzadas</h2>
-                <span style="font-size:0.75rem; color:#38BDF8; font-weight:600; text-transform:uppercase;">Superposición Geoespacial Multifuente</span>
+                <h2 style="margin:0; color:#FFFFFF; font-size:var(--fs-lg); font-weight:700;">Instrucciones: Capas Avanzadas</h2>
+                <span style="font-size:var(--fs-xs); color:#38BDF8; font-weight:600; text-transform:uppercase;">Superposición Geoespacial Multifuente</span>
             </div>
         </div>
 
-        <p style="color:#D1D5DB; font-size:0.92rem; line-height:1.6; margin-bottom:14px;">
+        <p style="color:#D1D5DB; font-size:var(--fs-base); line-height:1.6; margin-bottom:14px;">
             Las capas avanzadas permiten cruzar el catálogo sísmico con trazas tectónicas oficiales, modelos probabilísticos de amenaza y redes de soporte vital territorial.
         </p>
 
         <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:14px; margin-bottom:14px;">
-            <h3 style="color:#38BDF8; font-size:0.98rem; margin:0 0 10px 0;">⚡ Interruptores Disponibles:</h3>
-            <ul style="margin:0; padding-left:18px; color:#E5E7EB; font-size:0.84rem; line-height:1.5;">
+            <h3 style="color:#38BDF8; font-size:var(--fs-base); margin:0 0 10px 0;">⚡ Interruptores Disponibles:</h3>
+            <ul style="margin:0; padding-left:18px; color:#E5E7EB; font-size:var(--fs-sm); line-height:1.5;">
                 <li style="margin-bottom:6px;"><strong>Sismos de Alta Precisión:</strong> Filtra y oculta registros con incertidumbre geométrica instrumental (GAP &gt; 180° y RMS &gt; 1.0s).</li>
                 <li style="margin-bottom:6px;"><strong>Fallas Geológicas:</strong> Proyecta trazas activas con clasificación cinemática, ficha interactiva y zona de amortiguamiento normativo (buffer de 5 km).</li>
                 <li style="margin-bottom:6px;"><strong>Enjambres Sísmicos (IA DBSCAN):</strong> Algoritmo no supervisado que agrupa sismos con alta densidad espaciotemporal.</li>
@@ -3045,74 +3208,74 @@ const modalData = {
         <!-- REGLA EXPLICITA DE RETIRAR CAMBIOS -->
         <div style="background:rgba(255,149,0,0.12); border:1.5px solid #FF9500; border-radius:12px; padding:12px 14px; margin-bottom:14px;">
             <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
-                <span style="font-size:1.1rem;">🔄</span>
-                <strong style="color:#FFD60A; font-size:0.9rem;">¿Cómo retirar o apagar las capas activas?</strong>
+                <span style="font-size:var(--fs-md);">🔄</span>
+                <strong style="color:#FFD60A; font-size:var(--fs-base);">¿Cómo retirar o apagar las capas activas?</strong>
             </div>
-            <p style="margin:0; color:#FFF; font-size:0.83rem; line-height:1.45;">
+            <p style="margin:0; color:#FFF; font-size:var(--fs-sm); line-height:1.45;">
                 Para <strong>retirar y apagar todas las capas avanzadas</strong> en un solo paso, presiona el botón <span style="display:inline-block; padding:1px 6px; background:rgba(255,255,255,0.2); border-radius:4px; font-weight:bold;">🔄</span> situado a la derecha del título <em>Capas Avanzadas</em>. Se desmarcarán todos los interruptores activos, se cerrará el panel lateral de fallas y se limpiará el lienzo sin reiniciar el resto de tus preferencias.
             </p>
         </div>
     `,    'rtd': `
-        <h2 style="margin-top:0; color:#0A84FF; font-size:1.4rem; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:15px; margin-bottom:20px;">Investigación a través del Diseño (Research through Design - RtD)</h2>
-        <p style="color:var(--text-secondary); font-size:0.95rem; line-height:1.6; margin-bottom:12px;">El marco metodológico de esta investigación se fundamenta en <strong>Research through Design (RtD)</strong> (Zimmerman, Forlizzi & Evenson, 2007; Gaver, 2012), donde el proceso iterativo de diseño y construcción del artefacto digital interactivo constituye el medio epistemológico primario para generar conocimiento transferible.</p>
-        <div style="background: rgba(10,132,255,0.08); border-left: 3px solid #0A84FF; padding: 12px 14px; border-radius: 6px; margin: 14px 0; color: #e2e8f0; font-size: 0.9rem; line-height: 1.5;">
+        <h2 style="margin-top:0; color:#0A84FF; font-size:var(--fs-xl); border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:15px; margin-bottom:20px;">Investigación a través del Diseño (Research through Design - RtD)</h2>
+        <p style="color:var(--text-secondary); font-size:var(--fs-base); line-height:1.6; margin-bottom:12px;">El marco metodológico de esta investigación se fundamenta en <strong>Research through Design (RtD)</strong> (Zimmerman, Forlizzi & Evenson, 2007; Gaver, 2012), donde el proceso iterativo de diseño y construcción del artefacto digital interactivo constituye el medio epistemológico primario para generar conocimiento transferible.</p>
+        <div style="background: rgba(10,132,255,0.08); border-left: 3px solid #0A84FF; padding: 12px 14px; border-radius: 6px; margin: 14px 0; color: #e2e8f0; font-size: var(--fs-base); line-height: 1.5;">
             <strong>Línea Institucional:</strong> <em>Gestión y Transmisión del Conocimiento</em><br>
             <strong>Temática de Investigación:</strong> <em>Presentación de Información Compleja</em><br>
             <strong>Programa:</strong> Maestría en Diseño y Creación Interactiva — Universidad de Caldas
         </div>
-        <h3 style="color:#F5F5F7; font-size:1.05rem; margin-top:15px; margin-bottom:8px;">Triangulación Visual Analytics:</h3>
-        <p style="color:var(--text-secondary); font-size:0.9rem; line-height:1.5;">Siguiendo el mantra de Thomas & Cook (2005) y Shneiderman (1996), la plataforma articula el razonamiento analítico asistido por interfaces interactivas: <em>"Overview first, zoom and filter, then details-on-demand"</em>, reduciendo la carga cognitiva intrínseca ante volúmenes masivos de datos sismotectónicos.</p>
+        <h3 style="color:#F5F5F7; font-size:var(--fs-md); margin-top:15px; margin-bottom:8px;">Triangulación Visual Analytics:</h3>
+        <p style="color:var(--text-secondary); font-size:var(--fs-base); line-height:1.5;">Siguiendo el mantra de Thomas & Cook (2005) y Shneiderman (1996), la plataforma articula el razonamiento analítico asistido por interfaces interactivas: <em>"Overview first, zoom and filter, then details-on-demand"</em>, reduciendo la carga cognitiva intrínseca ante volúmenes masivos de datos sismotectónicos.</p>
 
         <!-- INSTRUCCIONES DE USO Y RESTABLECIMIENTO -->
         <div style="background:rgba(255,149,0,0.12); border:1.5px solid #FF9500; border-radius:12px; padding:12px 14px; margin-top:14px;">
             <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
-                <span style="font-size:1.1rem;">🔄</span>
-                <strong style="color:#FFD60A; font-size:0.88rem;">Instrucciones de Uso y Restablecimiento:</strong>
+                <span style="font-size:var(--fs-md);">🔄</span>
+                <strong style="color:#FFD60A; font-size:var(--fs-sm);">Instrucciones de Uso y Restablecimiento:</strong>
             </div>
-            <ul style="margin:6px 0 0 0; padding-left:18px; color:#FFF; font-size:0.82rem; line-height:1.45;">
+            <ul style="margin:6px 0 0 0; padding-left:18px; color:#FFF; font-size:var(--fs-sm); line-height:1.45;">
                 <li><strong>Uso:</strong> Este panel es de consulta epistemológica y metodológica del proyecto de maestría. Puedes cerrar la ventana con el botón de la esquina superior derecha o haciendo clic fuera del diálogo.</li>
                 <li><strong>Restablecimiento:</strong> Para regresar cualquier visualización activa o filtro al estado de referencia inicial del sistema, puedes presionar el botón <em>⌂ Restablecer Todo</em> en la barra de herramientas superior.</li>
             </ul>
         </div>
     `,
     'magnitud': `
-        <h2 style="margin-top:0; color:#0A84FF; font-size:1.4rem; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:15px; margin-bottom:20px;">Magnitud (Mw)</h2>
-        <p style="color:var(--text-secondary); font-size:0.95rem; line-height:1.5; margin-bottom:10px;">Filtra los sismos según la energía total liberada en su hipocentro.</p>
-        <p style="color:var(--text-secondary); font-size:0.95rem; line-height:1.5;">En sismología moderna se usa la <strong>Escala de Magnitud de Momento (Mw)</strong>, que es mucho más precisa que la antigua escala de Richter. Es una escala logarítmica: un sismo de Mw 5.0 no es un 20% más fuerte que uno de 4.0... en realidad libera <strong>32 veces más energía destructiva</strong>.</p>
+        <h2 style="margin-top:0; color:#0A84FF; font-size:var(--fs-xl); border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:15px; margin-bottom:20px;">Magnitud (Mw)</h2>
+        <p style="color:var(--text-secondary); font-size:var(--fs-base); line-height:1.5; margin-bottom:10px;">Filtra los sismos según la energía total liberada en su hipocentro.</p>
+        <p style="color:var(--text-secondary); font-size:var(--fs-base); line-height:1.5;">En sismología moderna se usa la <strong>Escala de Magnitud de Momento (Mw)</strong>, que es mucho más precisa que la antigua escala de Richter. Es una escala logarítmica: un sismo de Mw 5.0 no es un 20% más fuerte que uno de 4.0... en realidad libera <strong>32 veces más energía destructiva</strong>.</p>
 
         <!-- INSTRUCCIONES DE USO Y RESTABLECIMIENTO -->
         <div style="background:rgba(255,149,0,0.12); border:1.5px solid #FF9500; border-radius:12px; padding:12px 14px; margin-top:14px;">
             <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
-                <span style="font-size:1.1rem;">🔄</span>
-                <strong style="color:#FFD60A; font-size:0.88rem;">Instrucciones de Uso y Restablecimiento:</strong>
+                <span style="font-size:var(--fs-md);">🔄</span>
+                <strong style="color:#FFD60A; font-size:var(--fs-sm);">Instrucciones de Uso y Restablecimiento:</strong>
             </div>
-            <ul style="margin:6px 0 0 0; padding-left:18px; color:#FFF; font-size:0.82rem; line-height:1.45;">
+            <ul style="margin:6px 0 0 0; padding-left:18px; color:#FFF; font-size:var(--fs-sm); line-height:1.45;">
                 <li><strong>Uso:</strong> Arrastra el deslizador horizontal para definir el umbral mínimo de energía sísmica (de 2.0 a 7.5 Mw). El mapa 3D y las métricas se filtrarán en tiempo real.</li>
                 <li><strong>Restablecer:</strong> Presiona el botón <em>🔄 Restablecer Filtros</em> ubicado inmediatamente en la cabecera de la sección de filtros para regresar la magnitud al valor base (2.0 Mw).</li>
             </ul>
         </div>
     `,
     'anio': `
-        <h2 style="margin-top:0; color:#0A84FF; font-size:1.4rem; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:15px; margin-bottom:20px;">Ventana de Tiempo</h2>
-        <p style="color:var(--text-secondary); font-size:0.95rem; line-height:1.5; margin-bottom:10px;">Permite analizar la sismicidad partiendo desde un año en específico (de 1993 a 2026).</p>
-        <p style="color:var(--text-secondary); font-size:0.95rem; line-height:1.5;">Al mover el deslizador, tanto el mapa 3D como las estadísticas se actualizarán instantáneamente para revelar cómo se ha comportado, acumulado y migrado la tensión tectónica a lo largo de las últimas décadas en el Chocó.</p>
+        <h2 style="margin-top:0; color:#0A84FF; font-size:var(--fs-xl); border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:15px; margin-bottom:20px;">Ventana de Tiempo</h2>
+        <p style="color:var(--text-secondary); font-size:var(--fs-base); line-height:1.5; margin-bottom:10px;">Permite analizar la sismicidad partiendo desde un año en específico (de 1993 a 2026).</p>
+        <p style="color:var(--text-secondary); font-size:var(--fs-base); line-height:1.5;">Al mover el deslizador, tanto el mapa 3D como las estadísticas se actualizarán instantáneamente para revelar cómo se ha comportado, acumulado y migrado la tensión tectónica a lo largo de las últimas décadas en el Chocó.</p>
 
         <!-- INSTRUCCIONES DE USO Y RESTABLECIMIENTO -->
         <div style="background:rgba(255,149,0,0.12); border:1.5px solid #FF9500; border-radius:12px; padding:12px 14px; margin-top:14px;">
             <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
-                <span style="font-size:1.1rem;">🔄</span>
-                <strong style="color:#FFD60A; font-size:0.88rem;">Instrucciones de Uso y Restablecimiento:</strong>
+                <span style="font-size:var(--fs-md);">🔄</span>
+                <strong style="color:#FFD60A; font-size:var(--fs-sm);">Instrucciones de Uso y Restablecimiento:</strong>
             </div>
-            <ul style="margin:6px 0 0 0; padding-left:18px; color:#FFF; font-size:0.82rem; line-height:1.45;">
+            <ul style="margin:6px 0 0 0; padding-left:18px; color:#FFF; font-size:var(--fs-sm); line-height:1.45;">
                 <li><strong>Uso:</strong> Desplaza el cursor de la barra para fijar el año de inicio del catálogo histórico analizado.</li>
                 <li><strong>Restablecer:</strong> Presiona el botón <em>🔄 Restablecer Filtros</em> en la sección de filtros para reiniciar la ventana temporal al registro histórico completo (año 1993).</li>
             </ul>
         </div>
     `,
     'puntos': `
-        <h2 style="margin-top:0; color:#0A84FF; font-size:1.4rem; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:15px; margin-bottom:20px;">Eventos Individuales (Scatter 3D)</h2>
-        <p style="color:var(--text-secondary); font-size:0.95rem; line-height:1.5; margin-bottom:10px;">Cada sismo del catálogo histórico se proyecta sobre la cartografía y, al activar el <strong>Perfil 3D Benioff</strong>, se extruye en profundidad dentro del subsuelo.</p>
-        <ul style="color:var(--text-secondary); font-size:0.95rem; line-height:1.5; margin-bottom:10px;">
+        <h2 style="margin-top:0; color:#0A84FF; font-size:var(--fs-xl); border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:15px; margin-bottom:20px;">Eventos Individuales (Scatter 3D)</h2>
+        <p style="color:var(--text-secondary); font-size:var(--fs-base); line-height:1.5; margin-bottom:10px;">Cada sismo del catálogo histórico se proyecta sobre la cartografía y, al activar el <strong>Perfil 3D Benioff</strong>, se extruye en profundidad dentro del subsuelo.</p>
+        <ul style="color:var(--text-secondary); font-size:var(--fs-base); line-height:1.5; margin-bottom:10px;">
             <li style="margin-bottom:6px;"><strong>El radio (tamaño):</strong> Es proporcional a la Magnitud del sismo.</li>
             <li style="margin-bottom:6px;"><strong>El color:</strong> Codifica el régimen de profundidad hipocentral: ámbar (&lt; 30 km superficial), rosa (30–70 km intermedio) e índigo (&gt; 70 km profundo).</li>
             <li><strong>La cota Z (en Perfil Benioff):</strong> Representa la profundidad focal real multiplicada por el factor de exageración vertical (0.5x–3.0x).</li>
@@ -3121,36 +3284,36 @@ const modalData = {
         <!-- INSTRUCCIONES DE USO Y RESTABLECIMIENTO -->
         <div style="background:rgba(255,149,0,0.12); border:1.5px solid #FF9500; border-radius:12px; padding:12px 14px; margin-top:14px;">
             <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
-                <span style="font-size:1.1rem;">🔄</span>
-                <strong style="color:#FFD60A; font-size:0.88rem;">Instrucciones de Uso y Restablecimiento:</strong>
+                <span style="font-size:var(--fs-md);">🔄</span>
+                <strong style="color:#FFD60A; font-size:var(--fs-sm);">Instrucciones de Uso y Restablecimiento:</strong>
             </div>
-            <ul style="margin:6px 0 0 0; padding-left:18px; color:#FFF; font-size:0.82rem; line-height:1.45;">
+            <ul style="margin:6px 0 0 0; padding-left:18px; color:#FFF; font-size:var(--fs-sm); line-height:1.45;">
                 <li><strong>Uso:</strong> Presiona el botón <em>⚪ Puntos</em> para visualizar cada sismo como una esfera tridimensional georreferenciada.</li>
                 <li><strong>Restablecer:</strong> Presiona el botón <em>🔄 Restablecer Visualización</em> en la cabecera de Modos de Visualización para regresar la vista al modo predeterminado de eventos individuales con vista cenital.</li>
             </ul>
         </div>
     `,
     'calor': `
-        <h2 style="margin-top:0; color:#0A84FF; font-size:1.4rem; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:15px; margin-bottom:20px;">Concentración de Energía (Heatmap)</h2>
-        <p style="color:var(--text-secondary); font-size:0.95rem; line-height:1.5; margin-bottom:10px;">Difumina matemáticamente los puntos individuales para formar un mapa térmico continuo sobre la superficie.</p>
-        <p style="color:var(--text-secondary); font-size:0.95rem; line-height:1.5;">Muestra visualmente de rojo a amarillo las zonas donde la corteza terrestre está sometida a mayor estrés sísmico acumulado a lo largo de los años. Es una herramienta fundamental para identificar zonas de alto riesgo inminente de ruptura o fallas ciegas.</p>
+        <h2 style="margin-top:0; color:#0A84FF; font-size:var(--fs-xl); border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:15px; margin-bottom:20px;">Concentración de Energía (Heatmap)</h2>
+        <p style="color:var(--text-secondary); font-size:var(--fs-base); line-height:1.5; margin-bottom:10px;">Difumina matemáticamente los puntos individuales para formar un mapa térmico continuo sobre la superficie.</p>
+        <p style="color:var(--text-secondary); font-size:var(--fs-base); line-height:1.5;">Muestra visualmente de rojo a amarillo las zonas donde la corteza terrestre está sometida a mayor estrés sísmico acumulado a lo largo de los años. Es una herramienta fundamental para identificar zonas de alto riesgo inminente de ruptura o fallas ciegas.</p>
 
         <!-- INSTRUCCIONES DE USO Y RESTABLECIMIENTO -->
         <div style="background:rgba(255,149,0,0.12); border:1.5px solid #FF9500; border-radius:12px; padding:12px 14px; margin-top:14px;">
             <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
-                <span style="font-size:1.1rem;">🔄</span>
-                <strong style="color:#FFD60A; font-size:0.88rem;">Instrucciones de Uso y Restablecimiento:</strong>
+                <span style="font-size:var(--fs-md);">🔄</span>
+                <strong style="color:#FFD60A; font-size:var(--fs-sm);">Instrucciones de Uso y Restablecimiento:</strong>
             </div>
-            <ul style="margin:6px 0 0 0; padding-left:18px; color:#FFF; font-size:0.82rem; line-height:1.45;">
+            <ul style="margin:6px 0 0 0; padding-left:18px; color:#FFF; font-size:var(--fs-sm); line-height:1.45;">
                 <li><strong>Uso:</strong> Presiona el botón <em>🔥 Calor</em> para renderizar la densidad e intensidad de energía liberada como una superficie continua de calor.</li>
                 <li><strong>Restablecer:</strong> Presiona el botón <em>🔄 Restablecer Visualización</em> para desactivar el mapa de calor y retornar a la vista de esferas individuales.</li>
             </ul>
         </div>
     `,
     'hex': `
-        <h2 style="margin-top:0; color:#0A84FF; font-size:1.4rem; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:15px; margin-bottom:20px;">Agrupación Espacial (Hexbins 3D)</h2>
-        <p style="color:var(--text-secondary); font-size:0.95rem; line-height:1.5; margin-bottom:10px;">Agrupa los sismos en prismas hexagonales volumétricos en 3D (similar a un panal de abejas).</p>
-        <ul style="color:var(--text-secondary); font-size:0.95rem; line-height:1.5; margin-bottom:10px;">
+        <h2 style="margin-top:0; color:#0A84FF; font-size:var(--fs-xl); border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:15px; margin-bottom:20px;">Agrupación Espacial (Hexbins 3D)</h2>
+        <p style="color:var(--text-secondary); font-size:var(--fs-base); line-height:1.5; margin-bottom:10px;">Agrupa los sismos en prismas hexagonales volumétricos en 3D (similar a un panal de abejas).</p>
+        <ul style="color:var(--text-secondary); font-size:var(--fs-base); line-height:1.5; margin-bottom:10px;">
             <li style="margin-bottom:6px;"><strong>La altura del hexágono:</strong> Indica la cantidad de sismos (frecuencia estadística) que han ocurrido dentro de ese polígono de 5km cuadrados.</li>
             <li><strong>El color:</strong> Indica la magnitud de la energía en esa celda.</li>
         </ul>
@@ -3158,76 +3321,76 @@ const modalData = {
         <!-- INSTRUCCIONES DE USO Y RESTABLECIMIENTO -->
         <div style="background:rgba(255,149,0,0.12); border:1.5px solid #FF9500; border-radius:12px; padding:12px 14px; margin-top:14px;">
             <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
-                <span style="font-size:1.1rem;">🔄</span>
-                <strong style="color:#FFD60A; font-size:0.88rem;">Instrucciones de Uso y Restablecimiento:</strong>
+                <span style="font-size:var(--fs-md);">🔄</span>
+                <strong style="color:#FFD60A; font-size:var(--fs-sm);">Instrucciones de Uso y Restablecimiento:</strong>
             </div>
-            <ul style="margin:6px 0 0 0; padding-left:18px; color:#FFF; font-size:0.82rem; line-height:1.45;">
+            <ul style="margin:6px 0 0 0; padding-left:18px; color:#FFF; font-size:var(--fs-sm); line-height:1.45;">
                 <li><strong>Uso:</strong> Presiona el botón <em>🔷 Hexbins</em> para proyectar la agregación hexagonal volumétrica sobre el mapa.</li>
                 <li><strong>Restablecer:</strong> Presiona el botón <em>🔄 Restablecer Visualización</em> para remover los prismas hexagonales y restablecer la capa base.</li>
             </ul>
         </div>
     `,
     'grafico': `
-        <h2 style="margin-top:0; color:#0A84FF; font-size:1.4rem; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:15px; margin-bottom:20px;">Frecuencia y Tamaño de los Sismos (Ley Gutenberg-Richter)</h2>
-        <p style="color:var(--text-secondary); font-size:0.95rem; line-height:1.5; margin-bottom:10px;">Esta curva estadística explica una regla universal de la naturaleza en el Chocó: <strong>por cada terremoto grande, ocurren decenas de sismos moderados y cientos de temblores pequeños</strong>.</p>
-        <div style="background: rgba(10,132,255,0.08); border-left: 3px solid #0A84FF; padding: 10px 14px; border-radius: 6px; margin: 12px 0; color: #e2e8f0; font-size: 0.9rem; line-height: 1.5;">
+        <h2 style="margin-top:0; color:#0A84FF; font-size:var(--fs-xl); border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:15px; margin-bottom:20px;">Frecuencia y Tamaño de los Sismos (Ley Gutenberg-Richter)</h2>
+        <p style="color:var(--text-secondary); font-size:var(--fs-base); line-height:1.5; margin-bottom:10px;">Esta curva estadística explica una regla universal de la naturaleza en el Chocó: <strong>por cada terremoto grande, ocurren decenas de sismos moderados y cientos de temblores pequeños</strong>.</p>
+        <div style="background: rgba(10,132,255,0.08); border-left: 3px solid #0A84FF; padding: 10px 14px; border-radius: 6px; margin: 12px 0; color: #e2e8f0; font-size: var(--fs-base); line-height: 1.5;">
             <strong>¿Qué significa el valor "b" en pantalla?</strong><br>
             Es el termómetro de acumulación de energía tectónica. Un valor cercano a 1.0 es el equilibrio natural. Si baja de 0.8, indica que la falla está "trabada" acumulando energía que podría liberarse en un sismo fuerte.
         </div>
-        <ul style="color:var(--text-secondary); font-size:0.95rem; line-height:1.5; margin-bottom:15px; padding-left:20px;">
+        <ul style="color:var(--text-secondary); font-size:var(--fs-base); line-height:1.5; margin-bottom:15px; padding-left:20px;">
             <li style="margin-bottom:8px;"><strong>Eje horizontal:</strong> Magnitud del temblor (energía liberada).</li>
             <li style="margin-bottom:8px;"><strong>Eje vertical:</strong> Cuántos sismos iguales o mayores han ocurrido históricamente.</li>
             <li><strong>Tiempo de retorno estimado:</strong> Abajo de la gráfica puedes consultar cada cuántos años se repite estadísticamente un sismo de magnitud 5, 6 o 7 en la región.</li>
         </ul>
-        <p style="color:var(--text-secondary); font-size:0.9rem; line-height:1.5;"><strong>Consejo de uso:</strong> Puedes hacer clic sobre cualquier punto de la curva para filtrar de inmediato el mapa 3D y ver solo los sismos a partir de esa magnitud.</p>
+        <p style="color:var(--text-secondary); font-size:var(--fs-base); line-height:1.5;"><strong>Consejo de uso:</strong> Puedes hacer clic sobre cualquier punto de la curva para filtrar de inmediato el mapa 3D y ver solo los sismos a partir de esa magnitud.</p>
 
         <!-- INSTRUCCIONES DE USO Y RESTABLECIMIENTO -->
         <div style="background:rgba(255,149,0,0.12); border:1.5px solid #FF9500; border-radius:12px; padding:12px 14px; margin-top:14px;">
             <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
-                <span style="font-size:1.1rem;">🔄</span>
-                <strong style="color:#FFD60A; font-size:0.88rem;">Instrucciones de Uso y Restablecimiento:</strong>
+                <span style="font-size:var(--fs-md);">🔄</span>
+                <strong style="color:#FFD60A; font-size:var(--fs-sm);">Instrucciones de Uso y Restablecimiento:</strong>
             </div>
-            <ul style="margin:6px 0 0 0; padding-left:18px; color:#FFF; font-size:0.82rem; line-height:1.45;">
+            <ul style="margin:6px 0 0 0; padding-left:18px; color:#FFF; font-size:var(--fs-sm); line-height:1.45;">
                 <li><strong>Uso:</strong> Haz clic en cualquier punto o segmento de la gráfica para aplicar un filtro de magnitud rápido sobre la escena 3D.</li>
                 <li><strong>Restablecer:</strong> Presiona el botón <em>🔄 Restablecer Filtros</em> en la sección superior para restablecer el rango completo de magnitud en el gráfico y en el mapa.</li>
             </ul>
         </div>
     `,
     'calidad': `
-        <h2 style="margin-top:0; color:#0A84FF; font-size:1.4rem; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:15px; margin-bottom:20px;">Filtro de Sismos con Máxima Confiabilidad</h2>
-        <h3 style="color:#F5F5F7; font-size:1.1rem; margin-bottom:8px;">¿Para qué sirve este filtro?</h3>
-        <p style="color:var(--text-secondary); font-size:0.95rem; line-height:1.5; margin-bottom:10px;">En ocasiones, las estaciones sismológicas captan señales lejanas o con pocas antenas receptoras, lo que puede provocar que la ubicación calculada en el mapa tenga margen de error.</p>
-        <p style="color:var(--text-secondary); font-size:0.95rem; line-height:1.5; margin-bottom:10px;">Al activar este interruptor, el sistema <strong>oculta los registros con incertidumbre</strong> y deja visibles únicamente los sismos que fueron verificados por múltiples sismógrafos con precisión milimétrica en su epicentro y profundidad.</p>
-        <div style="background: rgba(255,255,255,0.05); padding: 10px 14px; border-radius: 8px; color: var(--text-secondary); font-size: 0.85rem; line-height: 1.4;">
+        <h2 style="margin-top:0; color:#0A84FF; font-size:var(--fs-xl); border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:15px; margin-bottom:20px;">Filtro de Sismos con Máxima Confiabilidad</h2>
+        <h3 style="color:#F5F5F7; font-size:var(--fs-md); margin-bottom:8px;">¿Para qué sirve este filtro?</h3>
+        <p style="color:var(--text-secondary); font-size:var(--fs-base); line-height:1.5; margin-bottom:10px;">En ocasiones, las estaciones sismológicas captan señales lejanas o con pocas antenas receptoras, lo que puede provocar que la ubicación calculada en el mapa tenga margen de error.</p>
+        <p style="color:var(--text-secondary); font-size:var(--fs-base); line-height:1.5; margin-bottom:10px;">Al activar este interruptor, el sistema <strong>oculta los registros con incertidumbre</strong> y deja visibles únicamente los sismos que fueron verificados por múltiples sismógrafos con precisión milimétrica en su epicentro y profundidad.</p>
+        <div style="background: rgba(255,255,255,0.05); padding: 10px 14px; border-radius: 8px; color: var(--text-secondary); font-size: var(--fs-sm); line-height: 1.4;">
             Ideal para ingenieros, investigadores y tomadores de decisiones que requieran datos rigurosamente certificados para estudios de suelo o diseño estructural.
         </div>
 
         <!-- INSTRUCCIONES DE USO Y RESTABLECIMIENTO -->
         <div style="background:rgba(255,149,0,0.12); border:1.5px solid #FF9500; border-radius:12px; padding:12px 14px; margin-top:14px;">
             <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
-                <span style="font-size:1.1rem;">🔄</span>
-                <strong style="color:#FFD60A; font-size:0.88rem;">Instrucciones de Uso y Restablecimiento:</strong>
+                <span style="font-size:var(--fs-md);">🔄</span>
+                <strong style="color:#FFD60A; font-size:var(--fs-sm);">Instrucciones de Uso y Restablecimiento:</strong>
             </div>
-            <ul style="margin:6px 0 0 0; padding-left:18px; color:#FFF; font-size:0.82rem; line-height:1.45;">
+            <ul style="margin:6px 0 0 0; padding-left:18px; color:#FFF; font-size:var(--fs-sm); line-height:1.45;">
                 <li><strong>Uso:</strong> Activa el interruptor para discriminar eventos con alta calidad instrumental (Gap azimuthal &lt; 180° y RMS &lt; 0.5s).</li>
                 <li><strong>Restablecer:</strong> Apaga el interruptor directamente o presiona el botón <em>🔄 Restablecer Capas</em> en la sección de Capas Avanzadas para reintegrar todos los registros sismológicos.</li>
             </ul>
         </div>
     `,
     'fallas': `
-        <h2 style="margin-top:0; color:#0A84FF; font-size:1.4rem; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:15px; margin-bottom:20px;">Fallas Geológicas y Tectónica Regional</h2>
-        <h3 style="color:#F5F5F7; font-size:1.1rem; margin-bottom:8px;">¿Qué estás observando en el mapa?</h3>
-        <p style="color:var(--text-secondary); font-size:0.95rem; line-height:1.5; margin-bottom:10px;">Las líneas luminosas representan las <strong>11 fracturas principales de la corteza terrestre</strong> en el Chocó y el Pacífico colombiano, identificadas por el Servicio Geológico Colombiano (SGC).</p>
+        <h2 style="margin-top:0; color:#0A84FF; font-size:var(--fs-xl); border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:15px; margin-bottom:20px;">Fallas Geológicas y Tectónica Regional</h2>
+        <h3 style="color:#F5F5F7; font-size:var(--fs-md); margin-bottom:8px;">¿Qué estás observando en el mapa?</h3>
+        <p style="color:var(--text-secondary); font-size:var(--fs-base); line-height:1.5; margin-bottom:10px;">Las líneas luminosas representan las <strong>11 fracturas principales de la corteza terrestre</strong> en el Chocó y el Pacífico colombiano, identificadas por el Servicio Geológico Colombiano (SGC).</p>
         
-        <h3 style="color:#F5F5F7; font-size:1.05rem; margin-top:15px; margin-bottom:8px;">Código de colores para orientarte:</h3>
-        <ul style="color:var(--text-secondary); font-size:0.9rem; line-height:1.5; margin-bottom:15px; padding-left:20px;">
+        <h3 style="color:#F5F5F7; font-size:var(--fs-md); margin-top:15px; margin-bottom:8px;">Código de colores para orientarte:</h3>
+        <ul style="color:var(--text-secondary); font-size:var(--fs-base); line-height:1.5; margin-bottom:15px; padding-left:20px;">
             <li><strong style="color:#38bdf8;">Cian (Azul claro):</strong> Fosa marina de subducción (choque frontal donde la Placa de Nazca se mete bajo el continente).</li>
             <li><strong style="color:#fbbf24;">Ámbar (Amarillo):</strong> Fallas de rumbo o desgarre (bloques de roca que se deslizan horizontalmente uno contra otro, como la Falla Murindó).</li>
             <li><strong style="color:#f87171;">Rojo:</strong> Fallas inversas y de cabalgamiento (empujes compresivos que levantan cordilleras y serranías).</li>
         </ul>
 
-        <h3 style="color:#F5F5F7; font-size:1.05rem; margin-top:15px; margin-bottom:8px;">Cómo interactuar con las fallas:</h3>
-        <ul style="color:var(--text-secondary); font-size:0.9rem; line-height:1.5; margin-bottom:15px; padding-left:20px;">
+        <h3 style="color:#F5F5F7; font-size:var(--fs-md); margin-top:15px; margin-bottom:8px;">Cómo interactuar con las fallas:</h3>
+        <ul style="color:var(--text-secondary); font-size:var(--fs-base); line-height:1.5; margin-bottom:15px; padding-left:20px;">
             <li><strong>Al tocar o seleccionar una falla:</strong> La cámara 3D vuela suavemente y se enfoca en ella con resplandor neón de alto contraste.</li>
             <li><strong>Ficha lateral en vivo:</strong> Consulta al instante la tasa anual de desplazamiento, el terremoto más fuerte que podría generar y cuántos sismos reales han ocurrido cerca de ella.</li>
             <li><strong>Zona de Retiro (5 km):</strong> Activa el switch para ver el corredor de seguridad donde la norma exige cuidados especiales en construcción.</li>
@@ -3236,99 +3399,99 @@ const modalData = {
         <!-- INSTRUCCIONES DE USO Y RESTABLECIMIENTO -->
         <div style="background:rgba(255,149,0,0.12); border:1.5px solid #FF9500; border-radius:12px; padding:12px 14px; margin-top:14px;">
             <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
-                <span style="font-size:1.1rem;">🔄</span>
-                <strong style="color:#FFD60A; font-size:0.88rem;">Instrucciones de Uso y Restablecimiento:</strong>
+                <span style="font-size:var(--fs-md);">🔄</span>
+                <strong style="color:#FFD60A; font-size:var(--fs-sm);">Instrucciones de Uso y Restablecimiento:</strong>
             </div>
-            <ul style="margin:6px 0 0 0; padding-left:18px; color:#FFF; font-size:0.82rem; line-height:1.45;">
+            <ul style="margin:6px 0 0 0; padding-left:18px; color:#FFF; font-size:var(--fs-sm); line-height:1.45;">
                 <li><strong>Uso:</strong> Activa el interruptor <em>Trazas de Fallas SGC</em> o selecciona una falla del listado para resaltar su geometría en 3D.</li>
                 <li><strong>Restablecer:</strong> Presiona el botón <em>🔄 Restablecer Capas</em> en la sección de Capas Avanzadas para desactivar las fallas, ocultar el corredor de retiro y cerrar el panel lateral de detalles.</li>
             </ul>
         </div>
     `,
     'ml': `
-        <h2 style="margin-top:0; color:#0A84FF; font-size:1.4rem; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:15px; margin-bottom:20px;">Detección Inteligente de Enjambres Sísmicos (IA)</h2>
-        <h3 style="color:#F5F5F7; font-size:1.1rem; margin-bottom:8px;">¿Qué hace este análisis automatizado?</h3>
-        <p style="color:var(--text-secondary); font-size:0.95rem; line-height:1.5; margin-bottom:10px;">La plataforma analiza miles de registros con un algoritmo de Inteligencia Artificial para encontrar agrupaciones atípicas de temblores que el ojo humano no detecta fácilmente a simple vista.</p>
-        <p style="color:var(--text-secondary); font-size:0.95rem; line-height:1.5; margin-bottom:10px;"><strong>¿Por qué es importante?</strong> Cuando varios sismos ocurren muy juntos en poco tiempo y en el mismo sector, forman un "enjambre sísmico". Esto suele indicar reacomodos de fallas activas o secuencias de réplicas tras un temblor principal.</p>
+        <h2 style="margin-top:0; color:#0A84FF; font-size:var(--fs-xl); border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:15px; margin-bottom:20px;">Detección Inteligente de Enjambres Sísmicos (IA)</h2>
+        <h3 style="color:#F5F5F7; font-size:var(--fs-md); margin-bottom:8px;">¿Qué hace este análisis automatizado?</h3>
+        <p style="color:var(--text-secondary); font-size:var(--fs-base); line-height:1.5; margin-bottom:10px;">La plataforma analiza miles de registros con un algoritmo de Inteligencia Artificial para encontrar agrupaciones atípicas de temblores que el ojo humano no detecta fácilmente a simple vista.</p>
+        <p style="color:var(--text-secondary); font-size:var(--fs-base); line-height:1.5; margin-bottom:10px;"><strong>¿Por qué es importante?</strong> Cuando varios sismos ocurren muy juntos en poco tiempo y en el mismo sector, forman un "enjambre sísmico". Esto suele indicar reacomodos de fallas activas o secuencias de réplicas tras un temblor principal.</p>
 
         <!-- INSTRUCCIONES DE USO Y RESTABLECIMIENTO -->
         <div style="background:rgba(255,149,0,0.12); border:1.5px solid #FF9500; border-radius:12px; padding:12px 14px; margin-top:14px;">
             <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
-                <span style="font-size:1.1rem;">🔄</span>
-                <strong style="color:#FFD60A; font-size:0.88rem;">Instrucciones de Uso y Restablecimiento:</strong>
+                <span style="font-size:var(--fs-md);">🔄</span>
+                <strong style="color:#FFD60A; font-size:var(--fs-sm);">Instrucciones de Uso y Restablecimiento:</strong>
             </div>
-            <ul style="margin:6px 0 0 0; padding-left:18px; color:#FFF; font-size:0.82rem; line-height:1.45;">
+            <ul style="margin:6px 0 0 0; padding-left:18px; color:#FFF; font-size:var(--fs-sm); line-height:1.45;">
                 <li><strong>Uso:</strong> Activa el interruptor <em>Clusters DBSCAN (IA)</em> para calcular y colorear agrupaciones espacio-temporales densas.</li>
                 <li><strong>Restablecer:</strong> Apaga el interruptor o presiona el botón <em>🔄 Restablecer Capas</em> en Capas Avanzadas para retirar la clasificación por enjambres.</li>
             </ul>
         </div>
     `,
     'sgc': `
-        <h2 style="margin-top:0; color:#0A84FF; font-size:1.4rem; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:15px; margin-bottom:20px;">Telemetría FDSN en Vivo (EMSC / USGS)</h2>
-        <h3 style="color:#F5F5F7; font-size:1.1rem; margin-bottom:8px;">¿Qué muestra esta capa?</h3>
-        <p style="color:var(--text-secondary); font-size:0.95rem; line-height:1.5; margin-bottom:10px;">Establece un enlace telemétrico abierto mediante protocolo FDSN con los catálogos en tiempo real del <strong>EMSC</strong> (European-Mediterranean Seismological Centre) y del <strong>USGS</strong> (United States Geological Survey), georreferenciando cada evento respecto a las cabeceras municipales del Chocó. Para contraste sísmico oficial nacional, utilice la capa <strong>Modelo SGC Oficial (OGC)</strong> o el portal <a href="https://sismo.sgc.gov.co/" target="_blank" rel="noopener noreferrer" style="color:#38bdf8;">sismo.sgc.gov.co</a>.</p>
-        <p style="color:var(--text-secondary); font-size:0.95rem; line-height:1.5; margin-bottom:10px;">Cada evento se representa mediante <strong>anillos concéntricos verde esmeralda con núcleo brillante</strong> ajustados al zoom de pantalla.</p>
-        <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; padding: 12px; margin-top: 12px; color: #a7f3d0; font-size: 0.85rem; line-height: 1.4;">
+        <h2 style="margin-top:0; color:#0A84FF; font-size:var(--fs-xl); border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:15px; margin-bottom:20px;">Telemetría FDSN en Vivo (EMSC / USGS)</h2>
+        <h3 style="color:#F5F5F7; font-size:var(--fs-md); margin-bottom:8px;">¿Qué muestra esta capa?</h3>
+        <p style="color:var(--text-secondary); font-size:var(--fs-base); line-height:1.5; margin-bottom:10px;">Establece un enlace telemétrico abierto mediante protocolo FDSN con los catálogos en tiempo real del <strong>EMSC</strong> (European-Mediterranean Seismological Centre) y del <strong>USGS</strong> (United States Geological Survey), georreferenciando cada evento respecto a las cabeceras municipales del Chocó. Para contraste sísmico oficial nacional, utilice la capa <strong>Modelo SGC Oficial (OGC)</strong> o el portal <a href="https://sismo.sgc.gov.co/" target="_blank" rel="noopener noreferrer" style="color:#38bdf8;">sismo.sgc.gov.co</a>.</p>
+        <p style="color:var(--text-secondary); font-size:var(--fs-base); line-height:1.5; margin-bottom:10px;">Cada evento se representa mediante <strong>anillos concéntricos verde esmeralda con núcleo brillante</strong> ajustados al zoom de pantalla.</p>
+        <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; padding: 12px; margin-top: 12px; color: #a7f3d0; font-size: var(--fs-sm); line-height: 1.4;">
             <strong>Resiliencia y Atribución Transparente:</strong> Si no hay conectividad hacia las APIs FDSN externas, el sistema recurre automáticamente al catálogo local precargado en caché PWA sin falsificar la agencia de origen.
         </div>
 
         <!-- INSTRUCCIONES DE USO Y RESTABLECIMIENTO -->
         <div style="background:rgba(255,149,0,0.12); border:1.5px solid #FF9500; border-radius:12px; padding:12px 14px; margin-top:14px;">
             <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
-                <span style="font-size:1.1rem;">🔄</span>
-                <strong style="color:#FFD60A; font-size:0.88rem;">Instrucciones de Uso y Restablecimiento:</strong>
+                <span style="font-size:var(--fs-md);">🔄</span>
+                <strong style="color:#FFD60A; font-size:var(--fs-sm);">Instrucciones de Uso y Restablecimiento:</strong>
             </div>
-            <ul style="margin:6px 0 0 0; padding-left:18px; color:#FFF; font-size:0.82rem; line-height:1.45;">
+            <ul style="margin:6px 0 0 0; padding-left:18px; color:#FFF; font-size:var(--fs-sm); line-height:1.45;">
                 <li><strong>Uso:</strong> Activa el interruptor <em>Telemetría FDSN Live</em>. El distintivo indicará la fuente real activa (EMSC, USGS o caché local).</li>
                 <li><strong>Restablecer:</strong> Apaga el interruptor o presiona <em>🔄 Restablecer Capas</em> para retirar los marcadores en vivo.</li>
             </ul>
         </div>
     `,
     'sgc_wms': `
-        <h2 style="margin-top: 0; color: #0A84FF; font-size: 1.4rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px; margin-bottom: 20px;">Modelo Nacional de Amenaza Sísmica — SGC (Servicio OGC)</h2>
-        <p style="color: var(--text-secondary); font-size: 0.95rem; line-height: 1.5; margin-bottom: 12px;">Consume directamente las teselas cartográficas interoperables del servidor oficial del <strong>Servicio Geológico Colombiano (SGC)</strong> para aceleración horizontal máxima en roca (<strong>PGA [g] con período de retorno Tr = 475 años</strong>, equivalente a 10% de probabilidad de excedencia en 50 años, base de la norma NSR-10).</p>
-        <p style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.5;">Al interoperar directamente con el servicio institucional, SismoChocó evita duplicar cartografía oficial y mantiene coherencia técnica con <a href="https://amenazasismica.sgc.gov.co/" target="_blank" rel="noopener noreferrer" style="color:#38bdf8;">amenazasismica.sgc.gov.co</a>.</p>
+        <h2 style="margin-top: 0; color: #0A84FF; font-size: var(--fs-xl); border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px; margin-bottom: 20px;">Modelo Nacional de Amenaza Sísmica — SGC (Servicio OGC)</h2>
+        <p style="color: var(--text-secondary); font-size: var(--fs-base); line-height: 1.5; margin-bottom: 12px;">Proyecta directamente las teselas raster oficiales del servidor del <strong>Servicio Geológico Colombiano (SGC 2020)</strong> para aceleración horizontal máxima en roca (<strong>PGA [g] Tr = 475 años</strong>, equivalente al 10% de excedencia en 50 años) y permite consultar puntualmente <strong>PGA, Sa(0.2s) y Sa(1.0s)</strong> al hacer clic sobre cualquier lugar del mapa o pulsar <em>Consultar cabecera</em>.</p>
+        <p style="color: var(--text-secondary); font-size: var(--fs-base); line-height: 1.5;">Al interoperar directamente con el servicio REST/OGC institucional, SismoChocó evita duplicar cartografía oficial y mantiene coherencia técnica con <a href="https://amenazasismica.sgc.gov.co/" target="_blank" rel="noopener noreferrer" style="color:#38bdf8;">amenazasismica.sgc.gov.co</a>.</p>
     `,
     'oq': `
-        <h2 style="margin-top: 0; color: #0A84FF; font-size: 1.4rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px; margin-bottom: 20px;">Malla Demostrativa OpenQuake (Modelo Simplificado — No Oficial)</h2>
-        <div style="background: rgba(245, 158, 11, 0.14); border: 1px solid rgba(245, 158, 11, 0.45); border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; color: #fde68a; font-size: 0.85rem; line-height: 1.45;">
+        <h2 style="margin-top: 0; color: #0A84FF; font-size: var(--fs-xl); border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px; margin-bottom: 20px;">Malla Demostrativa OpenQuake (Modelo Simplificado — No Oficial)</h2>
+        <div style="background: rgba(245, 158, 11, 0.14); border: 1px solid rgba(245, 158, 11, 0.45); border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; color: #fde68a; font-size: var(--fs-sm); line-height: 1.45;">
             <strong>Alcance Técnico del Artefacto:</strong> Esta capa corresponde a un escenario demostrativo de una fuente planar única bajo ecuación <em>BooreAtkinson2008</em> (valores de PGA entre 0.04 g y 0.11 g). Para diseño estructural u ordenamiento territorial utilice exclusivamente los coeficientes oficiales NSR-10 y la capa <strong>Modelo SGC Oficial (OGC)</strong>.
         </div>
-        <h3 style="color: #F5F5F7; font-size: 1.1rem; margin-bottom: 8px;">¿Qué significa el período de retorno de 475 años?</h3>
-        <p style="color: var(--text-secondary); font-size: 0.95rem; line-height: 1.5; margin-bottom: 15px;">Corresponde al movimiento con 10% de probabilidad de excedencia en 50 años. No implica periodicidad fija, sino una tasa probabilística poissoniana para definir demanda sísmica.</p>
+        <h3 style="color: #F5F5F7; font-size: var(--fs-md); margin-bottom: 8px;">¿Qué significa el período de retorno de 475 años?</h3>
+        <p style="color: var(--text-secondary); font-size: var(--fs-base); line-height: 1.5; margin-bottom: 15px;">Corresponde al movimiento con 10% de probabilidad de excedencia en 50 años. No implica periodicidad fija, sino una tasa probabilística poissoniana para definir demanda sísmica.</p>
 
         <!-- INSTRUCCIONES DE USO Y RESTABLECIMIENTO -->
         <div style="background:rgba(255,149,0,0.12); border:1.5px solid #FF9500; border-radius:12px; padding:12px 14px; margin-top:14px;">
             <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
-                <span style="font-size:1.1rem;">🔄</span>
-                <strong style="color:#FFD60A; font-size:0.88rem;">Instrucciones de Uso y Restablecimiento:</strong>
+                <span style="font-size:var(--fs-md);">🔄</span>
+                <strong style="color:#FFD60A; font-size:var(--fs-sm);">Instrucciones de Uso y Restablecimiento:</strong>
             </div>
-            <ul style="margin:6px 0 0 0; padding-left:18px; color:#FFF; font-size:0.82rem; line-height:1.45;">
+            <ul style="margin:6px 0 0 0; padding-left:18px; color:#FFF; font-size:var(--fs-sm); line-height:1.45;">
                 <li><strong>Uso:</strong> Activa el interruptor <em>Malla OpenQuake (Demo)</em> para proyectar la malla demostrativa simplificada en roca (no sustituye el mapa oficial del SGC).</li>
                 <li><strong>Restablecer:</strong> Apaga el interruptor o presiona el botón <em>🔄 Restablecer Capas</em> para ocultar la malla de amenaza sísmica.</li>
             </ul>
         </div>
     `,
     'benioff': `
-        <h2 style="margin-top:0; color:#0A84FF; font-size:1.4rem; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:15px; margin-bottom:20px;">Perfil 3D de la Placa Subducida (Zona de Benioff)</h2>
-        <h3 style="color:#F5F5F7; font-size:1.05rem; margin-top:15px; margin-bottom:8px;">¿Qué ocurre bajo el suelo del Chocó?</h3>
-        <p style="color:var(--text-secondary); font-size:0.95rem; line-height:1.6; margin-bottom:15px;">En el Océano Pacífico, frente a las costas chocoanas, la <strong>Placa de Nazca</strong> se sumerge continuamente por debajo de Colombia a una velocidad de unos 5 centímetros cada año. Esa losa marina inclinada que entra a las profundidades de la Tierra se conoce como Zona de Benioff.</p>
+        <h2 style="margin-top:0; color:#0A84FF; font-size:var(--fs-xl); border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:15px; margin-bottom:20px;">Perfil 3D de la Placa Subducida (Zona de Benioff)</h2>
+        <h3 style="color:#F5F5F7; font-size:var(--fs-md); margin-top:15px; margin-bottom:8px;">¿Qué ocurre bajo el suelo del Chocó?</h3>
+        <p style="color:var(--text-secondary); font-size:var(--fs-base); line-height:1.6; margin-bottom:15px;">En el Océano Pacífico, frente a las costas chocoanas, la <strong>Placa de Nazca</strong> se sumerge continuamente por debajo de Colombia a una velocidad de unos 5 centímetros cada año. Esa losa marina inclinada que entra a las profundidades de la Tierra se conoce como Zona de Benioff.</p>
         
-        <h3 style="color:#F5F5F7; font-size:1.05rem; margin-top:15px; margin-bottom:8px;">Distribución de la profundidad de los sismos:</h3>
-        <ul style="color:var(--text-secondary); font-size:0.9rem; line-height:1.5; margin-bottom:15px; padding-left:20px;">
+        <h3 style="color:#F5F5F7; font-size:var(--fs-md); margin-top:15px; margin-bottom:8px;">Distribución de la profundidad de los sismos:</h3>
+        <ul style="color:var(--text-secondary); font-size:var(--fs-base); line-height:1.5; margin-bottom:15px; padding-left:20px;">
             <li><strong>En el mar y la costa (Bahía Solano, Nuquí):</strong> Los sismos son superficiales (entre 0 y 30 km bajo el fondo marino).</li>
             <li><strong>Hacia el interior (Quibdó y Valle del Atrato):</strong> Los sismos ocurren a profundidades intermedias (entre 40 y 80 km).</li>
             <li><strong>Bajo la Cordillera Occidental:</strong> La placa ya está muy profunda, generando sismos a más de 100 km de profundidad.</li>
         </ul>
-        <p style="color:var(--text-secondary); font-size:0.95rem; line-height:1.6;"><strong>Cómo usarlo:</strong> Al pulsar el botón del perfil, la cámara se orienta de costado para que puedas ver claramente la inclinación tridimensional de la losa y cómo los sismos van haciéndose más profundos de oeste a este.</p>
+        <p style="color:var(--text-secondary); font-size:var(--fs-base); line-height:1.6;"><strong>Cómo usarlo:</strong> Al pulsar el botón del perfil, la cámara se orienta de costado para que puedas ver claramente la inclinación tridimensional de la losa y cómo los sismos van haciéndose más profundos de oeste a este.</p>
         
         <!-- INSTRUCCIONES DE USO Y RESTABLECIMIENTO -->
         <div style="background:rgba(255,149,0,0.12); border:1.5px solid #FF9500; border-radius:12px; padding:12px 14px; margin-top:14px;">
             <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
-                <span style="font-size:1.1rem;">🔄</span>
-                <strong style="color:#FFD60A; font-size:0.88rem;">Instrucciones de Uso y Restablecimiento:</strong>
+                <span style="font-size:var(--fs-md);">🔄</span>
+                <strong style="color:#FFD60A; font-size:var(--fs-sm);">Instrucciones de Uso y Restablecimiento:</strong>
             </div>
-            <ul style="margin:6px 0 0 0; padding-left:18px; color:#FFF; font-size:0.82rem; line-height:1.45;">
+            <ul style="margin:6px 0 0 0; padding-left:18px; color:#FFF; font-size:var(--fs-sm); line-height:1.45;">
                 <li><strong>Activar:</strong> Presiona el botón <em>📐 Activar Perfil Benioff</em>. La cámara 3D se colocará de perfil (vista Oeste → Este).</li>
                 <li><strong>Ajustar:</strong> Modifica la exageración vertical (0.5x a 3.0x) o cambia de trinchera latitudinal (Murindó, Quibdó, San Juan).</li>
                 <li><strong>Desactivar / Restablecer:</strong> Vuelve a presionar el botón <em>📐 Desactivar Perfil Benioff</em> o presiona el botón <em>🔄 Restablecer Visualización</em> para regresar a la vista cenital horizontal y retirar el corte.</li>
@@ -3336,12 +3499,12 @@ const modalData = {
         </div>
     `,
     'nsr10_info': `
-        <h2 style="margin-top:0; color:#0A84FF; font-size:1.4rem; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:15px; margin-bottom:20px;">Norma Colombiana de Diseño Sismorresistente (NSR-10)</h2>
-        <h3 style="color:#F5F5F7; font-size:1.05rem; margin-top:15px; margin-bottom:8px;">1. ¿Por qué es obligatoria la NSR-10?</h3>
-        <p style="color:var(--text-secondary); font-size:0.95rem; line-height:1.6; margin-bottom:15px;">Es la ley nacional que establece cómo deben calcularse y construirse todas las viviendas, puentes y edificios en Colombia para proteger la vida humana ante terremotos. Todo el departamento del Chocó está clasificado en <strong>Zona de Amenaza Sísmica Alta</strong>.</p>
+        <h2 style="margin-top:0; color:#0A84FF; font-size:var(--fs-xl); border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:15px; margin-bottom:20px;">Norma Colombiana de Diseño Sismorresistente (NSR-10)</h2>
+        <h3 style="color:#F5F5F7; font-size:var(--fs-md); margin-top:15px; margin-bottom:8px;">1. ¿Por qué es obligatoria la NSR-10?</h3>
+        <p style="color:var(--text-secondary); font-size:var(--fs-base); line-height:1.6; margin-bottom:15px;">Es la ley nacional que establece cómo deben calcularse y construirse todas las viviendas, puentes y edificios en Colombia para proteger la vida humana ante terremotos. Todo el departamento del Chocó está clasificado en <strong>Zona de Amenaza Sísmica Alta</strong>.</p>
         
-        <h3 style="color:#F5F5F7; font-size:1.05rem; margin-top:15px; margin-bottom:8px;">2. Parámetros clave explicados de forma sencilla:</h3>
-        <ul style="color:var(--text-secondary); font-size:0.9rem; line-height:1.5; margin-bottom:15px; padding-left:20px;">
+        <h3 style="color:#F5F5F7; font-size:var(--fs-md); margin-top:15px; margin-bottom:8px;">2. Parámetros clave explicados de forma sencilla:</h3>
+        <ul style="color:var(--text-secondary); font-size:var(--fs-base); line-height:1.5; margin-bottom:15px; padding-left:20px;">
             <li style="margin-bottom:8px;"><strong>Aceleración en roca:</strong> La fuerza básica con que se sacude la roca firme en el municipio. En la costa chocoana alcanza los niveles más altos del país.</li>
             <li style="margin-bottom:8px;"><strong>Factores de suelo:</strong> Si el suelo es blando o aluvial (como junto a los ríos), actúa como una gelatina y amplifica la sacudida, exigiendo cimientos más profundos y vigas más robustas.</li>
             <li><strong>Grupo de Uso (Importancia):</strong> A las edificaciones esenciales como hospitales, estaciones de bomberos y colegios se les exige un margen extra de resistencia para que sigan funcionando después de una emergencia.</li>
@@ -3350,23 +3513,23 @@ const modalData = {
         <!-- INSTRUCCIONES DE USO Y RESTABLECIMIENTO -->
         <div style="background:rgba(255,149,0,0.12); border:1.5px solid #FF9500; border-radius:12px; padding:12px 14px; margin-top:14px;">
             <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
-                <span style="font-size:1.1rem;">🔄</span>
-                <strong style="color:#FFD60A; font-size:0.88rem;">Instrucciones de Uso y Restablecimiento:</strong>
+                <span style="font-size:var(--fs-md);">🔄</span>
+                <strong style="color:#FFD60A; font-size:var(--fs-sm);">Instrucciones de Uso y Restablecimiento:</strong>
             </div>
-            <ul style="margin:6px 0 0 0; padding-left:18px; color:#FFF; font-size:0.82rem; line-height:1.45;">
+            <ul style="margin:6px 0 0 0; padding-left:18px; color:#FFF; font-size:var(--fs-sm); line-height:1.45;">
                 <li><strong>Uso:</strong> Selecciona un municipio del departamento para consultar sus coeficientes sismorresistentes (<i>A<sub>a</sub></i>, <i>A<sub>v</sub></i>, <i>A<sub>e</sub></i>, <i>A<sub>d</sub></i>).</li>
                 <li><strong>Restablecer:</strong> Para regresar a la selección por defecto (Quibdó), vuelve a seleccionarlo en el menú desplegable o presiona el botón general <em>⌂ Restablecer Todo</em>.</li>
             </ul>
         </div>
     `,
     'geotecnia_info': `
-        <h2 style="margin-top:0; color:#0A84FF; font-size:1.4rem; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:15px; margin-bottom:20px;">Geotecnia Local y Fenómeno de Licuación</h2>
-        <h3 style="color:#F5F5F7; font-size:1.05rem; margin-top:15px; margin-bottom:8px;">1. El Suelo como Soporte de la Vida</h3>
-        <p style="color:var(--text-secondary); font-size:0.95rem; line-height:1.6; margin-bottom:15px;">Un edificio no colapsa solo por el movimiento del aire o la estructura; el suelo donde se apoya es determinante. En el Chocó predominan suelos formados por depósitos aluviales de ríos caudalosos (como el Atrato y el San Juan) y zonas litorales de bajamar.</p>
+        <h2 style="margin-top:0; color:#0A84FF; font-size:var(--fs-xl); border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:15px; margin-bottom:20px;">Geotecnia Local y Fenómeno de Licuación</h2>
+        <h3 style="color:#F5F5F7; font-size:var(--fs-md); margin-top:15px; margin-bottom:8px;">1. El Suelo como Soporte de la Vida</h3>
+        <p style="color:var(--text-secondary); font-size:var(--fs-base); line-height:1.6; margin-bottom:15px;">Un edificio no colapsa solo por el movimiento del aire o la estructura; el suelo donde se apoya es determinante. En el Chocó predominan suelos formados por depósitos aluviales de ríos caudalosos (como el Atrato y el San Juan) y zonas litorales de bajamar.</p>
 
-        <h3 style="color:#F5F5F7; font-size:1.05rem; margin-top:15px; margin-bottom:8px;">2. ¿Qué es la Licuación del Suelo?</h3>
-        <p style="color:var(--text-secondary); font-size:0.95rem; line-height:1.6; margin-bottom:12px;">Es un fenómeno en el que suelos arenosos o limosos, saturados de agua, <strong>pierden totalmente su firmeza durante un temblor fuerte y se comportan momentáneamente como un líquido o arenas movedizas</strong>.</p>
-        <ul style="color:var(--text-secondary); font-size:0.9rem; line-height:1.5; margin-bottom:15px; padding-left:20px;">
+        <h3 style="color:#F5F5F7; font-size:var(--fs-md); margin-top:15px; margin-bottom:8px;">2. ¿Qué es la Licuación del Suelo?</h3>
+        <p style="color:var(--text-secondary); font-size:var(--fs-base); line-height:1.6; margin-bottom:12px;">Es un fenómeno en el que suelos arenosos o limosos, saturados de agua, <strong>pierden totalmente su firmeza durante un temblor fuerte y se comportan momentáneamente como un líquido o arenas movedizas</strong>.</p>
+        <ul style="color:var(--text-secondary); font-size:var(--fs-base); line-height:1.5; margin-bottom:15px; padding-left:20px;">
             <li style="margin-bottom:8px;">Las casas y postes pueden hundirse o inclinarse súbitamente aunque la estructura no se quiebre.</li>
             <li style="margin-bottom:8px;">Ocurrió de forma generalizada en el terremoto de Murindó en 1992 en toda la cuenca del Río Atrato.</li>
             <li><strong>Prevención:</strong> En zonas de amenaza alta se deben realizar estudios geotécnicos con perforaciones previas y emplear cimentaciones con pilotes que alcancen estratos firmes.</li>
@@ -3375,21 +3538,21 @@ const modalData = {
         <!-- INSTRUCCIONES DE USO Y RESTABLECIMIENTO -->
         <div style="background:rgba(255,149,0,0.12); border:1.5px solid #FF9500; border-radius:12px; padding:12px 14px; margin-top:14px;">
             <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
-                <span style="font-size:1.1rem;">🔄</span>
-                <strong style="color:#FFD60A; font-size:0.88rem;">Instrucciones de Uso y Restablecimiento:</strong>
+                <span style="font-size:var(--fs-md);">🔄</span>
+                <strong style="color:#FFD60A; font-size:var(--fs-sm);">Instrucciones de Uso y Restablecimiento:</strong>
             </div>
-            <ul style="margin:6px 0 0 0; padding-left:18px; color:#FFF; font-size:0.82rem; line-height:1.45;">
+            <ul style="margin:6px 0 0 0; padding-left:18px; color:#FFF; font-size:var(--fs-sm); line-height:1.45;">
                 <li><strong>Uso:</strong> Cambia el tipo de perfil de suelo (Tipo A: Roca competente hasta Tipo E: Arcillas blandas/aluvión) para verificar su factor de amplificación sísmica.</li>
                 <li><strong>Restablecer:</strong> Para regresar al suelo de referencia estándar (Suelo Tipo D), cámbialo en la lista desplegable o pulsa <em>⌂ Restablecer Todo</em>.</li>
             </ul>
         </div>
     `,
     'pot_info': `
-        <h2 style="margin-top:0; color:#0A84FF; font-size:1.4rem; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:15px; margin-bottom:20px;">Planes de Ordenamiento Territorial (POT) y Gestión del Riesgo</h2>
-        <h3 style="color:#F5F5F7; font-size:1.05rem; margin-top:15px; margin-bottom:8px;">Orientación para Autoridades y Ciudadanos</h3>
-        <p style="color:var(--text-secondary); font-size:0.95rem; line-height:1.6; margin-bottom:15px;">Las leyes colombianas exigen que los municipios organicen su crecimiento urbano evitando que las familias se asienten en zonas de peligro insuperable.</p>
-        <h3 style="color:#F5F5F7; font-size:1.05rem; margin-top:15px; margin-bottom:8px;">Directrices clave en este módulo:</h3>
-        <ul style="color:var(--text-secondary); font-size:0.9rem; line-height:1.5; margin-bottom:15px; padding-left:20px;">
+        <h2 style="margin-top:0; color:#0A84FF; font-size:var(--fs-xl); border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:15px; margin-bottom:20px;">Planes de Ordenamiento Territorial (POT) y Gestión del Riesgo</h2>
+        <h3 style="color:#F5F5F7; font-size:var(--fs-md); margin-top:15px; margin-bottom:8px;">Orientación para Autoridades y Ciudadanos</h3>
+        <p style="color:var(--text-secondary); font-size:var(--fs-base); line-height:1.6; margin-bottom:15px;">Las leyes colombianas exigen que los municipios organicen su crecimiento urbano evitando que las familias se asienten en zonas de peligro insuperable.</p>
+        <h3 style="color:#F5F5F7; font-size:var(--fs-md); margin-top:15px; margin-bottom:8px;">Directrices clave en este módulo:</h3>
+        <ul style="color:var(--text-secondary); font-size:var(--fs-base); line-height:1.5; margin-bottom:15px; padding-left:20px;">
             <li style="margin-bottom:8px;"><strong>Retiro de fallas activas:</strong> No construir viviendas ni infraestructura vital justo encima de las trazas de fractura geológica conocidas.</li>
             <li style="margin-bottom:8px;"><strong>Suelo firme para equipamiento comunitario:</strong> Los colegios, hospitales y alcaldías deben ubicarse en terrenos estables y fuera de zonas inundables o licuables.</li>
             <li><strong>Ficha Municipal en PDF:</strong> Puedes generar e imprimir un diagnóstico técnico completo de tu municipio listo para sustentar decisiones de planeación.</li>
@@ -3398,24 +3561,24 @@ const modalData = {
         <!-- INSTRUCCIONES DE USO Y RESTABLECIMIENTO -->
         <div style="background:rgba(255,149,0,0.12); border:1.5px solid #FF9500; border-radius:12px; padding:12px 14px; margin-top:14px;">
             <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
-                <span style="font-size:1.1rem;">🔄</span>
-                <strong style="color:#FFD60A; font-size:0.88rem;">Instrucciones de Uso y Restablecimiento:</strong>
+                <span style="font-size:var(--fs-md);">🔄</span>
+                <strong style="color:#FFD60A; font-size:var(--fs-sm);">Instrucciones de Uso y Restablecimiento:</strong>
             </div>
-            <ul style="margin:6px 0 0 0; padding-left:18px; color:#FFF; font-size:0.82rem; line-height:1.45;">
+            <ul style="margin:6px 0 0 0; padding-left:18px; color:#FFF; font-size:var(--fs-sm); line-height:1.45;">
                 <li><strong>Uso:</strong> Selecciona el municipio objetivo y presiona <em>📄 Generar Ficha Municipal POT (PDF)</em> para compilar el reporte oficial de ordenamiento territorial.</li>
                 <li><strong>Restablecer:</strong> Las descargas de reportes no alteran los parámetros visuales del mapa; para restablecer la selección municipal inicial, presiona <em>⌂ Restablecer Todo</em>.</li>
             </ul>
         </div>
     `,
     'espectro_info': `
-        <h2 style="margin-top:0; color:#0A84FF; font-size:1.4rem; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:15px; margin-bottom:20px;">Curva de Demanda Sísmica para Construcción (Espectro NSR-10)</h2>
-        <h3 style="color:#F5F5F7; font-size:1.05rem; margin-top:15px; margin-bottom:8px;">¿Qué nos dice esta gráfica?</h3>
-        <p style="color:var(--text-secondary); font-size:0.95rem; line-height:1.6; margin-bottom:15px;">Indica con qué aceleración vibrará un edificio dependiendo de su altura o periodo de oscilación (un edificio bajo oscila rápido; uno alto oscila más lentamente).</p>
+        <h2 style="margin-top:0; color:#0A84FF; font-size:var(--fs-xl); border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:15px; margin-bottom:20px;">Curva de Demanda Sísmica para Construcción (Espectro NSR-10)</h2>
+        <h3 style="color:#F5F5F7; font-size:var(--fs-md); margin-top:15px; margin-bottom:8px;">¿Qué nos dice esta gráfica?</h3>
+        <p style="color:var(--text-secondary); font-size:var(--fs-base); line-height:1.6; margin-bottom:15px;">Indica con qué aceleración vibrará un edificio dependiendo de su altura o periodo de oscilación (un edificio bajo oscila rápido; uno alto oscila más lentamente).</p>
         
-        <div style="background: rgba(56,189,248,0.08); border-left: 3px solid #38bdf8; padding: 10px 14px; border-radius: 6px; margin: 12px 0; color: #e2e8f0; font-size: 0.9rem; line-height: 1.5;">
+        <div style="background: rgba(56,189,248,0.08); border-left: 3px solid #38bdf8; padding: 10px 14px; border-radius: 6px; margin: 12px 0; color: #e2e8f0; font-size: var(--fs-base); line-height: 1.5;">
             <strong>Meseta máxima:</strong> Es la parte más alta de la curva. Representa la sacudida máxima que los constructores deben prever al calcular el acero y concreto de las columnas.
         </div>
-        <ul style="color:var(--text-secondary); font-size:0.9rem; line-height:1.5; margin-bottom:15px; padding-left:20px;">
+        <ul style="color:var(--text-secondary); font-size:var(--fs-base); line-height:1.5; margin-bottom:15px; padding-left:20px;">
             <li style="margin-bottom:8px;"><strong>Línea discontinua gris:</strong> Muestra el sismo de referencia en roca firme.</li>
             <li style="margin-bottom:8px;"><strong>Curva de color con relleno:</strong> Muestra la fuerza real sobre el suelo seleccionado (si el suelo es blando, la curva sube considerablemente).</li>
             <li><strong>Exportar CSV:</strong> Permite a los calculistas estructurales descargar la tabla de datos numéricos para ingresarla directamente a programas de diseño como ETABS o SAP2000.</li>
@@ -3424,10 +3587,10 @@ const modalData = {
         <!-- INSTRUCCIONES DE USO Y RESTABLECIMIENTO -->
         <div style="background:rgba(255,149,0,0.12); border:1.5px solid #FF9500; border-radius:12px; padding:12px 14px; margin-top:14px;">
             <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
-                <span style="font-size:1.1rem;">🔄</span>
-                <strong style="color:#FFD60A; font-size:0.88rem;">Instrucciones de Uso y Restablecimiento:</strong>
+                <span style="font-size:var(--fs-md);">🔄</span>
+                <strong style="color:#FFD60A; font-size:var(--fs-sm);">Instrucciones de Uso y Restablecimiento:</strong>
             </div>
-            <ul style="margin:6px 0 0 0; padding-left:18px; color:#FFF; font-size:0.82rem; line-height:1.45;">
+            <ul style="margin:6px 0 0 0; padding-left:18px; color:#FFF; font-size:var(--fs-sm); line-height:1.45;">
                 <li><strong>Uso:</strong> Cambia el municipio, tipo de suelo o grupo de uso para recalcular el espectro elástico de diseño en tiempo real.</li>
                 <li><strong>Restablecer:</strong> Para volver al espectro basal (Quibdó, Suelo D, Grupo I), puedes reajustar los selectores o utilizar el botón maestro <em>⌂ Restablecer Todo</em>.</li>
             </ul>
@@ -3435,27 +3598,27 @@ const modalData = {
     `,
     'shakemap_info': `
         <div style="display:flex; align-items:center; gap:12px; border-bottom:1px solid rgba(255,255,255,0.12); padding-bottom:14px; margin-bottom:18px;">
-            <div style="width:38px; height:38px; border-radius:10px; background:linear-gradient(135deg, #ff453a, #b91c1c); display:flex; align-items:center; justify-content:center; font-size:1.25rem;">
+            <div style="width:38px; height:38px; border-radius:10px; background:linear-gradient(135deg, #ff453a, #b91c1c); display:flex; align-items:center; justify-content:center; font-size:var(--fs-lg);">
                 ⚡
             </div>
             <div>
-                <h2 style="margin:0; color:#FFFFFF; font-size:1.3rem; font-weight:700;">Simulador ShakeMap: Ruptura Cosísmica</h2>
-                <span style="font-size:0.75rem; color:#ff453a; font-weight:600; text-transform:uppercase;">Falla Finita Lobular &amp; Propagación Cinemática P/S</span>
+                <h2 style="margin:0; color:#FFFFFF; font-size:var(--fs-lg); font-weight:700;">Simulador ShakeMap: Ruptura Cosísmica</h2>
+                <span style="font-size:var(--fs-xs); color:#ff453a; font-weight:600; text-transform:uppercase;">Falla Finita Lobular &amp; Propagación Cinemática P/S</span>
             </div>
         </div>
 
-        <h3 style="color:#F5F5F7; font-size:1.05rem; margin-top:0; margin-bottom:8px;">1. Integración de Estado del Arte: Cinemática y Falla Finita</h3>
-        <p style="color:var(--text-secondary); font-size:0.92rem; line-height:1.6; margin-bottom:12px;">
+        <h3 style="color:#F5F5F7; font-size:var(--fs-md); margin-top:0; margin-bottom:8px;">1. Integración de Estado del Arte: Cinemática y Falla Finita</h3>
+        <p style="color:var(--text-secondary); font-size:var(--fs-base); line-height:1.6; margin-bottom:12px;">
             En sismos mayores (<i>M<sub>w</sub></i> ≥ 6.8), la energía no se libera en un punto geométrico sino a lo largo de un <strong>plano de falla con longitud finita</strong>. Esta plataforma integra dos componentes complementarios:
         </p>
-        <ul style="color:var(--text-secondary); font-size:0.86rem; line-height:1.5; margin-bottom:14px; padding-left:20px;">
+        <ul style="color:var(--text-secondary); font-size:var(--fs-sm); line-height:1.5; margin-bottom:14px; padding-left:20px;">
             <li style="margin-bottom:6px;"><strong style="color:#ff453a;">Plano de Ruptura 3D y Huella Lobular (<i>R</i><sub>jb</sub>):</strong> Proyección superficial rectangular del plano de falla y curvas de nivel elípticas orientadas según el rumbo (<em>strike</em>) tectónico regional, modelando la concentración de daño longitudinal.</li>
             <li style="margin-bottom:6px;"><strong style="color:#38bdf8;">Frente Onda P (Compresional, <i>V<sub>p</sub></i> ≈ 6.0 km/s):</strong> Anillo celeste rápido de primer arribo. Activa los sistemas de alerta temprana antes del impacto severo.</li>
             <li><strong style="color:#ffd60a;">Frente Onda S (Cizallante, <i>V<sub>s</sub></i> ≈ 3.5 km/s):</strong> Anillo anaranjado/rojo de alta energía que transporta las máximas aceleraciones destructivas y causa el daño estructural.</li>
         </ul>
 
-        <h3 style="color:#F5F5F7; font-size:1.05rem; margin-top:14px; margin-bottom:8px;">2. Escenarios Deterministas Disponibles:</h3>
-        <ul style="color:var(--text-secondary); font-size:0.86rem; line-height:1.5; margin-bottom:14px; padding-left:20px;">
+        <h3 style="color:#F5F5F7; font-size:var(--fs-md); margin-top:14px; margin-bottom:8px;">2. Escenarios Deterministas Disponibles:</h3>
+        <ul style="color:var(--text-secondary); font-size:var(--fs-sm); line-height:1.5; margin-bottom:14px; padding-left:20px;">
             <li style="margin-bottom:6px;"><strong style="color:#ff453a;">Falla Murindó (Mw 7.3):</strong> Réplica del evento de 1992 con traza de 65 km, aceleraciones PGA ≥ 0.68 g e intensidades MMI VIII-IX.</li>
             <li style="margin-bottom:6px;"><strong style="color:#38bdf8;">Subducción Nazca (Mw 8.2):</strong> Megaterremoto de contacto interplaca de 140 km con afectación en toda la fosa pacífica.</li>
             <li style="margin-bottom:6px;"><strong style="color:#fbbf24;">Falla Atrato - Quibdó (Mw 6.8):</strong> Sismo cortical superficial directo con arribo de onda destructora a la capital en menos de 5 segundos.</li>
@@ -3465,10 +3628,10 @@ const modalData = {
         <!-- INSTRUCCIONES DE USO Y LIMPIEZA -->
         <div style="background:rgba(255,149,0,0.12); border:1.5px solid #FF9500; border-radius:12px; padding:12px 14px; margin-top:14px;">
             <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
-                <span style="font-size:1.1rem;">🧹</span>
-                <strong style="color:#FFD60A; font-size:0.88rem;">Instrucciones de Simulación y Limpieza:</strong>
+                <span style="font-size:var(--fs-md);">🧹</span>
+                <strong style="color:#FFD60A; font-size:var(--fs-sm);">Instrucciones de Simulación y Limpieza:</strong>
             </div>
-            <ul style="margin:6px 0 0 0; padding-left:18px; color:#FFF; font-size:0.82rem; line-height:1.45;">
+            <ul style="margin:6px 0 0 0; padding-left:18px; color:#FFF; font-size:var(--fs-sm); line-height:1.45;">
                 <li><strong>Simular:</strong> Elige un escenario y pulsa <em>⚡ Simular Ruptura Sísmica</em>. Las ondas P y S comenzarán su avance y el cronómetro medirá el tiempo de arribo a Quibdó e Istmina.</li>
                 <li><strong>Pausar / Reiniciar Ondas:</strong> Usa los controles cinemáticos (<em>▶ Propagar Ondas</em> / <em>↺ Reiniciar</em>) para estudiar en detalle el frente de onda.</li>
                 <li><strong>Limpiar Simulación:</strong> Presiona el botón <em>🧹 Limpiar</em> para retirar de inmediato las isoseistas, las ondas y el plano de ruptura.</li>
@@ -3476,9 +3639,9 @@ const modalData = {
         </div>
     `,
     'profundidad': `
-        <h2 style="margin-top:0; color:#c084fc; font-size:1.4rem; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:15px; margin-bottom:20px;">Filtro de Profundidad Hipocentral</h2>
-        <p style="color:var(--text-secondary); font-size:0.95rem; line-height:1.6; margin-bottom:12px;">En la tectónica del Chocó, la profundidad focal es el factor discriminante entre sismos corticales de fallas activas y sismos de subducción en la losa oceánica:</p>
-        <ul style="color:var(--text-secondary); font-size:0.9rem; line-height:1.5; margin-bottom:15px; padding-left:20px;">
+        <h2 style="margin-top:0; color:#c084fc; font-size:var(--fs-xl); border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:15px; margin-bottom:20px;">Filtro de Profundidad Hipocentral</h2>
+        <p style="color:var(--text-secondary); font-size:var(--fs-base); line-height:1.6; margin-bottom:12px;">En la tectónica del Chocó, la profundidad focal es el factor discriminante entre sismos corticales de fallas activas y sismos de subducción en la losa oceánica:</p>
+        <ul style="color:var(--text-secondary); font-size:var(--fs-base); line-height:1.5; margin-bottom:15px; padding-left:20px;">
             <li style="margin-bottom:8px;"><strong style="color:#ff9f0a;">0 a 30 km (Superficial):</strong> Ocurren en la corteza continental y fallas activas. Liberan energía cerca de las poblaciones y causan el mayor daño a la infraestructura.</li>
             <li style="margin-bottom:8px;"><strong style="color:#ff375f;">30 a 70 km (Intermedio):</strong> Interfase de subducción interplaca entre Nazca y el bloque Panamá-Chocó.</li>
             <li><strong style="color:#bf5af2;">&gt; 70 km (Profundo / Wadati-Benioff):</strong> Deformación intraplaca en el interior de la losa fría descendente bajo la cordillera.</li>
@@ -3487,32 +3650,34 @@ const modalData = {
         <!-- INSTRUCCIONES DE USO Y RESTABLECIMIENTO -->
         <div style="background:rgba(255,149,0,0.12); border:1.5px solid #FF9500; border-radius:12px; padding:12px 14px; margin-top:14px;">
             <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
-                <span style="font-size:1.1rem;">🔄</span>
-                <strong style="color:#FFD60A; font-size:0.88rem;">Instrucciones de Uso y Restablecimiento:</strong>
+                <span style="font-size:var(--fs-md);">🔄</span>
+                <strong style="color:#FFD60A; font-size:var(--fs-sm);">Instrucciones de Uso y Restablecimiento:</strong>
             </div>
-            <ul style="margin:6px 0 0 0; padding-left:18px; color:#FFF; font-size:0.82rem; line-height:1.45;">
+            <ul style="margin:6px 0 0 0; padding-left:18px; color:#FFF; font-size:var(--fs-sm); line-height:1.45;">
                 <li><strong>Uso:</strong> Ajusta el control deslizante para aislar sismos según su profundidad focal en kilómetros (de 0 a 150 km).</li>
                 <li><strong>Restablecer:</strong> Presiona el botón <em>🔄 Restablecer Filtros</em> en la sección de Filtros Paramétricos para reincorporar todas las profundidades focales en la vista 3D.</li>
             </ul>
         </div>
     `,
     'infra_info': `
-        <h2 style="margin-top:0; color:#38bdf8; font-size:1.4rem; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:15px; margin-bottom:20px;">Red de Infraestructura Crítica y Vulnerabilidad</h2>
-        <p style="color:var(--text-secondary); font-size:0.95rem; line-height:1.6; margin-bottom:12px;">Superpone la red logística y asistencial de soporte vital en el departamento del Chocó para evaluar su proximidad a trazas de falla y sismos históricos:</p>
-        <ul style="color:var(--text-secondary); font-size:0.9rem; line-height:1.5; margin-bottom:15px; padding-left:20px;">
-            <li style="margin-bottom:8px;"><strong style="color:#ffd60a;">Corredores Viales (Rutas 60, 13 y 40):</strong> Arterias de conexión con Medellín, Pereira y el puerto de Buenaventura, con susceptibilidad crítica a deslizamientos cosísmicos.</li>
-            <li style="margin-bottom:8px;"><strong style="color:#38bdf8;">Arteria Fluvial del Río Atrato:</strong> Eje navegable vital del departamento, vulnerable a licuación de orillas.</li>
-            <li style="margin-bottom:8px;"><strong style="color:#0A84FF;">Aeropuertos Estratégicos:</strong> Bases indispensables para ayuda humanitaria y puentes aéreos (Quibdó, Bahía Solano, Nuquí, Condoto).</li>
-            <li><strong style="color:#ff453a;">Hospitales de Referencia (NSR-10 Grupo IV):</strong> Centros asistenciales que deben permanecer 100% operativos tras un terremoto severo.</li>
+        <h2 style="margin-top:0; color:#38bdf8; font-size:var(--fs-xl); border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:15px; margin-bottom:20px;">Red de Infraestructura Crítica y Vulnerabilidad</h2>
+        <p style="color:var(--text-secondary); font-size:var(--fs-base); line-height:1.6; margin-bottom:12px;">Superpone la red logística y asistencial de soporte vital en el departamento del Chocó para evaluar su proximidad a trazas de falla y sismos históricos:</p>
+        <ul style="color:var(--text-secondary); font-size:var(--fs-base); line-height:1.5; margin-bottom:15px; padding-left:20px;">
+            <li style="margin-bottom:8px;"><strong style="color:#FFB703;">🛣️ Red Vial Primaria (Rutas 60 / 13):</strong> Arterias terrestres interdepartamentales con susceptibilidad a deslizamientos cosísmicos.</li>
+            <li style="margin-bottom:8px;"><strong style="color:#38BDF8;">🚢 Corredor Fluvial (Atrato / San Juan / Baudó):</strong> Ejes navegables interiores vitales ante aislamiento terrestre y vulnerables a licuación de orillas.</li>
+            <li style="margin-bottom:8px;"><strong style="color:#2DD4BF;">⛵ Ruta Marítima (Cabotaje Pacífico):</strong> Enlace costero entre Juradó, Bahía Solano, Nuquí y Docordó.</li>
+            <li style="margin-bottom:8px;"><strong style="color:#60A5FA;">✈️ Terminal Aéreo:</strong> Aeropuertos y pistas estratégicas para puentes aéreos humanitarios (Quibdó, Condoto, costa pacífica).</li>
+            <li style="margin-bottom:8px;"><strong style="color:#FF6482;">🏥 Centro Asistencial (NSR-10 Grupo IV):</strong> Hospitales y centros de salud que deben operar de forma ininterrumpida post-sismo.</li>
+            <li><strong style="color:#C084FC;">⚓ Muelle / Puerto:</strong> Embarcaderos marítimos y fluviales estratégicos para abastecimiento de emergencia.</li>
         </ul>
 
         <!-- INSTRUCCIONES DE USO Y RESTABLECIMIENTO -->
         <div style="background:rgba(255,149,0,0.12); border:1.5px solid #FF9500; border-radius:12px; padding:12px 14px; margin-top:14px;">
             <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
-                <span style="font-size:1.1rem;">🔄</span>
-                <strong style="color:#FFD60A; font-size:0.88rem;">Instrucciones de Uso y Restablecimiento:</strong>
+                <span style="font-size:var(--fs-md);">🔄</span>
+                <strong style="color:#FFD60A; font-size:var(--fs-sm);">Instrucciones de Uso y Restablecimiento:</strong>
             </div>
-            <ul style="margin:6px 0 0 0; padding-left:18px; color:#FFF; font-size:0.82rem; line-height:1.45;">
+            <ul style="margin:6px 0 0 0; padding-left:18px; color:#FFF; font-size:var(--fs-sm); line-height:1.45;">
                 <li><strong>Uso:</strong> Activa el interruptor <em>Visualizar Red de Infraestructura Crítica</em> para proyectar las capas vectoriales y la tabla de convenciones de soporte vital.</li>
                 <li><strong>Restablecer:</strong> Apaga el interruptor o presiona el botón <em>🔄 Restablecer Capas</em> en Capas Avanzadas para retirar completamente las líneas viales, corredores fluviales, aeropuertos y hospitales del lienzo 3D.</li>
             </ul>
@@ -3739,7 +3904,7 @@ function renderPotTabularSummary(filterMode = 'all') {
         });
 
     let html = `<div style="font-weight:700; color:#38bdf8; margin-bottom:6px;">Resumen Municipal Chocó (${rows.length} municipios)</div>`;
-    html += `<table class="ficha-pot-table" style="font-size:0.68rem;"><thead><tr><th>Municipio</th><th>Aa</th><th>Cat. Ley 617</th><th>Acceso</th></tr></thead><tbody>`;
+    html += `<table class="ficha-pot-table" style="font-size:var(--fs-2xs);"><thead><tr><th>Municipio</th><th>Aa</th><th>Cat. Ley 617</th><th>Acceso</th></tr></thead><tbody>`;
     rows.forEach(({ m, idx }) => {
         const catShort = m.id === 'quibdo' ? 'Cat. 4' : (String(m.categoria_ley617 || '').includes('Categoría 6') ? 'Cat. 6' : 'Ref.');
         const accShort = m.costero_pacifico ? 'Marítimo/Aéreo' : (m.aislamiento_modal ? 'Fluvial' : 'Terrestre');
@@ -4391,34 +4556,34 @@ function openFichaPOTModal() {
     body.innerHTML = `
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px;">
             <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:12px;">
-                <h4 style="margin:0 0 8px 0; font-size:0.78rem; color:#38bdf8; text-transform:uppercase; letter-spacing:0.04em;">1. Localización y Capacidad Institucional</h4>
-                <p style="margin:0 0 4px 0; font-size:0.75rem;"><strong>Municipio:</strong> ${escapeHtml(m.nombre)} (${escapeHtml(m.departamento)})</p>
-                <p style="margin:0 0 4px 0; font-size:0.75rem;"><strong>Categoría Ley 617/2000:</strong> ${escapeHtml(m.categoria_ley617 || 'Referencia')}</p>
-                <p style="margin:0 0 4px 0; font-size:0.75rem;"><strong>Población de Referencia:</strong> ${(m.poblacion || 0).toLocaleString()} habitantes</p>
-                <p style="margin:0 0 4px 0; font-size:0.75rem;"><strong>Conectividad:</strong> ${escapeHtml(m.acceso_principal || 'Consultar red')}</p>
-                <p style="margin:0; font-size:0.75rem;"><strong>Coordenadas Cabecera:</strong> Lat ${m.lat.toFixed(4)}°, Lon ${m.lng.toFixed(4)}°</p>
+                <h4 style="margin:0 0 8px 0; font-size:var(--fs-xs); color:#38bdf8; text-transform:uppercase; letter-spacing:0.04em;">1. Localización y Capacidad Institucional</h4>
+                <p style="margin:0 0 4px 0; font-size:var(--fs-xs);"><strong>Municipio:</strong> ${escapeHtml(m.nombre)} (${escapeHtml(m.departamento)})</p>
+                <p style="margin:0 0 4px 0; font-size:var(--fs-xs);"><strong>Categoría Ley 617/2000:</strong> ${escapeHtml(m.categoria_ley617 || 'Referencia')}</p>
+                <p style="margin:0 0 4px 0; font-size:var(--fs-xs);"><strong>Población de Referencia:</strong> ${(m.poblacion || 0).toLocaleString()} habitantes</p>
+                <p style="margin:0 0 4px 0; font-size:var(--fs-xs);"><strong>Conectividad:</strong> ${escapeHtml(m.acceso_principal || 'Consultar red')}</p>
+                <p style="margin:0; font-size:var(--fs-xs);"><strong>Coordenadas Cabecera:</strong> Lat ${m.lat.toFixed(4)}°, Lon ${m.lng.toFixed(4)}°</p>
             </div>
 
             <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:12px;">
-                <h4 style="margin:0 0 8px 0; font-size:0.78rem; color:#38bdf8; text-transform:uppercase; letter-spacing:0.04em;">2. Parámetros Oficiales NSR-10</h4>
-                <p style="margin:0 0 4px 0; font-size:0.75rem;"><strong>Zona de Amenaza Sísmica:</strong> <span class="status-pill critico">🔴 ${escapeHtml(m.zona)}</span></p>
-                <p style="margin:0 0 4px 0; font-size:0.75rem;"><strong>Coeficientes de Aceleración:</strong> Aa = ${m.aa.toFixed(2)} g | Av = ${m.av.toFixed(2)} g</p>
-                <p style="margin:0 0 4px 0; font-size:0.75rem;"><strong>Perfil de Suelo Referencial:</strong> Tipo ${escapeHtml(m.suelo_defecto || 'E')} (Fa=${factors.Fa}, Fv=${factors.Fv})</p>
-                <p style="margin:0; font-size:0.75rem;"><strong>PGA Esperado en Superficie:</strong> <strong style="color:#38bdf8;">${pgaDiseno} g</strong></p>
+                <h4 style="margin:0 0 8px 0; font-size:var(--fs-xs); color:#38bdf8; text-transform:uppercase; letter-spacing:0.04em;">2. Parámetros Oficiales NSR-10</h4>
+                <p style="margin:0 0 4px 0; font-size:var(--fs-xs);"><strong>Zona de Amenaza Sísmica:</strong> <span class="status-pill critico">🔴 ${escapeHtml(m.zona)}</span></p>
+                <p style="margin:0 0 4px 0; font-size:var(--fs-xs);"><strong>Coeficientes de Aceleración:</strong> Aa = ${m.aa.toFixed(2)} g | Av = ${m.av.toFixed(2)} g</p>
+                <p style="margin:0 0 4px 0; font-size:var(--fs-xs);"><strong>Perfil de Suelo Referencial:</strong> Tipo ${escapeHtml(m.suelo_defecto || 'E')} (Fa=${factors.Fa}, Fv=${factors.Fv})</p>
+                <p style="margin:0; font-size:var(--fs-xs);"><strong>PGA Esperado en Superficie:</strong> <strong style="color:#38bdf8;">${pgaDiseno} g</strong></p>
             </div>
         </div>
 
         <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:12px; margin-bottom:14px;">
-            <h4 style="margin:0 0 8px 0; font-size:0.78rem; color:#38bdf8; text-transform:uppercase; letter-spacing:0.04em;">3. Contexto Sismotectónico y Exposición de Líneas Vitales</h4>
-            <p style="margin:0 0 5px 0; font-size:0.75rem;"><strong>Geología Local:</strong> ${escapeHtml(m.geologia)}</p>
-            <p style="margin:0 0 5px 0; font-size:0.75rem;"><strong>Sismos Instrumentales en 50 km:</strong> ${sismos50km} eventos (Magnitud máx: ${maxMag50km > 0 ? maxMag50km.toFixed(1) : 's/d'})</p>
-            <p style="margin:0 0 5px 0; font-size:0.75rem;"><strong>Eventos Históricos de Referencia:</strong> ${escapeHtml(m.ultimo_destructor)}</p>
-            <p style="margin:0 0 5px 0; font-size:0.75rem;"><strong>Fallas Cartografiadas Próximas:</strong> ${fallasCercanas.length > 0 ? fallasCercanas.map(f => `${escapeHtml(f.nombre)} (${f.dist} km)`).join(', ') : 'Sin trazas dentro de 75 km en capa local'}</p>
-            <p style="margin:0; font-size:0.75rem;"><strong>Infraestructura Crítica en 45 km:</strong> ${nearbyInfra.length > 0 ? nearbyInfra.slice(0, 6).map(i => `${escapeHtml(i.nombre)} (${i.distKm} km)`).join('; ') : 'Sin nodos mapeados en 45 km — verificar red local REPS/DIMAR'}</p>
+            <h4 style="margin:0 0 8px 0; font-size:var(--fs-xs); color:#38bdf8; text-transform:uppercase; letter-spacing:0.04em;">3. Contexto Sismotectónico y Exposición de Líneas Vitales</h4>
+            <p style="margin:0 0 5px 0; font-size:var(--fs-xs);"><strong>Geología Local:</strong> ${escapeHtml(m.geologia)}</p>
+            <p style="margin:0 0 5px 0; font-size:var(--fs-xs);"><strong>Sismos Instrumentales en 50 km:</strong> ${sismos50km} eventos (Magnitud máx: ${maxMag50km > 0 ? maxMag50km.toFixed(1) : 's/d'})</p>
+            <p style="margin:0 0 5px 0; font-size:var(--fs-xs);"><strong>Eventos Históricos de Referencia:</strong> ${escapeHtml(m.ultimo_destructor)}</p>
+            <p style="margin:0 0 5px 0; font-size:var(--fs-xs);"><strong>Fallas Cartografiadas Próximas:</strong> ${fallasCercanas.length > 0 ? fallasCercanas.map(f => `${escapeHtml(f.nombre)} (${f.dist} km)`).join(', ') : 'Sin trazas dentro de 75 km en capa local'}</p>
+            <p style="margin:0; font-size:var(--fs-xs);"><strong>Infraestructura Crítica en 45 km:</strong> ${nearbyInfra.length > 0 ? nearbyInfra.slice(0, 6).map(i => `${escapeHtml(i.nombre)} (${i.distKm} km)`).join('; ') : 'Sin nodos mapeados en 45 km — verificar red local REPS/DIMAR'}</p>
         </div>
 
         <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:12px; margin-bottom:14px;">
-            <h4 style="margin:0 0 8px 0; font-size:0.78rem; color:#ff7b72; text-transform:uppercase; letter-spacing:0.04em;">4. Matriz Cualitativa de Fenómenos Concomitantes</h4>
+            <h4 style="margin:0 0 8px 0; font-size:var(--fs-xs); color:#ff7b72; text-transform:uppercase; letter-spacing:0.04em;">4. Matriz Cualitativa de Fenómenos Concomitantes</h4>
             <table class="ficha-pot-table">
                 <thead>
                     <tr>
@@ -4448,8 +4613,8 @@ function openFichaPOTModal() {
         </div>
 
         <div style="background:rgba(10,132,255,0.08); border:1px solid rgba(10,132,255,0.25); border-radius:10px; padding:12px;">
-            <h4 style="margin:0 0 8px 0; font-size:0.78rem; color:#70b5ff; text-transform:uppercase; letter-spacing:0.04em;">5. Lineamientos Técnicos Orientadores (No Vinculantes)</h4>
-            <ol style="margin:0; padding-left:18px; font-size:0.74rem; color:var(--text-secondary); line-height:1.5;">
+            <h4 style="margin:0 0 8px 0; font-size:var(--fs-xs); color:#70b5ff; text-transform:uppercase; letter-spacing:0.04em;">5. Lineamientos Técnicos Orientadores (No Vinculantes)</h4>
+            <ol style="margin:0; padding-left:18px; font-size:var(--fs-xs); color:var(--text-secondary); line-height:1.5;">
                 <li style="margin-bottom:4px;">${directrizTerritorial}</li>
                 <li style="margin-bottom:4px;"><strong>Articulación Decreto 1807 de 2014 (Dec. 1077/2015):</strong> Esta ficha constituye un insumo orientador preliminar y no reemplaza los Estudios Básicos ni Detallados ni las competencias de asistencia técnica de CODECHOCÓ.</li>
                 <li style="margin-bottom:4px;"><strong>Enfoque Territorial y Étnico (Ley 70/1993):</strong> Toda delimitación de suelos de protección o reasentamiento en consejos comunitarios y resguardos requiere cartografía IGAC/ANT y consulta previa (Convenio 169 OIT).</li>
@@ -5092,7 +5257,7 @@ function getMmiBadgeStyle(mmiStr) {
     for (const key of Object.keys(MMI_PALETTE_DECK)) {
         if (raw.includes(key)) entry = MMI_PALETTE_DECK[key];
     }
-    return `background:${entry.bg}; color:${entry.text}; font-weight:700; padding:2px 7px; border-radius:6px; font-size:0.68rem; letter-spacing:0.04em; text-transform:uppercase;`;
+    return `background:${entry.bg}; color:${entry.text}; font-weight:700; padding:2px 7px; border-radius:6px; font-size:var(--fs-2xs); letter-spacing:0.04em; text-transform:uppercase;`;
 }
 
 function formatShakemapEpicentroTooltip(d) {
@@ -5113,39 +5278,39 @@ function formatShakemapEpicentroTooltip(d) {
         <div style="font-family:'Inter',system-ui,sans-serif; max-width:320px; line-height:1.4; color:#f8fafc;">
             <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.12); padding-bottom:7px; margin-bottom:8px;">
                 <div style="display:flex; align-items:center; gap:6px;">
-                    <span style="font-size:1.1rem;">⚡</span>
-                    <strong style="font-size:0.86rem; color:#fff;">Foco Epicentral (${anio})</strong>
+                    <span style="font-size:var(--fs-md);">⚡</span>
+                    <strong style="font-size:var(--fs-sm); color:#fff;">Foco Epicentral (${anio})</strong>
                 </div>
-                <span style="background:rgba(255,69,58,0.22); color:#ff6961; border:1px solid #ff453a; border-radius:6px; padding:1px 6px; font-size:0.7rem; font-weight:700;">
+                <span style="background:rgba(255,69,58,0.22); color:#ff6961; border:1px solid #ff453a; border-radius:6px; padding:1px 6px; font-size:var(--fs-2xs); font-weight:700;">
                     ${mw} Mw
                 </span>
             </div>
 
-            <div style="font-size:0.78rem; font-weight:600; color:#cbd5e1; margin-bottom:8px;">
+            <div style="font-size:var(--fs-xs); font-weight:600; color:#cbd5e1; margin-bottom:8px;">
                 ${safeNombre}
             </div>
 
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:8px;">
                 <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:5px 8px;">
-                    <span style="display:block; font-size:0.65rem; color:#94a3b8; text-transform:uppercase;">Profundidad Focal</span>
-                    <strong style="font-size:0.85rem; color:#38bdf8;">${prof} km</strong>
+                    <span style="display:block; font-size:var(--fs-2xs); color:#94a3b8; text-transform:uppercase;">Profundidad Focal</span>
+                    <strong style="font-size:var(--fs-sm); color:#38bdf8;">${prof} km</strong>
                 </div>
                 <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:5px 8px;">
-                    <span style="display:block; font-size:0.65rem; color:#94a3b8; text-transform:uppercase;">PGA Epicentral</span>
-                    <strong style="font-size:0.85rem; color:#ffd60a;">${safePga}</strong>
-                    <span style="font-size:0.65rem; color:#94a3b8;">(~${pgaPct}% g)</span>
+                    <span style="display:block; font-size:var(--fs-2xs); color:#94a3b8; text-transform:uppercase;">PGA Epicentral</span>
+                    <strong style="font-size:var(--fs-sm); color:#ffd60a;">${safePga}</strong>
+                    <span style="font-size:var(--fs-2xs); color:#94a3b8;">(~${pgaPct}% g)</span>
                 </div>
                 <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:5px 8px;">
-                    <span style="display:block; font-size:0.65rem; color:#94a3b8; text-transform:uppercase;">Rumbo (Strike)</span>
-                    <strong style="font-size:0.82rem; color:#e2e8f0;">N${strike}°E</strong>
+                    <span style="display:block; font-size:var(--fs-2xs); color:#94a3b8; text-transform:uppercase;">Rumbo (Strike)</span>
+                    <strong style="font-size:var(--fs-sm); color:#e2e8f0;">N${strike}°E</strong>
                 </div>
                 <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:5px 8px;">
-                    <span style="display:block; font-size:0.65rem; color:#94a3b8; text-transform:uppercase;">Longitud Plano</span>
-                    <strong style="font-size:0.82rem; color:#e2e8f0;">${lengthKm} km</strong>
+                    <span style="display:block; font-size:var(--fs-2xs); color:#94a3b8; text-transform:uppercase;">Longitud Plano</span>
+                    <strong style="font-size:var(--fs-sm); color:#e2e8f0;">${lengthKm} km</strong>
                 </div>
             </div>
 
-            <div style="background:rgba(239,68,68,0.1); border-left:3px solid #ef4444; padding:6px 8px; border-radius:4px; font-size:0.71rem; color:#fca5a5;">
+            <div style="background:rgba(239,68,68,0.1); border-left:3px solid #ef4444; padding:6px 8px; border-radius:4px; font-size:var(--fs-xs); color:#fca5a5;">
                 <strong>Estructura:</strong> ${safeFalla} (${profTipo}). Aceleración severa con potencial de daño directo en mampostería no confinada y palafitos.
             </div>
         </div>
@@ -5162,27 +5327,27 @@ function formatShakemapFaultTraceTooltip(infoObj, currentData) {
             <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.12); padding-bottom:6px; margin-bottom:8px;">
                 <div style="display:flex; align-items:center; gap:6px;">
                     <span style="display:inline-block; width:10px; height:10px; background:#ef4444; border-radius:2px; box-shadow:0 0 6px #ef4444;"></span>
-                    <strong style="font-size:0.86rem; color:#fff;">Plano de Ruptura Cosísmico</strong>
+                    <strong style="font-size:var(--fs-sm); color:#fff;">Plano de Ruptura Cosísmico</strong>
                 </div>
-                <span style="font-size:0.66rem; color:#94a3b8; font-family:monospace;">Falla Finita</span>
+                <span style="font-size:var(--fs-2xs); color:#94a3b8; font-family: var(--font-mono);">Falla Finita</span>
             </div>
 
-            <div style="font-size:0.78rem; font-weight:600; color:#38bdf8; margin-bottom:8px;">
+            <div style="font-size:var(--fs-xs); font-weight:600; color:#38bdf8; margin-bottom:8px;">
                 ${safeNombre}
             </div>
 
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:8px;">
                 <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:6px; padding:5px 7px;">
-                    <span style="font-size:0.65rem; color:#94a3b8; display:block;">Longitud Estimada</span>
-                    <strong style="font-size:0.82rem; color:#fff;">${lengthKm} km</strong>
+                    <span style="font-size:var(--fs-2xs); color:#94a3b8; display:block;">Longitud Estimada</span>
+                    <strong style="font-size:var(--fs-sm); color:#fff;">${lengthKm} km</strong>
                 </div>
                 <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:6px; padding:5px 7px;">
-                    <span style="font-size:0.65rem; color:#94a3b8; display:block;">Profundidad de Foco</span>
-                    <strong style="font-size:0.82rem; color:#fff;">${prof} km</strong>
+                    <span style="font-size:var(--fs-2xs); color:#94a3b8; display:block;">Profundidad de Foco</span>
+                    <strong style="font-size:var(--fs-sm); color:#fff;">${prof} km</strong>
                 </div>
             </div>
 
-            <p style="font-size:0.71rem; color:#cbd5e1; margin:0; line-height:1.35;">
+            <p style="font-size:var(--fs-xs); color:#cbd5e1; margin:0; line-height:1.35;">
                 Traza de dislocación tectónica y liberación de energía elástica. En el campo cercano rige directividad cosísmica e incremento de frecuencias destructivas.
             </p>
         </div>
@@ -5212,30 +5377,30 @@ function formatShakemapIsoseistaTooltip(obj) {
         <div style="font-family:'Inter',system-ui,sans-serif; max-width:310px; line-height:1.4; color:#f8fafc;">
             <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.12); padding-bottom:6px; margin-bottom:8px;">
                 <div style="display:flex; align-items:center; gap:6px;">
-                    <span style="font-size:1rem;">💥</span>
-                    <strong style="font-size:0.86rem; color:#fff;">ShakeMap: Isoseista</strong>
+                    <span style="font-size:var(--fs-md);">💥</span>
+                    <strong style="font-size:var(--fs-sm); color:#fff;">ShakeMap: Isoseista</strong>
                 </div>
                 <span style="${getMmiBadgeStyle(safeMmi)}">
                     MMI ${safeMmi}
                 </span>
             </div>
 
-            <div style="font-size:0.8rem; font-weight:600; color:#ffd60a; margin-bottom:6px;">
+            <div style="font-size:var(--fs-sm); font-weight:600; color:#ffd60a; margin-bottom:6px;">
                 ${safeLabel}
             </div>
 
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:8px;">
                 <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:6px; padding:5px 7px;">
-                    <span style="font-size:0.65rem; color:#94a3b8; display:block;">Aceleración Pico (PGA)</span>
-                    <strong style="font-size:0.82rem; color:#38bdf8;">${safePgaRange}</strong>
+                    <span style="font-size:var(--fs-2xs); color:#94a3b8; display:block;">Aceleración Pico (PGA)</span>
+                    <strong style="font-size:var(--fs-sm); color:#38bdf8;">${safePgaRange}</strong>
                 </div>
                 <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:6px; padding:5px 7px;">
-                    <span style="font-size:0.65rem; color:#94a3b8; display:block;">Radio Atenuación</span>
-                    <strong style="font-size:0.82rem; color:#fff;">~${radioKm} km</strong>
+                    <span style="font-size:var(--fs-2xs); color:#94a3b8; display:block;">Radio Atenuación</span>
+                    <strong style="font-size:var(--fs-sm); color:#fff;">~${radioKm} km</strong>
                 </div>
             </div>
 
-            <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); border-radius:6px; padding:6px 8px; font-size:0.71rem; color:#cbd5e1; line-height:1.35;">
+            <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); border-radius:6px; padding:6px 8px; font-size:var(--fs-xs); color:#cbd5e1; line-height:1.35;">
                 <strong style="color:#e2e8f0; display:block; margin-bottom:2px;">Efectos Físicos Estimados:</strong>
                 ${efectoDesc}
             </div>
@@ -5253,27 +5418,27 @@ function formatShakemapWavePTooltip(infoObj, velKmS) {
             <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.12); padding-bottom:6px; margin-bottom:8px;">
                 <div style="display:flex; align-items:center; gap:6px;">
                     <span style="display:inline-block; width:9px; height:9px; border-radius:50%; background:#38bdf8; box-shadow:0 0 8px #38bdf8;"></span>
-                    <strong style="font-size:0.85rem; color:#38bdf8;">Frente de Onda P</strong>
+                    <strong style="font-size:var(--fs-sm); color:#38bdf8;">Frente de Onda P</strong>
                 </div>
-                <span style="background:rgba(56,189,248,0.2); color:#38bdf8; border:1px solid rgba(56,189,248,0.4); border-radius:4px; padding:1px 6px; font-size:0.65rem; font-weight:700;">
+                <span style="background:rgba(56,189,248,0.2); color:#38bdf8; border:1px solid rgba(56,189,248,0.4); border-radius:4px; padding:1px 6px; font-size:var(--fs-2xs); font-weight:700;">
                     Compresional
                 </span>
             </div>
 
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:8px;">
                 <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:6px; padding:5px 7px;">
-                    <span style="font-size:0.65rem; color:#94a3b8; display:block;">Velocidad Media</span>
-                    <strong style="font-size:0.82rem; color:#fff;">${vel} km/s</strong>
+                    <span style="font-size:var(--fs-2xs); color:#94a3b8; display:block;">Velocidad Media</span>
+                    <strong style="font-size:var(--fs-sm); color:#fff;">${vel} km/s</strong>
                 </div>
                 <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:6px; padding:5px 7px;">
-                    <span style="font-size:0.65rem; color:#94a3b8; display:block;">Radio Frontal</span>
-                    <strong style="font-size:0.82rem; color:#fff;">${distKm} km</strong>
+                    <span style="font-size:var(--fs-2xs); color:#94a3b8; display:block;">Radio Frontal</span>
+                    <strong style="font-size:var(--fs-sm); color:#fff;">${distKm} km</strong>
                 </div>
             </div>
 
-            <div style="font-size:0.71rem; color:#cbd5e1; line-height:1.35;">
-                <p style="margin:0 0 4px 0;"><strong>Tiempo Cosísmico:</strong> <span style="font-family:monospace; color:#38bdf8;">t = ${tSec} s</span></p>
-                <p style="margin:0; font-size:0.69rem; color:#94a3b8;">
+            <div style="font-size:var(--fs-xs); color:#cbd5e1; line-height:1.35;">
+                <p style="margin:0 0 4px 0;"><strong>Tiempo Cosísmico:</strong> <span style="font-family: var(--font-mono); color:#38bdf8;">t = ${tSec} s</span></p>
+                <p style="margin:0; font-size:var(--fs-2xs); color:#94a3b8;">
                     Fase inicial de alerta previa. Produce vibración longitudinal leve y sirve como base técnica para sistemas de alerta temprana (EEW).
                 </p>
             </div>
@@ -5291,27 +5456,27 @@ function formatShakemapWaveSTooltip(infoObj, velKmS) {
             <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.12); padding-bottom:6px; margin-bottom:8px;">
                 <div style="display:flex; align-items:center; gap:6px;">
                     <span style="display:inline-block; width:9px; height:9px; border-radius:50%; background:#ef4444; box-shadow:0 0 8px #ef4444;"></span>
-                    <strong style="font-size:0.85rem; color:#ef4444;">Frente de Onda S</strong>
+                    <strong style="font-size:var(--fs-sm); color:#ef4444;">Frente de Onda S</strong>
                 </div>
-                <span style="background:rgba(239,68,68,0.2); color:#fca5a5; border:1px solid #ef4444; border-radius:4px; padding:1px 6px; font-size:0.65rem; font-weight:700;">
+                <span style="background:rgba(239,68,68,0.2); color:#fca5a5; border:1px solid #ef4444; border-radius:4px; padding:1px 6px; font-size:var(--fs-2xs); font-weight:700;">
                     Tren Destructor
                 </span>
             </div>
 
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:8px;">
                 <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:6px; padding:5px 7px;">
-                    <span style="font-size:0.65rem; color:#94a3b8; display:block;">Velocidad Media</span>
-                    <strong style="font-size:0.82rem; color:#fff;">${vel} km/s</strong>
+                    <span style="font-size:var(--fs-2xs); color:#94a3b8; display:block;">Velocidad Media</span>
+                    <strong style="font-size:var(--fs-sm); color:#fff;">${vel} km/s</strong>
                 </div>
                 <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:6px; padding:5px 7px;">
-                    <span style="font-size:0.65rem; color:#94a3b8; display:block;">Alcance Cizallante</span>
-                    <strong style="font-size:0.82rem; color:#fff;">${distKm} km</strong>
+                    <span style="font-size:var(--fs-2xs); color:#94a3b8; display:block;">Alcance Cizallante</span>
+                    <strong style="font-size:var(--fs-sm); color:#fff;">${distKm} km</strong>
                 </div>
             </div>
 
-            <div style="font-size:0.71rem; color:#cbd5e1; line-height:1.35;">
-                <p style="margin:0 0 4px 0;"><strong>Tiempo Cosísmico:</strong> <span style="font-family:monospace; color:#ef4444;">t = ${tSec} s</span></p>
-                <p style="margin:0; font-size:0.69rem; color:#fca5a5;">
+            <div style="font-size:var(--fs-xs); color:#cbd5e1; line-height:1.35;">
+                <p style="margin:0 0 4px 0;"><strong>Tiempo Cosísmico:</strong> <span style="font-family: var(--font-mono); color:#ef4444;">t = ${tSec} s</span></p>
+                <p style="margin:0; font-size:var(--fs-2xs); color:#fca5a5;">
                     Onda secundaria de corte transversal. Concentra la mayor energía destructiva y deformación dinámica, excitando estructuras y entrepisos.
                 </p>
             </div>
@@ -5570,8 +5735,8 @@ function showShortcutToast(keyChar, label, icon = '⌨️') {
             border-radius: 12px;
             padding: 10px 16px;
             color: #F8FAFC;
-            font-family: 'Inter', sans-serif;
-            font-size: 0.82rem;
+            font-family: var(--font-sans);
+            font-size: var(--fs-sm);
             display: flex;
             align-items: center;
             gap: 10px;
@@ -5585,7 +5750,7 @@ function showShortcutToast(keyChar, label, icon = '⌨️') {
     }
 
     toast.innerHTML = `
-        <span style="display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:6px; background:#0284c7; color:#fff; font-weight:700; font-family:monospace; font-size:0.85rem; border:1px solid #38bdf8;">${keyChar}</span>
+        <span style="display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:6px; background:#0284c7; color:#fff; font-weight:700; font-family: var(--font-mono); font-size:var(--fs-sm); border:1px solid #38bdf8;">${keyChar}</span>
         <span style="font-weight:600; color:#E2E8F0;">${icon} ${label}</span>
     `;
 

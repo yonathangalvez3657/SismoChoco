@@ -30,8 +30,15 @@ const fns = [
     'safeCsvField',
     'distToSegment',
     'haversineDistanceKm',
+    'tileToMercatorBbox',
 ];
-vm.runInContext(fns.map(name => extractTopLevelFunction(mainJs, name)).join('\n\n'), context);
+const infraMatch = /const INFRA_COLORS = \{[\s\S]*?\n\};/.exec(mainJs);
+assert.ok(infraMatch, 'No se encontró INFRA_COLORS en main.js');
+vm.runInContext(
+    `${infraMatch[0].replace(/^const /, 'var ')}\n\n` +
+    fns.map(name => extractTopLevelFunction(mainJs, name)).join('\n\n'),
+    context
+);
 
 test('NSR-10 espectro alinea curva Roca Base con períodos del suelo evaluado y alcanza TL', () => {
     for (const suelo of ['D', 'E', 'F']) {
@@ -106,4 +113,21 @@ test('Geometría espacial Haversine y distancia punto-segmento consistentes', ()
     assert.ok(km > 125 && km < 145, `Distancia esperada ~136 km, obtenida ${km}`);
     const degDist = context.distToSegment(-76.6, 5.7, -76.7, 5.7, -76.5, 5.7);
     assert.ok(Math.abs(degDist) < 1e-9);
+});
+
+test('SGC OGC tileToMercatorBbox y 6 colores distintos en convenciones INFRA_COLORS', () => {
+    const world = context.tileToMercatorBbox(0, 0, 0);
+    assert.ok(Math.abs(world[0] + 20037508.342789244) < 1e-6);
+    assert.ok(Math.abs(world[2] - 20037508.342789244) < 1e-6);
+    const chocoTile = context.tileToMercatorBbox(73, 124, 8);
+    assert.ok(chocoTile[0] < chocoTile[2] && chocoTile[1] < chocoTile[3]);
+
+    const keys = ['vial', 'fluvial', 'maritimo', 'aeropuerto', 'hospital', 'puerto'];
+    const hexes = keys.map(k => context.INFRA_COLORS[k]?.hex);
+    assert.equal(new Set(hexes).size, 6, 'Cada una de las 6 convenciones debe tener color único');
+
+    const html = fs.readFileSync(path.join(APP_DIR, 'index.html'), 'utf8');
+    for (const h of hexes) {
+        assert.ok(html.includes(h), `Falta color ${h} en convenciones de index.html`);
+    }
 });

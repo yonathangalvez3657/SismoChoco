@@ -35,6 +35,7 @@ const fns = [
     'classifySgcRasterColor',
     'buildInfraSvgDataUrl',
     'getInfraPixelOffset',
+    'getOqContourLevels',
 ];
 const infraMatch = /const INFRA_COLORS = \{[\s\S]*?\n\};/.exec(mainJs);
 assert.ok(infraMatch, 'No se encontró INFRA_COLORS en main.js');
@@ -193,4 +194,21 @@ test('Puertos DIMAR en vías e infraestructura tienen ícono SVG válido y separ
     const offPuerto = Array.from(context.getInfraPixelOffset(acandiPuerto, pts));
     const offHosp = Array.from(context.getInfraPixelOffset(acandiHosp, pts));
     assert.notDeepEqual(offPuerto, offHosp);
+});
+
+test('OpenQuake Demo ContourLayer define isobandas e isolíneas dentro del rango real de oq_resultados.geojson', () => {
+    const oqGeo = JSON.parse(fs.readFileSync(path.join(APP_DIR, 'data', 'oq_resultados.geojson'), 'utf8'));
+    const pgas = oqGeo.features.map(f => f.properties.pga);
+    const minPga = Math.min(...pgas);
+    const maxPga = Math.max(...pgas);
+    const levels = Array.from(context.getOqContourLevels());
+    const bands = levels.filter(c => Array.isArray(c.threshold));
+    const lines = levels.filter(c => typeof c.threshold === 'number');
+    assert.equal(bands.length, 4);
+    assert.equal(lines.length, 4);
+    assert.ok(bands[0].threshold[0] <= minPga);
+    assert.ok(bands[bands.length - 1].threshold[1] >= maxPga);
+    for (const line of lines) {
+        assert.ok(line.threshold >= minPga && line.threshold <= maxPga);
+    }
 });

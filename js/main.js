@@ -88,6 +88,19 @@ function getInfraPixelOffset(feature, allPoints) {
     return [0, 0];
 }
 
+function getOqContourLevels() {
+    return [
+        { threshold: [0.04, 0.06], color: [34, 197, 94, 55], zIndex: 0 },
+        { threshold: [0.06, 0.08], color: [234, 179, 8, 70], zIndex: 1 },
+        { threshold: [0.08, 0.10], color: [249, 115, 22, 85], zIndex: 2 },
+        { threshold: [0.10, 0.12], color: [239, 68, 68, 100], zIndex: 3 },
+        { threshold: 0.05, color: [22, 163, 74, 210], strokeWidth: 2, zIndex: 4 },
+        { threshold: 0.07, color: [202, 138, 4, 220], strokeWidth: 2, zIndex: 5 },
+        { threshold: 0.09, color: [234, 88, 12, 230], strokeWidth: 2.5, zIndex: 6 },
+        { threshold: 0.11, color: [220, 38, 38, 245], strokeWidth: 3, zIndex: 7 }
+    ];
+}
+
 function tileToMercatorBbox(x, y, z) {
     const MAX_EXTENT = 20037508.342789244;
     const tileSpan = (2 * MAX_EXTENT) / Math.pow(2, z);
@@ -1428,18 +1441,25 @@ function renderLayers(options = {}) {
     }
 
     if (showOQ && oqData.features.length > 0) {
-        layers.push(new deck.HeatmapLayer({
+        layers.push(new deck.ContourLayer({
             id: 'oq-hazard',
             data: oqData.features,
             getPosition: d => d.geometry.coordinates,
             getWeight: d => d.properties.pga,
-            radiusPixels: 90,
-            intensity: 1.5,
-            threshold: 0.1,
-            colorRange: [ [255, 255, 178], [254, 204, 92], [253, 141, 60], [240, 59, 32], [189, 0, 38] ]
+            cellSize: 13500,
+            aggregation: 'MEAN',
+            gpuAggregation: false,
+            contours: getOqContourLevels(),
+            zOffset: 0.005
         }));
         layers.push(new deck.ScatterplotLayer({
-            id: 'oq-hover', data: oqData.features, getPosition: d => d.geometry.coordinates, getRadius: 6000, getFillColor: [0,0,0,0], pickable: true, onHover: handleHover
+            id: 'oq-hover',
+            data: oqData.features,
+            getPosition: d => d.geometry.coordinates,
+            getRadius: 5500,
+            getFillColor: [0, 0, 0, 0],
+            pickable: true,
+            onHover: handleHover
         }));
     }
 
@@ -2092,11 +2112,15 @@ function renderLayers(options = {}) {
         } else if (showOQ) {
             legend.style.display = 'block';
             legend.innerHTML = `
-                <h4 style="margin: 0 0 8px 0; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #F5F5F7;">OpenQuake Demo (No Oficial)</h4>
-                <div style="display: flex; align-items: center; justify-content: space-between; height: 12px; border-radius: 6px; margin-bottom: 5px; background: linear-gradient(to right, rgb(255,255,178), rgb(254,204,92), rgb(253,141,60), rgb(240,59,32), rgb(189,0,38));"></div>
-                <div style="display: flex; justify-content: space-between; color: #CBD5E1; font-size: var(--fs-xs); font-weight: 500;">
-                    <span>0.04 g (Ref.)</span>
-                    <span>0.11 g (Demo B&amp;A 2008)</span>
+                <h4 style="margin: 0 0 8px 0; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-primary);">OpenQuake Demo · Isolíneas (No Oficial)</h4>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:5px 10px; color:var(--text-secondary); font-size:var(--fs-2xs); margin-bottom:6px;">
+                    <div style="display:flex; align-items:center; gap:5px;"><span style="display:inline-block; width:14px; height:3px; background:#16a34a; border-radius:2px;"></span><span>0.05 g (0.04–0.06)</span></div>
+                    <div style="display:flex; align-items:center; gap:5px;"><span style="display:inline-block; width:14px; height:3px; background:#ca8a04; border-radius:2px;"></span><span>0.07 g (0.06–0.08)</span></div>
+                    <div style="display:flex; align-items:center; gap:5px;"><span style="display:inline-block; width:14px; height:3px; background:#ea580c; border-radius:2px;"></span><span>0.09 g (0.08–0.10)</span></div>
+                    <div style="display:flex; align-items:center; gap:5px;"><span style="display:inline-block; width:14px; height:3px; background:#dc2626; border-radius:2px;"></span><span>≥ 0.11 g (Máx. Demo)</span></div>
+                </div>
+                <div style="font-size: var(--fs-2xs); color: var(--text-tertiary); line-height: 1.35;">
+                    Curvas de nivel (ContourLayer) · Escenario simplificado BooreAtkinson2008. Pasa el cursor para ver el PGA puntual.
                 </div>
             `;
         } else if (showInfra) {
@@ -3649,12 +3673,12 @@ const modalData = {
             <strong>Importante:</strong> Esta capa es únicamente una <strong>demostración simplificada</strong> para fines educativos (valores entre 0.04 g y 0.11 g). Para diseñar obras o revisar normas municipales, usa siempre la capa <strong>Modelo SGC Oficial (OGC)</strong> y la pestaña <strong>NSR-10</strong>.
         </div>
         <p style="font-size:var(--fs-sm); line-height:1.55; margin-bottom:14px;">
-            Muestra cómo se ve una cuadrícula de cálculo teórico sobre el terreno. En estudios reales, los ingenieros calculan la sacudida esperada en un horizonte de tiempo largo (llamado periodo de retorno de 475 años, que equivale a una probabilidad del 10 % en 50 años) para decidir qué tan resistentes deben ser las edificaciones.
+            Las curvas y franjas de nivel muestran cómo disminuye suavemente la aceleración desde la zona central (<strong>0.11 g</strong> en línea roja) hacia la periferia (<strong>0.05 g</strong> en línea verde). En estudios reales, estos cálculos se estiman para un periodo de retorno de 475 años (10 % de probabilidad de superarse en 50 años).
         </p>
         <div style="background:rgba(245,158,11,0.12); border:1.5px solid #F59E0B; border-radius:12px; padding:12px 14px;">
             <strong style="font-size:var(--fs-sm);">¿Cómo activarla y ocultarla?</strong>
             <p style="margin:6px 0 0 0; font-size:var(--fs-sm); line-height:1.45;">
-                Enciende el interruptor para ver los puntos de la malla de ejemplo y pásales el ratón por encima. Apágalo o pulsa <strong>↺</strong> en <em>Capas Avanzadas</em> para retirarla.
+                Enciende el interruptor para ver las isolíneas de atenuación y pasa el cursor por encima para consultar el dato en cada punto. Apágalo o pulsa <strong>↺</strong> en <em>Capas Avanzadas</em> para retirarla.
             </p>
         </div>
     `,

@@ -216,6 +216,17 @@ body.theme-light input[type="range"] {
     border-color: rgba(15, 23, 42, 0.22);
 }
 
+body.theme-light .custom-select option {
+    background: #FFFFFF;
+    color: #0F172A;
+}
+
+body.theme-light .custom-select optgroup {
+    background: #F1F5F9;
+    color: #334155;
+    font-weight: 600;
+}
+
 body.theme-light input[type="range"]::-webkit-slider-runnable-track {
     background: rgba(15, 23, 42, 0.18);
 }
@@ -993,6 +1004,12 @@ input:checked + .slider:before { transform: translateX(18px); }
 .custom-select option {
     background: #1c1c1e;
     color: #fff;
+}
+
+.custom-select optgroup {
+    background: #141416;
+    color: #94a3b8;
+    font-weight: 600;
 }
 
 /* Grid de Métricas de Ingeniería NSR-10 */

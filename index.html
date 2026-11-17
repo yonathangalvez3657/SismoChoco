@@ -55,7 +55,7 @@
     <script src="lib/chart.js"></script>
     
     <!-- Estilos Bento Box -->
-    <link rel="stylesheet" href="css/styles.css?v=40">
+    <link rel="stylesheet" href="css/styles.css?v=41">
 
     <!-- Datos Estructurados Schema.org JSON-LD para Google Search & Google Dataset Search -->
     <script type="application/ld+json">
@@ -1206,7 +1206,7 @@
     <script src="js/core-oop.js?v=40"></script>
 
     <!-- Lógica principal con versionamiento para evitar caché persistente -->
-    <script src="js/main.js?v=66"></script>
+    <script src="js/main.js?v=67"></script>
 
     <!-- PWA & Limpieza Activa de CacheStorage -->
     <script>
@@ -1237,7 +1237,7 @@
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js?v=64')
+                navigator.serviceWorker.register('sw.js?v=65')
                     .then(reg => {
                         reg.update();
                     })

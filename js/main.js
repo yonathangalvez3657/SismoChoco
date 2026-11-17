@@ -2173,64 +2173,22 @@ function renderLayers(options = {}) {
 // ============================================================================
 // BOTON HOME
 // ============================================================================
-const btnHome = document.getElementById('btn-home');
-if (btnHome) {
-    btnHome.addEventListener('click', () => {
-        document.getElementById('btn-reset').click();
-        document.getElementById('btn-reset-vis').click();
-        document.getElementById('btn-reset-capas').click();
-        if (isBenioffMode) {
-            toggleBenioffMode(false);
-        }
-        selectedNsrMunicipio = null;
-
-        // Restablecer mapa base a Relieve y desactivar tema claro del panel
-        currentMapStyle = BASEMAP_STYLES['voy'];
-        document.querySelectorAll('.basemap-btn[data-style]').forEach(b => {
-            b.classList.toggle('active', b.getAttribute('data-style') === 'voy');
-        });
-        document.body.classList.remove('theme-light');
-        const tBtnHome = document.getElementById('btn-theme-toggle');
-        if (tBtnHome) {
-            tBtnHome.classList.remove('active');
-            tBtnHome.setAttribute('aria-pressed', 'false');
-        }
-        applyThemeToCharts(false);
-
-        // Restablecer la cámara 3D a la vista original por defecto
-        if (deckgl) {
-            deckgl.setProps({
-                mapStyle: currentMapStyle,
-                initialViewState: {
-                    longitude: -77.0,
-                    latitude: 6.0,
-                    zoom: 6.5,
-                    pitch: 45,
-                    bearing: 15,
-                    transitionDuration: 1200,
-                    transitionInterpolator: new deck.FlyToInterpolator()
-                }
-            });
-        }
-        renderLayers();
-    });
-}
-
-// ============================================================================
-// RESET FILTERS
-// ============================================================================
-document.getElementById('btn-reset').addEventListener('click', () => {
-    // Restaurar Magnitud
-    document.getElementById('mag-slider').value = 0;
+function resetParametricFilters(shouldRender = true) {
+    if (typeof stopTimelapse === 'function') {
+        stopTimelapse();
+    }
+    const magSlider = document.getElementById('mag-slider');
+    const magVal = document.getElementById('mag-val');
+    if (magSlider) magSlider.value = 0;
     currentMag = 0;
-    document.getElementById('mag-val').innerText = '0.0';
-    
-    // Restaurar Tiempo
-    document.getElementById('time-slider').value = 1993;
-    currentTime = 1993;
-    document.getElementById('time-val').innerText = '1993';
+    if (magVal) magVal.innerText = '0.0';
 
-    // Restaurar Profundidad completa (250 km)
+    const timeSliderEl = document.getElementById('time-slider');
+    const timeValEl = document.getElementById('time-val');
+    if (timeSliderEl) timeSliderEl.value = 1993;
+    currentTime = 1993;
+    if (timeValEl) timeValEl.innerText = '1993';
+
     const depthSlider = document.getElementById('depth-slider');
     if (depthSlider) {
         depthSlider.value = 250;
@@ -2238,27 +2196,50 @@ document.getElementById('btn-reset').addEventListener('click', () => {
         const depthVal = document.getElementById('depth-val');
         if (depthVal) depthVal.innerText = '250 km (Todos)';
     }
-    
-    // Disparar Render
-    renderLayers();
-});
 
-// Reset Visualización
-document.getElementById('btn-reset-vis').addEventListener('click', () => {
+    if (shouldRender) renderLayers();
+}
+
+function resetSpatialVisualization({ skipCameraReset = false, skipRender = false } = {}) {
     viewMode = 'none';
-    
-    const viewBtns = [document.getElementById('btn-puntos'), document.getElementById('btn-calor'), document.getElementById('btn-hex')];
-    viewBtns.forEach(b => { if(b) b.classList.remove('active'); });
-    
-    if (isBenioffMode) {
-        toggleBenioffMode(false);
-    }
-    
-    renderLayers();
-});
+    const viewBtns = [
+        document.getElementById('btn-puntos'),
+        document.getElementById('btn-calor'),
+        document.getElementById('btn-hex')
+    ];
+    viewBtns.forEach(b => { if (b) b.classList.remove('active'); });
 
-// Reset Capas Avanzadas
-document.getElementById('btn-reset-capas').addEventListener('click', () => {
+    benioffSector = 'all';
+    const benioffSectorSel = document.getElementById('benioff-sector-select');
+    if (benioffSectorSel) benioffSectorSel.value = 'all';
+
+    benioffExaggeration = 1.5;
+    const benioffExagSel = document.getElementById('benioff-exag-slider');
+    const benioffExagVal = document.getElementById('benioff-exag-val');
+    if (benioffExagSel) benioffExagSel.value = '1.5';
+    if (benioffExagVal) benioffExagVal.innerText = '1.50x';
+
+    if (isBenioffMode) {
+        toggleBenioffMode(false, { skipCameraReset, skipRender: true });
+    } else {
+        const btnBen = document.getElementById('btn-benioff');
+        const btnBenTxt = document.getElementById('btn-benioff-text');
+        const benCtrl = document.getElementById('benioff-controls');
+        if (btnBen) {
+            btnBen.classList.remove('active');
+            btnBen.style.background = '';
+            btnBen.style.color = '';
+            btnBen.style.borderColor = '';
+            btnBen.style.boxShadow = '';
+        }
+        if (btnBenTxt) btnBenTxt.innerHTML = '📐 Activar Perfil Benioff';
+        if (benCtrl) benCtrl.style.display = 'none';
+    }
+
+    if (!skipRender) renderLayers();
+}
+
+function resetAdvancedLayers({ skipRender = false } = {}) {
     highQualityOnly = false;
     showFaults = false;
     showInfra = false;
@@ -2268,12 +2249,16 @@ document.getElementById('btn-reset-capas').addEventListener('click', () => {
     showLiveSGC = false;
     showSgcWms = false;
     showML = false;
-    
+    alertMagThreshold = 4.0;
+
     const checks = ['check-calidad', 'check-fallas', 'check-infra', 'check-live-sgc', 'check-sgc-wms', 'check-ml', 'check-fallas-buffer'];
     checks.forEach(id => {
         const el = document.getElementById(id);
-        if(el) el.checked = false;
+        if (el) el.checked = false;
     });
+
+    const selFalla = document.getElementById('select-falla-activa');
+    if (selFalla) selFalla.selectedIndex = 0;
 
     const infraConvenciones = document.getElementById('infra-convenciones');
     if (infraConvenciones) infraConvenciones.style.display = 'none';
@@ -2284,6 +2269,13 @@ document.getElementById('btn-reset-capas').addEventListener('click', () => {
     const sgcQueryBox = document.getElementById('sgc-wms-query-box');
     if (sgcQueryBox) sgcQueryBox.style.display = 'none';
     hideSgcRasterTooltipIfActive();
+
+    const sgcSettings = document.getElementById('sgc-alert-settings');
+    if (sgcSettings) sgcSettings.style.display = 'none';
+    const alertSlider = document.getElementById('slider-alert-threshold');
+    const alertVal = document.getElementById('alert-mag-threshold-val');
+    if (alertSlider) alertSlider.value = '4.0';
+    if (alertVal) alertVal.innerText = '≥ 4.0 Mw';
 
     document.querySelectorAll('.falla-tipo-btn').forEach(b => {
         b.classList.remove('active');
@@ -2307,13 +2299,127 @@ document.getElementById('btn-reset-capas').addEventListener('click', () => {
     }
     sgcData.features = [];
     const sgcBadge = document.getElementById('sgc-live-status-badge');
-    const sgcSubtext = document.getElementById('sgc-live-subtext');
     if (sgcBadge) sgcBadge.style.display = 'none';
-    if (isSimulatorActive) {
-        deactivateShakemap();
+    const alertBanner = document.getElementById('live-seismic-alert-banner');
+    if (alertBanner) {
+        alertBanner.style.opacity = '0';
+        alertBanner.style.display = 'none';
     }
 
-    renderLayers();
+    if (isSimulatorActive && typeof deactivateShakemap === 'function') {
+        deactivateShakemap({ skipRender: true });
+    }
+    const shakemapSelect = document.getElementById('select-shakemap-escenario');
+    if (shakemapSelect) shakemapSelect.value = 'murindo_73';
+
+    if (!skipRender) renderLayers();
+}
+
+function resetBasemapAndThemeToDefault() {
+    currentMapStyle = BASEMAP_STYLES['voy'];
+    document.querySelectorAll('.basemap-btn[data-style]').forEach(b => {
+        b.classList.toggle('active', b.getAttribute('data-style') === 'voy');
+    });
+    document.body.classList.remove('theme-light');
+    const tBtn = document.getElementById('btn-theme-toggle');
+    if (tBtn) {
+        tBtn.classList.remove('active');
+        tBtn.setAttribute('aria-pressed', 'false');
+    }
+    applyThemeToCharts(false);
+}
+
+function resetSpecialtyAndThemeControls() {
+    resetBasemapAndThemeToDefault();
+
+    currentProfile = 'sismologia';
+    document.querySelectorAll('.profile-tab').forEach(t => {
+        const isDefault = t.getAttribute('data-profile') === 'sismologia';
+        t.classList.toggle('active', isDefault);
+        t.setAttribute('aria-selected', String(isDefault));
+    });
+    document.querySelectorAll('.profile-panel').forEach(p => {
+        p.style.display = p.id === 'panel-sismologia' ? 'flex' : 'none';
+    });
+
+    selectedNsrMunicipio = null;
+    selectedPotMunicipio = null;
+
+    const nsrSuelo = document.getElementById('nsr-suelo-select');
+    if (nsrSuelo) nsrSuelo.value = 'E';
+    const nsrUso = document.getElementById('nsr-grupo-uso-select');
+    if (nsrUso) nsrUso.value = '1.00';
+
+    const potFilter = document.getElementById('pot-priority-filter');
+    if (potFilter) potFilter.value = 'all';
+
+    const potSummary = document.getElementById('pot-tabular-summary');
+    if (potSummary) potSummary.style.display = 'none';
+    const potSummaryBtn = document.getElementById('btn-pot-summary-toggle');
+    if (potSummaryBtn) potSummaryBtn.innerText = '📊 Ver Tablero Municipal Simplificado';
+
+    if (municipiosData && municipiosData.length > 0) {
+        initMunicipiosUI();
+    }
+}
+
+/**
+ * Restablece todos los botones, interruptores, filtros y controles de interfaz a su estado inicial ("a cero").
+ */
+function resetAllControlsToZero({ resetCamera = false, skipRender = false } = {}) {
+    try {
+        localStorage.removeItem('sismochoco_prefs_v1');
+    } catch (_) {}
+
+    resetParametricFilters(false);
+    resetSpatialVisualization({ skipCameraReset: !resetCamera, skipRender: true });
+    resetAdvancedLayers({ skipRender: true });
+    resetSpecialtyAndThemeControls();
+
+    if (resetCamera && deckgl) {
+        deckgl.setProps({
+            mapStyle: currentMapStyle,
+            initialViewState: {
+                longitude: -77.0,
+                latitude: 6.0,
+                zoom: 6.5,
+                pitch: 45,
+                bearing: 15,
+                transitionDuration: 1200,
+                transitionInterpolator: new deck.FlyToInterpolator()
+            }
+        });
+    } else if (deckgl) {
+        deckgl.setProps({ mapStyle: currentMapStyle });
+    }
+
+    if (!skipRender) {
+        renderLayers();
+    }
+}
+
+const btnHome = document.getElementById('btn-home');
+if (btnHome) {
+    btnHome.addEventListener('click', () => {
+        resetAllControlsToZero({ resetCamera: true, skipRender: false });
+    });
+}
+
+// ============================================================================
+// RESET FILTERS
+// ============================================================================
+document.getElementById('btn-reset').addEventListener('click', () => {
+    resetParametricFilters(true);
+});
+
+// Reset Visualización
+document.getElementById('btn-reset-vis').addEventListener('click', () => {
+    resetSpatialVisualization({ skipCameraReset: false, skipRender: false });
+});
+
+// Reset Capas Avanzadas
+document.getElementById('btn-reset-capas').addEventListener('click', () => {
+    resetAdvancedLayers({ skipRender: false });
 });
 
 // ============================================================================
@@ -2342,20 +2448,53 @@ async function checkServerHealth() {
     }
 }
 
-async function fetchJsonWithFallback(primaryUrl, fallbackUrl, timeoutMs = 6500) {
+async function fetchJsonWithFallback(primaryUrl, fallbackUrl, timeoutMs = 6500, validator = null) {
     if (primaryUrl) {
         try {
             const res = await fetchWithTimeout(primaryUrl, timeoutMs);
-            if (res && res.ok) return await res.json();
+            if (res && res.ok) {
+                const parsed = await res.json();
+                if (!validator || validator(parsed)) return parsed;
+            }
         } catch (e) {
             console.warn(`Fallback a caché/estático para ${primaryUrl}:`, e && e.name ? e.name : e);
         }
     }
     if (fallbackUrl) {
         const fbRes = await fetch(fallbackUrl);
-        if (fbRes && fbRes.ok) return await fbRes.json();
+        if (fbRes && fbRes.ok) {
+            const fbParsed = await fbRes.json();
+            if (!validator || validator(fbParsed)) return fbParsed;
+        }
     }
     return null;
+}
+
+let _municipiosFetchPromise = null;
+async function ensureMunicipiosData() {
+    if (Array.isArray(municipiosData) && municipiosData.length > 0) {
+        return municipiosData;
+    }
+    if (!_municipiosFetchPromise) {
+        _municipiosFetchPromise = fetchJsonWithFallback(
+            MUNICIPIOS_API,
+            './data/municipios_choco_nsr10.json',
+            5000,
+            d => Array.isArray(d) && d.length > 0
+        ).then(d => {
+            if (Array.isArray(d) && d.length > 0) {
+                municipiosData = d;
+                initMunicipiosUI();
+            }
+            _municipiosFetchPromise = null;
+            return municipiosData;
+        }).catch(err => {
+            _municipiosFetchPromise = null;
+            console.warn('Error cargando catálogo municipal NSR-10:', err);
+            return municipiosData;
+        });
+    }
+    return _municipiosFetchPromise;
 }
 
 async function loadData() {
@@ -2365,7 +2504,7 @@ async function loadData() {
     // Lanzar en paralelo las cargas auxiliares (sin bloquear por el catálogo principal)
     const auxPromise = Promise.allSettled([
         fetchJsonWithFallback(ENDPOINTS.FALLAS_API, './data/fallas.geojson', 5000).then(d => { if (d) faultData = d; }),
-        fetchJsonWithFallback(MUNICIPIOS_API, './data/municipios_choco_nsr10.json', 5000).then(d => { if (d) { municipiosData = d; initMunicipiosUI(); } }),
+        ensureMunicipiosData(),
         fetchJsonWithFallback(INFRA_API, './data/vias_infraestructura.geojson', 5000).then(d => { if (d) infraData = d; }),
         fetchJsonWithFallback('./data/choco_base_offline.geojson', null, 4000).then(d => { if (d) chocoBaseData = d; })
     ]);
@@ -3895,78 +4034,60 @@ function haversineDistanceKm(lat1, lon1, lat2, lon2) {
 }
 
 function savePreferences() {
+    // La plataforma restablece sus controles a cero en cada carga; no persiste estado entre sesiones.
     try {
-        const prefs = {
-            profile: currentProfile,
-            mag: currentMag,
-            time: currentTime,
-            depth: currentMaxDepth
-        };
-        localStorage.setItem('sismochoco_prefs_v1', JSON.stringify(prefs));
+        localStorage.removeItem('sismochoco_prefs_v1');
     } catch (_) {}
 }
 
 function restoreSavedPreferences() {
-    // Al cargar, iniciar siempre con mapa en Relieve y botón Claro desactivado
-    currentMapStyle = BASEMAP_STYLES['voy'];
-    document.querySelectorAll('.basemap-btn[data-style]').forEach(b => {
-        b.classList.toggle('active', b.getAttribute('data-style') === 'voy');
-    });
-    document.body.classList.remove('theme-light');
-    const tBtnInit = document.getElementById('btn-theme-toggle');
-    if (tBtnInit) {
-        tBtnInit.classList.remove('active');
-        tBtnInit.setAttribute('aria-pressed', 'false');
-    }
-    applyThemeToCharts(false);
-
     try {
-        const raw = localStorage.getItem('sismochoco_prefs_v1');
-        if (!raw) return;
-        const prefs = JSON.parse(raw);
-        if (typeof prefs.mag === 'number') {
-            currentMag = prefs.mag;
-            const el = document.getElementById('mag-slider');
-            const lbl = document.getElementById('mag-val');
-            if (el) el.value = currentMag;
-            if (lbl) lbl.innerText = currentMag.toFixed(1);
-        }
-        if (typeof prefs.time === 'number') {
-            currentTime = prefs.time;
-            const el = document.getElementById('time-slider');
-            const lbl = document.getElementById('time-val');
-            if (el) el.value = currentTime;
-            if (lbl) lbl.innerText = currentTime;
-        }
-        if (typeof prefs.depth === 'number') {
-            currentMaxDepth = Math.min(250, Math.max(10, prefs.depth));
-            const el = document.getElementById('depth-slider');
-            const lbl = document.getElementById('depth-val');
-            if (el) el.value = currentMaxDepth;
-            if (lbl) lbl.innerText = currentMaxDepth >= 250 ? '250 km (Todos)' : `≤ ${currentMaxDepth.toFixed(0)} km`;
-        }
-        if (prefs.profile && ['sismologia', 'nsr10', 'alcaldia'].includes(prefs.profile)) {
-            const tab = document.querySelector(`.profile-tab[data-profile="${prefs.profile}"]`);
-            if (tab) {
-                currentProfile = prefs.profile;
-                document.querySelectorAll('.profile-tab').forEach(t => {
-                    const isAct = t === tab;
-                    t.classList.toggle('active', isAct);
-                    t.setAttribute('aria-selected', String(isAct));
-                });
-                document.querySelectorAll('.profile-panel').forEach(p => p.style.display = 'none');
-                const panel = document.getElementById(`panel-${prefs.profile}`);
-                if (panel) panel.style.display = 'flex';
-                if (prefs.profile === 'nsr10') updateNSR10Metrics();
-                if (prefs.profile === 'alcaldia') updatePOTMetrics();
-            }
-        }
+        localStorage.removeItem('sismochoco_prefs_v1');
     } catch (_) {}
+    resetBasemapAndThemeToDefault();
+}
+
+function matchesPotPriorityFilter(m, filterMode = 'all') {
+    if (!m) return false;
+    if (filterMode === 'choco_cat6') {
+        return m.departamento === 'Chocó' && String(m.categoria_ley617 || '').includes('Categoría 6');
+    }
+    if (filterMode === 'choco_aislados') {
+        return m.departamento === 'Chocó' && m.aislamiento_modal === true;
+    }
+    if (filterMode === 'choco_costero') {
+        return m.departamento === 'Chocó' && m.costero_pacifico === true;
+    }
+    if (filterMode === 'choco_all' || filterMode === 'choco') {
+        return m.departamento === 'Chocó';
+    }
+    return true;
+}
+
+function resolvePotSelectedIdx(matchingItems, prevVal = '', filterMode = 'all') {
+    if (!Array.isArray(matchingItems) || matchingItems.length === 0) return null;
+    if (prevVal !== undefined && prevVal !== null && prevVal !== '') {
+        const prevStr = String(prevVal);
+        if (matchingItems.some(item => String(item.idx) === prevStr)) {
+            return prevStr;
+        }
+    }
+    if (filterMode === 'all' || filterMode === 'choco_all' || filterMode === 'choco') {
+        const quibdo = matchingItems.find(item =>
+            item.m && (item.m.id === 'quibdo' || String(item.m.nombre || '').toLowerCase().includes('quibdó'))
+        );
+        if (quibdo) return String(quibdo.idx);
+    }
+    return String(matchingItems[0].idx);
 }
 
 function populatePotSelect(filterMode = 'all') {
     const potSelect = document.getElementById('pot-municipio-select');
-    if (!potSelect || !municipiosData || municipiosData.length === 0) return;
+    if (!potSelect) return;
+    if (!municipiosData || municipiosData.length === 0) {
+        ensureMunicipiosData();
+        return;
+    }
 
     const depts = [
         { name: 'Chocó', label: '📍 Chocó' },
@@ -3975,34 +4096,25 @@ function populatePotSelect(filterMode = 'all') {
         { name: 'Valle del Cauca', label: '🌴 Valle del Cauca' }
     ];
 
-    const matchesFilter = (m) => {
-        if (filterMode === 'choco_cat6') {
-            return m.departamento === 'Chocó' && String(m.categoria_ley617 || '').includes('Categoría 6');
-        }
-        if (filterMode === 'choco_aislados') {
-            return m.departamento === 'Chocó' && m.aislamiento_modal === true;
-        }
-        if (filterMode === 'choco_costero') {
-            return m.departamento === 'Chocó' && m.costero_pacifico === true;
-        }
-        return true;
-    };
-
     const prevVal = potSelect.value;
+    const matchingItems = municipiosData
+        .map((m, idx) => ({ m, idx }))
+        .filter(({ m }) => matchesPotPriorityFilter(m, filterMode));
+    const targetVal = resolvePotSelectedIdx(matchingItems, prevVal, filterMode);
+
     potSelect.innerHTML = '';
-    let firstOptionVal = null;
     depts.forEach(d => {
         const group = document.createElement('optgroup');
         let countInGroup = 0;
-        municipiosData.forEach((m, idx) => {
-            if ((m.departamento || 'Chocó') === d.name && matchesFilter(m)) {
+        matchingItems.forEach(({ m, idx }) => {
+            if ((m.departamento || 'Chocó') === d.name) {
                 const opt = document.createElement('option');
-                opt.value = idx;
+                opt.value = String(idx);
                 const isoTag = m.aislamiento_modal ? ' [Aislado]' : '';
                 opt.textContent = `${m.nombre} (${(m.poblacion || 0).toLocaleString()} hab.)${isoTag}`;
-                if (firstOptionVal === null) firstOptionVal = String(idx);
-                if (prevVal && prevVal === String(idx)) opt.selected = true;
-                else if (!prevVal && (m.id === 'quibdo' || m.nombre.toLowerCase().includes('quibdó'))) opt.selected = true;
+                if (targetVal !== null && String(idx) === targetVal) {
+                    opt.selected = true;
+                }
                 group.appendChild(opt);
                 countInGroup++;
             }
@@ -4012,8 +4124,12 @@ function populatePotSelect(filterMode = 'all') {
             potSelect.appendChild(group);
         }
     });
-    if (!potSelect.value && firstOptionVal !== null) {
-        potSelect.value = firstOptionVal;
+
+    if (targetVal !== null) {
+        potSelect.value = targetVal;
+    }
+    if (potSelect.options.length > 0 && potSelect.selectedIndex < 0) {
+        potSelect.selectedIndex = 0;
     }
     renderPotTabularSummary(filterMode);
 }
@@ -4023,12 +4139,11 @@ function renderPotTabularSummary(filterMode = 'all') {
     if (!container || !municipiosData) return;
     const rows = municipiosData
         .map((m, idx) => ({ m, idx }))
-        .filter(({ m }) => {
-            if (filterMode === 'choco_cat6') return m.departamento === 'Chocó' && String(m.categoria_ley617 || '').includes('Categoría 6');
-            if (filterMode === 'choco_aislados') return m.departamento === 'Chocó' && m.aislamiento_modal === true;
-            if (filterMode === 'choco_costero') return m.departamento === 'Chocó' && m.costero_pacifico === true;
-            return m.departamento === 'Chocó';
-        });
+        .filter(({ m }) => (
+            filterMode === 'all'
+                ? m.departamento === 'Chocó'
+                : matchesPotPriorityFilter(m, filterMode)
+        ));
 
     let html = `<div style="font-weight:700; color:#38bdf8; margin-bottom:6px;">Resumen Municipal Chocó (${rows.length} municipios)</div>`;
     html += `<table class="ficha-pot-table" style="font-size:var(--fs-2xs);"><thead><tr><th>Municipio</th><th>Aa</th><th>Cat. Ley 617</th><th>Acceso</th></tr></thead><tbody>`;
@@ -4550,8 +4665,9 @@ function getNearbyInfrastructure(m, radiusKm = 45) {
 function updatePOTMetrics() {
     const sel = document.getElementById('pot-municipio-select');
     if (!sel || !municipiosData || municipiosData.length === 0) return;
-    
-    const idx = parseInt(sel.value) || 0;
+
+    const parsedIdx = parseInt(sel.value, 10);
+    const idx = Number.isNaN(parsedIdx) ? 0 : parsedIdx;
     const m = municipiosData[idx] || municipiosData[0];
     selectedPotMunicipio = m;
     
@@ -4790,8 +4906,13 @@ document.querySelectorAll('.profile-tab').forEach(tab => {
 
 const potPriorityFilter = document.getElementById('pot-priority-filter');
 if (potPriorityFilter) {
-    potPriorityFilter.addEventListener('change', (e) => {
-        populatePotSelect(e.target.value);
+    potPriorityFilter.addEventListener('change', async (e) => {
+        const selectedMode = e.target.value || 'all';
+        if (!municipiosData || municipiosData.length === 0) {
+            await ensureMunicipiosData();
+            potPriorityFilter.value = selectedMode;
+        }
+        populatePotSelect(selectedMode);
         updatePOTMetrics();
         queueRender();
     });
@@ -4993,7 +5114,7 @@ function animateBenioffViewForMode(mode) {
     }
 }
 
-function toggleBenioffMode(forceState) {
+function toggleBenioffMode(forceState, { skipCameraReset = false, skipRender = false } = {}) {
     const newState = (forceState !== undefined) ? forceState : !isBenioffMode;
     isBenioffMode = newState;
 
@@ -5032,21 +5153,23 @@ function toggleBenioffMode(forceState) {
         if (btnText) btnText.innerHTML = '📐 Activar Perfil Benioff';
         if (controls) controls.style.display = 'none';
 
-        // Animar cámara de regreso a vista aérea tridimensional general
-        deckgl.setProps({
-            initialViewState: {
-                longitude: -77.0,
-                latitude: 6.0,
-                zoom: 6.5,
-                pitch: 45,
-                bearing: 15,
-                transitionDuration: 1500,
-                transitionInterpolator: new deck.FlyToInterpolator()
-            }
-        });
+        if (!skipCameraReset && deckgl) {
+            // Animar cámara de regreso a vista aérea tridimensional general
+            deckgl.setProps({
+                initialViewState: {
+                    longitude: -77.0,
+                    latitude: 6.0,
+                    zoom: 6.5,
+                    pitch: 45,
+                    bearing: 15,
+                    transitionDuration: 1500,
+                    transitionInterpolator: new deck.FlyToInterpolator()
+                }
+            });
+        }
     }
 
-    queueRender();
+    if (!skipRender) queueRender();
 }
 
 const btnBenioff = document.getElementById('btn-benioff');
@@ -5774,7 +5897,7 @@ async function activateShakemap(scenarioKey) {
     renderLayers();
 }
 
-function deactivateShakemap() {
+function deactivateShakemap({ skipRender = false } = {}) {
     stopWaveAnimation();
     isSimulatorActive = false;
     currentShakemapData = null;
@@ -5789,7 +5912,7 @@ function deactivateShakemap() {
     if (shakemapWaveControls) shakemapWaveControls.style.display = 'none';
     if (shakemapImpactBox) shakemapImpactBox.style.display = 'none';
 
-    renderLayers();
+    if (!skipRender) renderLayers();
 }
 
 if (btnWavePlay) {
@@ -6279,6 +6402,12 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 initKeyboardShortcuts();
+resetAllControlsToZero({ resetCamera: false, skipRender: true });
+window.addEventListener('pageshow', (e) => {
+    if (e.persisted) {
+        resetAllControlsToZero({ resetCamera: true, skipRender: false });
+    }
+});
 loadData();
 
 

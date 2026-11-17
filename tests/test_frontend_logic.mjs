@@ -35,6 +35,8 @@ const fns = [
     'classifySgcRasterColor',
     'buildInfraSvgDataUrl',
     'getInfraPixelOffset',
+    'matchesPotPriorityFilter',
+    'resolvePotSelectedIdx',
 ];
 const infraMatch = /const INFRA_COLORS = \{[\s\S]*?\n\};/.exec(mainJs);
 assert.ok(infraMatch, 'No se encontró INFRA_COLORS en main.js');
@@ -193,4 +195,29 @@ test('Puertos DIMAR en vías e infraestructura tienen ícono SVG válido y separ
     const offPuerto = Array.from(context.getInfraPixelOffset(acandiPuerto, pts));
     const offHosp = Array.from(context.getInfraPixelOffset(acandiHosp, pts));
     assert.notDeepEqual(offPuerto, offHosp);
+});
+
+test('Filtro Prioridad Chocó (POT) selecciona municipios válidos al excluir Quibdó', () => {
+    const indexed = municipios.map((m, idx) => ({ m, idx }));
+    const cases = [
+        { mode: 'all', expectedCount: 67, expectedFirst: '0', expectedName: 'Quibdó' },
+        { mode: 'choco_cat6', expectedCount: 30, expectedFirst: '1', expectedName: 'Bahía Solano (Mutis)' },
+        { mode: 'choco_aislados', expectedCount: 22, expectedFirst: '1', expectedName: 'Bahía Solano (Mutis)' },
+        { mode: 'choco_costero', expectedCount: 5, expectedFirst: '1', expectedName: 'Bahía Solano (Mutis)' },
+        { mode: 'choco_all', expectedCount: 31, expectedFirst: '0', expectedName: 'Quibdó' }
+    ];
+
+    for (const c of cases) {
+        const matched = indexed.filter(({ m }) => context.matchesPotPriorityFilter(m, c.mode));
+        assert.equal(matched.length, c.expectedCount, `Cantidad inesperada para filtro ${c.mode}`);
+        const picked = context.resolvePotSelectedIdx(matched, '0', c.mode);
+        assert.equal(picked, c.expectedFirst, `Selección inesperada para filtro ${c.mode} partiendo desde idx=0`);
+        assert.equal(municipios[Number(picked)].nombre, c.expectedName);
+    }
+});
+
+test('Al cargar la plataforma todos los controles se restablecen a cero sin restaurar sesión previa', () => {
+    assert.match(mainJs, /resetAllControlsToZero\(\{\s*resetCamera:\s*false,\s*skipRender:\s*true\s*\}\);\s*\n\s*window\.addEventListener\('pageshow'/);
+    assert.match(mainJs, /function restoreSavedPreferences\(\)\s*\{\s*try\s*\{\s*localStorage\.removeItem\('sismochoco_prefs_v1'\);/);
+    assert.doesNotMatch(mainJs, /const raw = localStorage\.getItem\('sismochoco_prefs_v1'\)/);
 });

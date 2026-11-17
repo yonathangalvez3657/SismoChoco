@@ -199,12 +199,12 @@
                 <div style="display: flex; align-items: center; gap: 8px;">
                     <button type="button" class="info-btn rtd-pill-btn" data-info="rtd" aria-label="Marco Epistemológico: Research through Design" title="Marco Epistemológico: Research through Design (RtD)">RtD</button>
                     <button type="button" class="info-btn" data-info="guia" aria-label="Guía de uso de la plataforma" title="Guía de uso de la plataforma">?</button>
-                    <button type="button" id="btn-home" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 6px; width: 26px; height: 26px; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: all 0.2s ease; position: relative;" onmouseover="this.style.background='#0066CC'; const tt=document.getElementById('btn-home-tooltip'); if(tt){tt.style.opacity='1'; tt.style.visibility='visible';}" onmouseout="this.style.background='rgba(255,255,255,0.1)'; const tt=document.getElementById('btn-home-tooltip'); if(tt){tt.style.opacity='0'; tt.style.visibility='hidden';}" aria-label="Restablecer Todo" title="Restablecer Todo (Atajo: 0)">
+                    <button type="button" id="btn-home" class="reset-icon-btn" aria-label="Restablecer Todo" title="Restablecer Todo (Atajo: 0)">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
                             <path d="M3 3v5h5"></path>
                         </svg>
-                        <span id="btn-home-tooltip" style="position: absolute; top: 35px; right: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); color: white; border: 1px solid rgba(255,255,255,0.15); padding: 6px 10px; border-radius: 8px; font-size: var(--fs-xs); white-space: nowrap; pointer-events: none; opacity: 0; visibility: hidden; transition: opacity 0.2s ease, visibility 0.2s ease; box-shadow: 0 4px 12px rgba(0,0,0,0.4); z-index: 10000; font-family: var(--font-sans); font-weight: 500;">
+                        <span id="btn-home-tooltip" class="reset-tooltip reset-tooltip--below">
                             🔄 Restablecer Todo (Atajo: 0): Restablece vista 3D por defecto, filtros y capas
                         </span>
                     </button>
@@ -344,12 +344,12 @@
                         <button type="button" class="info-btn" data-info="vis_espacial" aria-label="Instrucciones: Visualización Espacial" title="Instrucciones de uso: Visualización Espacial">?</button>
                     </div>
                     <div style="display: flex; align-items: center; flex-shrink: 0;">
-                        <button type="button" id="btn-reset-vis" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 6px; width: 26px; height: 26px; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: all 0.2s ease; position: relative;" onmouseover="this.style.background='#0066CC'; const tt=document.getElementById('btn-reset-vis-tt'); if(tt){tt.style.opacity='1'; tt.style.visibility='visible';}" onmouseout="this.style.background='rgba(255,255,255,0.1)'; const tt=document.getElementById('btn-reset-vis-tt'); if(tt){tt.style.opacity='0'; tt.style.visibility='hidden';}" aria-label="Restablecer visualización espacial" title="Restablecer visualización espacial">
+                        <button type="button" id="btn-reset-vis" class="reset-icon-btn" aria-label="Restablecer visualización espacial" title="Restablecer visualización espacial">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
                                 <path d="M3 3v5h5"></path>
                             </svg>
-                            <span id="btn-reset-vis-tt" style="position: absolute; top: -35px; right: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); color: white; border: 1px solid rgba(255,255,255,0.15); padding: 4px 8px; border-radius: 6px; font-size: var(--fs-2xs); white-space: nowrap; pointer-events: none; opacity: 0; visibility: hidden; transition: opacity 0.2s ease, visibility 0.2s ease; z-index: 10000; font-family: var(--font-sans); font-weight: 500;">
+                            <span id="btn-reset-vis-tt" class="reset-tooltip">
                                 🔄 Restablecer visualización espacial
                             </span>
                         </button>
@@ -387,12 +387,12 @@
                         <h3 style="margin: 0;">Filtros Paramétricos</h3>
                         <button type="button" class="info-btn" data-info="filtros_parametricos" aria-label="Instrucciones: Filtros Paramétricos" title="Instrucciones de uso: Filtros Paramétricos">?</button>
                     </div>
-                    <button type="button" id="btn-reset" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 6px; width: 26px; height: 26px; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: all 0.2s ease; position: relative;" onmouseover="this.style.background='#0066CC'; const tt=document.getElementById('btn-reset-tt'); if(tt){tt.style.opacity='1'; tt.style.visibility='visible';}" onmouseout="this.style.background='rgba(255,255,255,0.1)'; const tt=document.getElementById('btn-reset-tt'); if(tt){tt.style.opacity='0'; tt.style.visibility='hidden';}" aria-label="Restablecer Filtros Paramétricos">
+                    <button type="button" id="btn-reset" class="reset-icon-btn" aria-label="Restablecer Filtros Paramétricos" title="Restablecer Filtros Paramétricos">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
                             <path d="M3 3v5h5"></path>
                         </svg>
-                        <span id="btn-reset-tt" style="position: absolute; top: -35px; right: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); color: white; border: 1px solid rgba(255,255,255,0.15); padding: 4px 8px; border-radius: 6px; font-size: var(--fs-2xs); white-space: nowrap; pointer-events: none; opacity: 0; visibility: hidden; transition: opacity 0.2s ease, visibility 0.2s ease; z-index: 10000; font-family: var(--font-sans); font-weight: 500;">
+                        <span id="btn-reset-tt" class="reset-tooltip">
                             🔄 Restablecer Filtros Paramétricos
                         </span>
                     </button>
@@ -453,12 +453,12 @@
                         <h3 style="margin: 0;">Capas Avanzadas</h3>
                         <button type="button" class="info-btn" data-info="capas_avanzadas" aria-label="Instrucciones: Capas Avanzadas" title="Instrucciones de uso: Capas Avanzadas">?</button>
                     </div>
-                    <button type="button" id="btn-reset-capas" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 6px; width: 26px; height: 26px; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: all 0.2s ease; position: relative;" onmouseover="this.style.background='#0066CC'; const tt=document.getElementById('btn-reset-capas-tt'); if(tt){tt.style.opacity='1'; tt.style.visibility='visible';}" onmouseout="this.style.background='rgba(255,255,255,0.1)'; const tt=document.getElementById('btn-reset-capas-tt'); if(tt){tt.style.opacity='0'; tt.style.visibility='hidden';}" aria-label="Restablecer Capas Avanzadas">
+                    <button type="button" id="btn-reset-capas" class="reset-icon-btn" aria-label="Restablecer Capas Avanzadas" title="Restablecer Capas Avanzadas">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
                             <path d="M3 3v5h5"></path>
                         </svg>
-                        <span id="btn-reset-capas-tt" style="position: absolute; top: -35px; right: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); color: white; border: 1px solid rgba(255,255,255,0.15); padding: 4px 8px; border-radius: 6px; font-size: var(--fs-2xs); white-space: nowrap; pointer-events: none; opacity: 0; visibility: hidden; transition: opacity 0.2s ease, visibility 0.2s ease; z-index: 10000; font-family: var(--font-sans); font-weight: 500;">
+                        <span id="btn-reset-capas-tt" class="reset-tooltip">
                             🔄 Restablecer Capas Avanzadas
                         </span>
                     </button>
@@ -1252,7 +1252,7 @@
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js?v=52')
+                navigator.serviceWorker.register('sw.js?v=53')
                     .then(reg => {
                         reg.update();
                     })

@@ -163,20 +163,26 @@ body.theme-light #btn-ficha-close-action,
 body.theme-light #btn-close-ux-hud,
 body.theme-light #btn-close-alert-banner,
 body.theme-light #btn-reset-telemetry-hud,
-body.theme-light #btn-home,
-body.theme-light #btn-reset-capas {
+body.theme-light .reset-icon-btn {
     background: rgba(15, 23, 42, 0.08) !important;
-    border: 1px solid rgba(15, 23, 42, 0.2) !important;
+    border: 1px solid rgba(15, 23, 42, 0.25) !important;
     color: #0F172A !important;
 }
 
 body.theme-light #close-info-modal:hover,
 body.theme-light #btn-ficha-close-action:hover,
-body.theme-light #btn-home:hover,
-body.theme-light #btn-reset-capas:hover {
+body.theme-light .reset-icon-btn:hover,
+body.theme-light .reset-icon-btn:focus-visible {
     background: #0052CC !important;
     color: #FFFFFF !important;
     border-color: #0052CC !important;
+}
+
+body.theme-light .reset-tooltip {
+    background: #FFFFFF !important;
+    color: #0F172A !important;
+    border: 1px solid rgba(15, 23, 42, 0.2) !important;
+    box-shadow: 0 6px 16px rgba(15, 23, 42, 0.16) !important;
 }
 
 body.theme-light #basemap-selector,
@@ -246,6 +252,7 @@ body.theme-light .toggle-btn.active {
 }
 
 body.theme-light .metric-card,
+body.theme-light .toggle-group > div,
 body.theme-light #chart-container,
 body.theme-light #gr-recurrence-box,
 body.theme-light #nsr-geotecnia-feedback,
@@ -347,6 +354,61 @@ body.theme-light .panel-theme-btn.active {
     color: #FFFFFF !important;
     font-weight: 600;
     box-shadow: 0 2px 8px rgba(0, 82, 204, 0.35);
+}
+
+.reset-icon-btn {
+    background: rgba(255, 255, 255, 0.10);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    color: #FFFFFF;
+    border-radius: 6px;
+    width: 26px;
+    height: 26px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.reset-icon-btn:hover,
+.reset-icon-btn:focus-visible {
+    background: #0052CC;
+    border-color: #0052CC;
+    color: #FFFFFF;
+}
+
+.reset-tooltip {
+    position: absolute;
+    top: -35px;
+    right: 0;
+    background: rgba(15, 23, 42, 0.94);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    color: #FFFFFF;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: var(--fs-2xs);
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+    z-index: 10000;
+    font-family: var(--font-sans);
+    font-weight: 500;
+}
+
+.reset-tooltip--below {
+    top: 35px;
+}
+
+.reset-icon-btn:hover .reset-tooltip,
+.reset-icon-btn:focus-visible .reset-tooltip {
+    opacity: 1;
+    visibility: visible;
 }
 
 body {

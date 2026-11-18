@@ -55,7 +55,7 @@
     <script src="lib/chart.js"></script>
     
     <!-- Estilos Bento Box -->
-    <link rel="stylesheet" href="css/styles.css?v=46">
+    <link rel="stylesheet" href="css/styles.css?v=47">
 
     <!-- Datos Estructurados Schema.org JSON-LD para Google Search & Google Dataset Search -->
     <script type="application/ld+json">
@@ -386,7 +386,7 @@
                     <div style="display:flex; justify-content:space-between; align-items:center;">
                         <label for="depth-slider" style="display:flex; align-items:center; gap:8px; cursor:pointer;">
                             <span>Profundidad máxima:</span>
-                            <span id="depth-val" class="val-display tabular-num" style="color:var(--accent-depth-ui, #c084fc);">250 km (Todos)</span>
+                            <span id="depth-val" class="val-display tabular-num">250 km (Todos)</span>
                         </label>
                         <button type="button" class="info-btn" data-info="profundidad" aria-label="Instrucciones: Profundidad Hipocentral" title="Instrucciones de uso: Profundidad Hipocentral">?</button>
                     </div>
@@ -1247,7 +1247,7 @@
     <script src="js/core-oop.js?v=40"></script>
 
     <!-- Lógica principal con versionamiento para evitar caché persistente -->
-    <script src="js/main.js?v=75"></script>
+    <script src="js/main.js?v=76"></script>
 
     <!-- PWA & Limpieza Activa de CacheStorage -->
     <script>
@@ -1278,7 +1278,7 @@
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js?v=73')
+                navigator.serviceWorker.register('sw.js?v=75')
                     .then(reg => {
                         reg.update();
                     })

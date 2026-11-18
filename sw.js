@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sismo-choco-v73';
+const CACHE_NAME = 'sismo-choco-v75';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',

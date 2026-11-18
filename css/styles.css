@@ -18,7 +18,7 @@
     
     --accent: #0066CC; /* WCAG AA High-Contrast Blue (>5.5:1 con texto blanco) */
     --accent-ui: #38BDF8;
-    --accent-depth-ui: #C084FC;
+    --accent-depth-ui: #0066CC;
     --accent-glow: rgba(0, 102, 204, 0.35);
     --danger: #FF453A;
     --focus-ring: #38BDF8;
@@ -75,7 +75,7 @@ body.theme-light {
     --text-tertiary: #475569;
     --accent: #0052CC;
     --accent-ui: #0369A1;
-    --accent-depth-ui: #7E22CE;
+    --accent-depth-ui: #0052CC;
     --danger: #B91C1C;
     --focus-ring: #0052CC;
 

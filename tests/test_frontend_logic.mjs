@@ -282,6 +282,9 @@ test('Chips de filtros activos, encuadre Mercator, búsqueda acento-agnóstica e
     assert.match(css, /\.info-btn\[data-info="pot_info"\],\s*\n\.info-btn\[data-info="infra_info"\]\s*\{\s*background:\s*#B45309\s*!important;/);
     assert.match(css, /#btn-pot-print\s*\{\s*\n\s*background:\s*#B45309\s*!important;/);
     assert.match(mainJs, /espectro_info:\s*'#047857'[\s\S]*?geotecnia_info:\s*'#047857'[\s\S]*?pot_info:\s*'#B45309'[\s\S]*?infra_info:\s*'#B45309'/);
+    assert.match(mainJs, /if\s*\(\s*currentProfile\s*===\s*'nsr10'\s*&&\s*selectedNsrMunicipio\s*&&\s*selectedNsrMunicipio\.lat\s*\)/);
+    assert.match(mainJs, /'E':\s*\[230,\s*159,\s*0\]/);
+    assert.match(mainJs, /id:\s*'pot-municipio-pin'[\s\S]*?getFillColor:\s*\[180,\s*83,\s*9,\s*235\]/);
     assert.match(html, /class="toggle-btn vis-mode-btn"[^>]*id="btn-calor"/);
     assert.ok(html.includes('id="btn-panel-collapse"'));
     assert.ok(html.includes('id="active-filters-bar"'));

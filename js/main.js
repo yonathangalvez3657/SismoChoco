@@ -2307,8 +2307,8 @@ function renderLayers(options = {}) {
         }));
     }
 
-    // Pin de Ubicación y Halo de Amplificación Dinámica NSR-10 para Municipio Seleccionado
-    if (selectedNsrMunicipio && selectedNsrMunicipio.lat) {
+    // Pin de Ubicación y Halo de Amplificación Dinámica NSR-10 para Municipio Seleccionado (solo en Diseño Estructural)
+    if (currentProfile === 'nsr10' && selectedNsrMunicipio && selectedNsrMunicipio.lat) {
         const sueloSel = document.getElementById('nsr-suelo-select');
         const usoSel = document.getElementById('nsr-grupo-uso-select');
         const curSuelo = sueloSel ? sueloSel.value : (selectedNsrMunicipio.suelo_defecto || 'E');
@@ -2318,14 +2318,14 @@ function renderLayers(options = {}) {
         const curPga = (curFactors.Fa * selectedNsrMunicipio.aa).toFixed(2);
 
         const SOIL_COLORS_RGB = {
-            'A': [50, 215, 75],   // Roca Competente
-            'B': [56, 189, 248],  // Roca Media
-            'C': [255, 214, 10],  // Suelos Muy Densos / Roca Blanda
-            'D': [255, 159, 10],  // Suelos Rígidos
-            'E': [255, 69, 58],   // Suelos Blandos
-            'F': [191, 90, 242]   // Suelos Especiales / Licuables
+            'A': [0, 158, 115],    // Roca Competente (Okabe-Ito #009E73)
+            'B': [86, 180, 233],   // Roca Media (Okabe-Ito #56B4E9)
+            'C': [0, 114, 178],    // Suelos Densos / Roca Blanda (Okabe-Ito #0072B2)
+            'D': [240, 228, 66],   // Suelos Rígidos (Okabe-Ito #F0E442)
+            'E': [230, 159, 0],    // Suelos Blandos / Aluviales (Okabe-Ito #E69F00)
+            'F': [204, 121, 167]   // Suelos Especiales / Licuables (Okabe-Ito #CC79A7)
         };
-        const baseSoilRgb = SOIL_COLORS_RGB[curSuelo] || [255, 69, 58];
+        const baseSoilRgb = SOIL_COLORS_RGB[curSuelo] || [230, 159, 0];
         const haloColor = [...baseSoilRgb, 85];
         const pinColor = [...baseSoilRgb, 240];
         const haloRadiusMeters = 2500 + curSaMax * 2500;
@@ -2389,16 +2389,16 @@ function renderLayers(options = {}) {
 
     // Pin y Radio de Influencia Territorial (30 km) para Perfil POT
     if (currentProfile === 'alcaldia' && selectedPotMunicipio && selectedPotMunicipio.lat) {
-        // Halo de área de influencia directa territorial (30 km de radio de monitoreo sismotectónico)
+        // Halo de área de influencia directa territorial (30 km — Ámbar/Ocre Gestión Territorial)
         layers.push(new deck.ScatterplotLayer({
             id: 'pot-municipio-influence-radius',
             data: [{ pos: [selectedPotMunicipio.lng, selectedPotMunicipio.lat] }],
             getPosition: d => [d.pos[0], d.pos[1], 5],
             radiusUnits: 'meters',
             getRadius: 30000,
-            getFillColor: [50, 215, 75, 40],
+            getFillColor: [180, 83, 9, 42],
             stroked: true,
-            getLineColor: [50, 215, 75, 200],
+            getLineColor: [217, 119, 6, 215],
             lineWidthMinPixels: 1.5,
             pickable: false,
             updateTriggers: {
@@ -2406,14 +2406,14 @@ function renderLayers(options = {}) {
             }
         }));
 
-        // Pin de cabecera municipal POT
+        // Pin de cabecera municipal POT (Ámbar/Ocre #B45309)
         layers.push(new deck.ScatterplotLayer({
             id: 'pot-municipio-pin',
             data: [{ pos: [selectedPotMunicipio.lng, selectedPotMunicipio.lat], m: selectedPotMunicipio }],
             getPosition: d => [d.pos[0], d.pos[1], 100],
             radiusUnits: 'pixels',
             getRadius: 15,
-            getFillColor: [50, 215, 75, 230],
+            getFillColor: [180, 83, 9, 235],
             stroked: true,
             getLineColor: [255, 255, 255, 255],
             lineWidthMinPixels: 2.5,
@@ -2572,6 +2572,7 @@ function renderLayers(options = {}) {
                 </div>
             `;
         } else {
+            legend.innerHTML = '';
             legend.style.display = 'none';
         }
 
@@ -2599,6 +2600,36 @@ function renderLayers(options = {}) {
                         <div style="display:flex; align-items:center; gap:5px;"><span style="width:8px; height:8px; border-radius:50%; background:${INFRA_COLORS.aeropuerto.hex}; border:1px solid #fff; display:inline-block;"></span> Aéreo</div>
                         <div style="display:flex; align-items:center; gap:5px;"><span style="width:8px; height:8px; border-radius:50%; background:${INFRA_COLORS.hospital.hex}; border:1px solid #fff; display:inline-block;"></span> Salud</div>
                         <div style="display:flex; align-items:center; gap:5px;"><span style="width:8px; height:8px; border-radius:50%; background:${INFRA_COLORS.puerto.hex}; border:1px solid #fff; display:inline-block;"></span> Puertos</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Leyenda contextual para el marcador municipal de Diseño Estructural (NSR-10 Okabe-Ito) o Gestión Territorial (POT)
+        if (currentProfile === 'nsr10' && selectedNsrMunicipio && selectedNsrMunicipio.lat) {
+            const hasBaseLegend = legend.style.display === 'block' && legend.innerHTML.trim().length > 0;
+            legend.style.display = 'block';
+            legend.innerHTML += `
+                <div style="${hasBaseLegend ? 'margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--border-subtle);' : ''}">
+                    <div style="font-size: var(--fs-2xs); font-weight: 700; text-transform: uppercase; color: #34D399; margin-bottom: 5px;">Suelo NSR-10 (Okabe-Ito)</div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px 10px; font-size: var(--fs-2xs); color: var(--text-secondary);">
+                        <div style="display:flex; align-items:center; gap:5px;"><span style="width:9px; height:9px; border-radius:50%; background:#009E73; border:1px solid #fff; display:inline-block;"></span> A · Roca</div>
+                        <div style="display:flex; align-items:center; gap:5px;"><span style="width:9px; height:9px; border-radius:50%; background:#56B4E9; border:1px solid #fff; display:inline-block;"></span> B · Media</div>
+                        <div style="display:flex; align-items:center; gap:5px;"><span style="width:9px; height:9px; border-radius:50%; background:#0072B2; border:1px solid #fff; display:inline-block;"></span> C · Denso</div>
+                        <div style="display:flex; align-items:center; gap:5px;"><span style="width:9px; height:9px; border-radius:50%; background:#F0E442; border:1px solid #fff; display:inline-block;"></span> D · Rígido</div>
+                        <div style="display:flex; align-items:center; gap:5px;"><span style="width:9px; height:9px; border-radius:50%; background:#E69F00; border:1px solid #fff; display:inline-block;"></span> E · Blando</div>
+                        <div style="display:flex; align-items:center; gap:5px;"><span style="width:9px; height:9px; border-radius:50%; background:#CC79A7; border:1px solid #fff; display:inline-block;"></span> F · Especial</div>
+                    </div>
+                </div>
+            `;
+        } else if (currentProfile === 'alcaldia' && selectedPotMunicipio && selectedPotMunicipio.lat) {
+            const hasBaseLegend = legend.style.display === 'block' && legend.innerHTML.trim().length > 0;
+            legend.style.display = 'block';
+            legend.innerHTML += `
+                <div style="${hasBaseLegend ? 'margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--border-subtle);' : ''}">
+                    <div style="font-size: var(--fs-2xs); font-weight: 700; text-transform: uppercase; color: #FBBF24; margin-bottom: 5px;">Gestión Territorial POT</div>
+                    <div style="display:flex; align-items:center; gap:6px; font-size: var(--fs-2xs); color: var(--text-secondary);">
+                        <span style="width:10px; height:10px; border-radius:50%; background:#B45309; border:1.5px solid #fff; display:inline-block;"></span> Cabecera y radio 30 km
                     </div>
                 </div>
             `;

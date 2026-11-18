@@ -4416,19 +4416,19 @@ const modalData = {
 };
 
 const INFO_MODAL_ACCENTS = {
-    calor: '#E11D48',
-    hex: '#047857',
-    sgc: '#047857',
     nsr10_info: '#047857',
-    benioff: '#0369A1',
-    sgc_wms: '#0369A1',
-    infra_info: '#0369A1',
-    geotecnia_info: '#0369A1',
-    fallas: '#B45309',
+    espectro_info: '#047857',
+    geotecnia_info: '#047857',
     pot_info: '#B45309',
-    profundidad: '#9333EA',
-    ml: '#9333EA',
-    shakemap_info: '#DC2626'
+    infra_info: '#B45309'
+};
+
+const INFO_MODAL_PROFILE_CLASSES = {
+    nsr10_info: 'modal-ctx-nsr',
+    espectro_info: 'modal-ctx-nsr',
+    geotecnia_info: 'modal-ctx-nsr',
+    pot_info: 'modal-ctx-pot',
+    infra_info: 'modal-ctx-pot'
 };
 
 if (infoModal && closeInfoModal) {
@@ -4437,6 +4437,8 @@ if (infoModal && closeInfoModal) {
         if (!infoModalDialog) return;
         const accent = INFO_MODAL_ACCENTS[key] || '#0052CC';
         infoModalDialog.style.borderTop = `4px solid ${accent}`;
+        infoModal.classList.remove('modal-ctx-sismo', 'modal-ctx-nsr', 'modal-ctx-pot');
+        infoModal.classList.add(INFO_MODAL_PROFILE_CLASSES[key] || 'modal-ctx-sismo');
     };
 
     let _lastInfoTrigger = null;

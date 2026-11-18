@@ -141,15 +141,29 @@ body.theme-light #tooltip h4 {
 body.theme-light #ui-panel footer a,
 body.theme-light #info-modal-content a,
 body.theme-light #map-legend a,
-body.theme-light .ficha-pot-table th,
 body.theme-light #btn-sgc-query-municipio:not(:hover),
-body.theme-light #btn-nsr-locate:not(:hover),
-body.theme-light #btn-pot-locate:not(:hover),
-body.theme-light #btn-pot-summary-toggle:not(:hover),
 body.theme-light #btn-clear-cache-banner,
 body.theme-light #btn-clear-cache-mobile-modal,
 body.theme-light #btn-clear-cache-mobile {
     color: #0052CC !important;
+}
+
+body.theme-light #btn-nsr-locate:not(:hover) {
+    color: #047857 !important;
+    border-color: rgba(4, 120, 87, 0.42) !important;
+    background: rgba(4, 120, 87, 0.1) !important;
+}
+
+body.theme-light #btn-pot-locate:not(:hover),
+body.theme-light #btn-pot-summary-toggle:not(:hover),
+body.theme-light #panel-alcaldia a,
+body.theme-light .ficha-pot-table th {
+    color: #92400E !important;
+}
+
+body.theme-light #btn-pot-locate:not(:hover) {
+    border-color: rgba(180, 83, 9, 0.42) !important;
+    background: rgba(180, 83, 9, 0.1) !important;
 }
 
 body.theme-light #btn-sgc-query-municipio:hover,
@@ -162,11 +176,21 @@ body.theme-light #btn-pot-summary-toggle:hover span {
     color: #FFFFFF !important;
 }
 
-/* Botones primarios con fondo azul sólido conservan texto blanco en modo claro */
-body.theme-light .btn-primary-solid,
-body.theme-light #btn-pot-print {
+/* Botones primarios conservan texto blanco y respetan el acento del perfil */
+body.theme-light .btn-primary-solid {
     background: var(--accent) !important;
     border-color: var(--accent) !important;
+}
+body.theme-light #btn-pot-print,
+body.theme-light #btn-ficha-print-action {
+    background: #B45309 !important;
+    border-color: #B45309 !important;
+    color: #FFFFFF !important;
+}
+body.theme-light #btn-pot-print:hover,
+body.theme-light #btn-ficha-print-action:hover {
+    background: #92400E !important;
+    border-color: #92400E !important;
 }
 body.theme-light #btn-entendido-guia,
 body.theme-light #btn-entendido-guia span,
@@ -350,19 +374,12 @@ body.theme-light .toggle-btn.active {
     color: #FFFFFF !important;
 }
 
+body.theme-light #btn-puntos.active,
+body.theme-light #btn-puntos:hover,
 body.theme-light #btn-calor.active,
-body.theme-light #btn-calor:hover {
-    background: #E11D48 !important;
-    color: #FFFFFF !important;
-}
-
+body.theme-light #btn-calor:hover,
 body.theme-light #btn-hex.active,
 body.theme-light #btn-hex:hover {
-    background: #047857 !important;
-    color: #FFFFFF !important;
-}
-
-body.theme-light #btn-puntos:hover {
     background: #0052CC !important;
     color: #FFFFFF !important;
 }
@@ -397,7 +414,7 @@ body.theme-light .backpack-item {
 }
 
 body.theme-light .ficha-pot-table th {
-    background: #EFF6FF !important;
+    background: #FEF3C7 !important;
     border-color: #CBD5E1 !important;
 }
 
@@ -710,14 +727,12 @@ h3 {
     box-shadow: 0 4px 12px rgba(0, 82, 204, 0.3);
 }
 
-#btn-puntos:hover { background: rgba(10, 132, 255, 0.22); color: #60A5FA; }
-#btn-puntos.active { background: #0052CC; color: #FFFFFF; box-shadow: 0 4px 12px rgba(10, 132, 255, 0.35); }
-
-#btn-calor:hover { background: rgba(255, 45, 85, 0.22); color: #FF6482; }
-#btn-calor.active { background: #E11D48; color: #FFFFFF; box-shadow: 0 4px 12px rgba(225, 29, 72, 0.4); }
-
-#btn-hex:hover { background: rgba(16, 185, 129, 0.22); color: #34D399; }
-#btn-hex.active { background: #047857; color: #FFFFFF; box-shadow: 0 4px 12px rgba(4, 120, 87, 0.45); }
+#btn-puntos:hover,
+#btn-calor:hover,
+#btn-hex:hover { background: rgba(0, 102, 204, 0.22); color: #60A5FA; }
+#btn-puntos.active,
+#btn-calor.active,
+#btn-hex.active { background: #0052CC; color: #FFFFFF; box-shadow: 0 4px 12px rgba(0, 82, 204, 0.35); }
 
 /* ==========================================================================
    SLIDERS NATIVOS (PRECISIÓN)
@@ -778,13 +793,15 @@ input[type="range"]::-webkit-slider-thumb:active { transform: scale(1.2); backgr
 input:checked + .slider { background-color: var(--accent); box-shadow: 0 0 12px var(--accent-glow); }
 input:checked + .slider:before { transform: translateX(18px); }
 
-/* Switches contextuales según el módulo o capa (Opción B WCAG AA) */
-#check-fallas:checked + .slider { background-color: #B45309; box-shadow: 0 0 12px rgba(180, 83, 9, 0.45); }
-#check-ml:checked + .slider { background-color: #9333EA; box-shadow: 0 0 12px rgba(147, 51, 234, 0.45); }
-#check-live-sgc:checked + .slider { background-color: #047857; box-shadow: 0 0 12px rgba(4, 120, 87, 0.45); }
-#check-sgc-wms:checked + .slider,
-#check-infra:checked + .slider { background-color: #0369A1; box-shadow: 0 0 12px rgba(3, 105, 161, 0.45); }
-#check-simulador:checked + .slider { background-color: #DC2626; box-shadow: 0 0 12px rgba(220, 38, 38, 0.45); }
+/* Switches contextuales alineados a los 3 perfiles (Opción B WCAG AA) */
+#panel-sismologia input:checked + .slider {
+    background-color: var(--accent);
+    box-shadow: 0 0 12px var(--accent-glow);
+}
+#check-infra:checked + .slider {
+    background-color: #B45309;
+    box-shadow: 0 0 12px rgba(180, 83, 9, 0.45);
+}
 
 /* ==========================================================================
    TOOLTIP CONTEXTUAL EN MAPA
@@ -1027,6 +1044,74 @@ input:checked + .slider:before { transform: translateX(18px); }
     animation: fadeInProfile 0.3s ease;
 }
 
+/* Ámbito cromático por perfil (Opción B WCAG AA) */
+#panel-nsr10 {
+    --accent: #047857;
+    --accent-ui: #34D399;
+    --accent-depth-ui: #34D399;
+    --accent-glow: rgba(4, 120, 87, 0.35);
+    --focus-ring: #34D399;
+}
+body.theme-light #panel-nsr10 {
+    --accent: #047857;
+    --accent-ui: #047857;
+    --accent-depth-ui: #047857;
+    --focus-ring: #047857;
+}
+#panel-nsr10 .metric-card.highlight {
+    background: rgba(4, 120, 87, 0.14);
+    border-color: rgba(52, 211, 153, 0.35);
+}
+#panel-nsr10 .subpanel-box--info {
+    border-color: rgba(52, 211, 153, 0.32);
+    border-left-color: #047857 !important;
+}
+#panel-nsr10 .nsr-spectrum-card {
+    border-color: rgba(52, 211, 153, 0.28) !important;
+}
+#panel-nsr10 .nsr-spectrum-badge {
+    background: rgba(4, 120, 87, 0.18) !important;
+    border-color: rgba(52, 211, 153, 0.38) !important;
+}
+
+#panel-alcaldia {
+    --accent: #B45309;
+    --accent-ui: #FBBF24;
+    --accent-glow: rgba(180, 83, 9, 0.35);
+    --focus-ring: #FBBF24;
+}
+body.theme-light #panel-alcaldia {
+    --accent: #B45309;
+    --accent-ui: #B45309;
+    --focus-ring: #B45309;
+}
+
+/* Encabezados contextuales de #info-modal según los 3 perfiles */
+#info-modal.modal-ctx-sismo #info-modal-content h2 { color: #60A5FA !important; }
+#info-modal.modal-ctx-nsr #info-modal-content h2 { color: #34D399 !important; }
+#info-modal.modal-ctx-pot #info-modal-content h2 { color: #FBBF24 !important; }
+body.theme-light #info-modal.modal-ctx-sismo #info-modal-content h2 { color: #0052CC !important; }
+body.theme-light #info-modal.modal-ctx-nsr #info-modal-content h2 { color: #047857 !important; }
+body.theme-light #info-modal.modal-ctx-pot #info-modal-content h2 { color: #B45309 !important; }
+
+/* Modal Ficha Técnica POT alineado a Gestión Territorial (#B45309) */
+#modal-ficha-pot .ficha-pot-container {
+    border-top: 4px solid #B45309 !important;
+}
+#modal-ficha-pot .ficha-pot-kicker {
+    color: #FBBF24 !important;
+}
+body.theme-light #modal-ficha-pot .ficha-pot-kicker {
+    color: #B45309 !important;
+}
+#btn-ficha-print-action {
+    background: #B45309 !important;
+    color: #FFFFFF !important;
+}
+#btn-ficha-print-action:hover {
+    background: #92400E !important;
+}
+
 #chart-container {
     background: var(--glass-card);
     border: 1px solid var(--border-subtle);
@@ -1212,12 +1297,19 @@ input:checked + .slider:before { transform: translateX(18px); }
     border-color: var(--accent);
 }
 
-/* Hover contextual por color de botón (Opción B WCAG AA) */
+/* Hover y estado contextual por perfil (Opción B WCAG AA) */
 #btn-benioff:hover,
-#btn-benioff.active {
-    background: #0369A1 !important;
+#btn-benioff.active,
+#btn-sgc-query-municipio:hover,
+#btn-reset-vis:hover,
+#btn-reset-vis:focus-visible,
+#btn-reset:hover,
+#btn-reset:focus-visible,
+#btn-reset-capas:hover,
+#btn-reset-capas:focus-visible {
+    background: #0052CC !important;
     color: #FFFFFF !important;
-    border-color: #0369A1 !important;
+    border-color: #0052CC !important;
 }
 
 #btn-toggle-shakemap:hover,
@@ -1227,33 +1319,43 @@ input:checked + .slider:before { transform: translateX(18px); }
     border-color: #DC2626 !important;
 }
 
-#btn-nsr-locate:hover,
-#btn-sgc-query-municipio:hover,
-#btn-pot-summary-toggle:hover {
-    background: #0369A1 !important;
-    color: #FFFFFF !important;
-    border-color: #0369A1 !important;
+#btn-nsr-locate {
+    border-color: rgba(52, 211, 153, 0.42);
+    background: rgba(4, 120, 87, 0.18);
+    color: #34D399;
 }
-
-#btn-pot-locate:hover {
+#btn-nsr-locate:hover,
+#btn-export-espectro-csv:hover {
     background: #047857 !important;
     color: #FFFFFF !important;
     border-color: #047857 !important;
 }
 
-/* Hover y tooltips contextuales para botones de restablecer */
-#btn-reset-vis:hover,
-#btn-reset-vis:focus-visible { background: #0369A1 !important; border-color: #0369A1 !important; color: #FFFFFF !important; }
-#btn-reset-vis-tt { border-left: 3px solid #0369A1 !important; }
+#btn-pot-locate {
+    border-color: rgba(251, 191, 36, 0.42);
+    background: rgba(180, 83, 9, 0.18);
+    color: #FBBF24;
+}
+#btn-pot-locate:hover,
+#btn-pot-summary-toggle:hover {
+    background: #B45309 !important;
+    color: #FFFFFF !important;
+    border-color: #B45309 !important;
+}
+#btn-pot-print {
+    background: #B45309 !important;
+    border-color: #B45309 !important;
+    color: #FFFFFF !important;
+}
+#btn-pot-print:hover {
+    background: #92400E !important;
+    border-color: #92400E !important;
+}
 
-#btn-reset:hover,
-#btn-reset:focus-visible { background: #0052CC !important; border-color: #0052CC !important; color: #FFFFFF !important; }
-#btn-reset-tt { border-left: 3px solid #0052CC !important; }
-
-#btn-reset-capas:hover,
-#btn-reset-capas:focus-visible { background: #B45309 !important; border-color: #B45309 !important; color: #FFFFFF !important; }
-#btn-reset-capas-tt { border-left: 3px solid #B45309 !important; }
-
+/* Tooltips contextuales para botones de restablecer en Sismo Geología */
+#btn-reset-vis-tt,
+#btn-reset-tt,
+#btn-reset-capas-tt,
 #btn-home-tooltip { border-left: 3px solid #0052CC !important; }
 
 /* Botones de filtro por departamento en la Matriz de Impacto */
@@ -1565,38 +1667,19 @@ input:checked + .slider:before { transform: translateX(18px); }
     box-shadow: 0 3px 8px rgba(0, 82, 204, 0.5) !important;
 }
 
-/* Colores contextuales para cada botón de ayuda (?) y su hover */
-.info-btn[data-info="calor"] { background: #E11D48 !important; box-shadow: 0 2px 6px rgba(225, 29, 72, 0.35) !important; }
-.info-btn[data-info="calor"]:hover { background: #BE123C !important; box-shadow: 0 3px 8px rgba(225, 29, 72, 0.5) !important; }
+/* Colores por perfil principal para cada botón de ayuda (?) y su hover (Opción B WCAG AA)
+   Sismo Geología (predeterminado en .info-btn): #0052CC / hover #003E99 */
+.info-btn[data-info="nsr10_info"],
+.info-btn[data-info="espectro_info"],
+.info-btn[data-info="geotecnia_info"] { background: #047857 !important; box-shadow: 0 2px 6px rgba(4, 120, 87, 0.35) !important; }
+.info-btn[data-info="nsr10_info"]:hover,
+.info-btn[data-info="espectro_info"]:hover,
+.info-btn[data-info="geotecnia_info"]:hover { background: #065F46 !important; box-shadow: 0 3px 8px rgba(4, 120, 87, 0.5) !important; }
 
-.info-btn[data-info="hex"],
-.info-btn[data-info="sgc"],
-.info-btn[data-info="nsr10_info"] { background: #047857 !important; box-shadow: 0 2px 6px rgba(4, 120, 87, 0.35) !important; }
-.info-btn[data-info="hex"]:hover,
-.info-btn[data-info="sgc"]:hover,
-.info-btn[data-info="nsr10_info"]:hover { background: #065F46 !important; box-shadow: 0 3px 8px rgba(4, 120, 87, 0.5) !important; }
-
-.info-btn[data-info="benioff"],
-.info-btn[data-info="sgc_wms"],
-.info-btn[data-info="infra_info"],
-.info-btn[data-info="geotecnia_info"] { background: #0369A1 !important; box-shadow: 0 2px 6px rgba(3, 105, 161, 0.35) !important; }
-.info-btn[data-info="benioff"]:hover,
-.info-btn[data-info="sgc_wms"]:hover,
-.info-btn[data-info="infra_info"]:hover,
-.info-btn[data-info="geotecnia_info"]:hover { background: #075985 !important; box-shadow: 0 3px 8px rgba(3, 105, 161, 0.5) !important; }
-
-.info-btn[data-info="fallas"],
-.info-btn[data-info="pot_info"] { background: #B45309 !important; box-shadow: 0 2px 6px rgba(180, 83, 9, 0.35) !important; }
-.info-btn[data-info="fallas"]:hover,
-.info-btn[data-info="pot_info"]:hover { background: #92400E !important; box-shadow: 0 3px 8px rgba(180, 83, 9, 0.5) !important; }
-
-.info-btn[data-info="profundidad"],
-.info-btn[data-info="ml"] { background: #9333EA !important; box-shadow: 0 2px 6px rgba(147, 51, 234, 0.35) !important; }
-.info-btn[data-info="profundidad"]:hover,
-.info-btn[data-info="ml"]:hover { background: #7E22CE !important; box-shadow: 0 3px 8px rgba(147, 51, 234, 0.5) !important; }
-
-.info-btn[data-info="shakemap_info"] { background: #DC2626 !important; box-shadow: 0 2px 6px rgba(220, 38, 38, 0.35) !important; }
-.info-btn[data-info="shakemap_info"]:hover { background: #B91C1C !important; box-shadow: 0 3px 8px rgba(220, 38, 38, 0.5) !important; }
+.info-btn[data-info="pot_info"],
+.info-btn[data-info="infra_info"] { background: #B45309 !important; box-shadow: 0 2px 6px rgba(180, 83, 9, 0.35) !important; }
+.info-btn[data-info="pot_info"]:hover,
+.info-btn[data-info="infra_info"]:hover { background: #92400E !important; box-shadow: 0 3px 8px rgba(180, 83, 9, 0.5) !important; }
 
 /* Excepción para badge RtD que es pill horizontal */
 .info-btn[data-info="rtd"] {
@@ -1608,13 +1691,13 @@ input:checked + .slider:before { transform: translateX(18px); }
     max-height: unset !important;
     padding: 2px 7px !important;
     border-radius: 12px !important;
-    background: rgba(56, 189, 248, 0.15) !important;
-    border: 1px solid rgba(56, 189, 248, 0.4) !important;
-    color: #38bdf8 !important;
+    background: rgba(0, 102, 204, 0.22) !important;
+    border: 1px solid rgba(96, 165, 250, 0.45) !important;
+    color: #60A5FA !important;
     box-shadow: none !important;
 }
 .info-btn[data-info="rtd"]:hover {
-    background: rgba(56, 189, 248, 0.3) !important;
+    background: rgba(0, 102, 204, 0.36) !important;
     box-shadow: none !important;
 }
 

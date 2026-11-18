@@ -278,9 +278,10 @@ test('Chips de filtros activos, encuadre Mercator, búsqueda acento-agnóstica e
     const css = fs.readFileSync(path.join(APP_DIR, 'css', 'styles.css'), 'utf8');
     assert.match(css, /\.profile-tab\[data-profile="nsr10"\]\.active\s*\{\s*background:\s*#047857;/);
     assert.match(css, /\.profile-tab\[data-profile="alcaldia"\]\.active\s*\{\s*background:\s*#B45309;/);
-    assert.match(css, /\.info-btn\[data-info="geotecnia_info"\]\s*\{\s*background:\s*#0369A1\s*!important;/);
-    assert.match(css, /#btn-reset-capas:hover,\s*\n#btn-reset-capas:focus-visible\s*\{\s*background:\s*#B45309\s*!important;/);
-    assert.match(css, /#btn-pot-locate:hover\s*\{\s*\n\s*background:\s*#047857\s*!important;/);
+    assert.match(css, /\.info-btn\[data-info="nsr10_info"\],\s*\n\.info-btn\[data-info="espectro_info"\],\s*\n\.info-btn\[data-info="geotecnia_info"\]\s*\{\s*background:\s*#047857\s*!important;/);
+    assert.match(css, /\.info-btn\[data-info="pot_info"\],\s*\n\.info-btn\[data-info="infra_info"\]\s*\{\s*background:\s*#B45309\s*!important;/);
+    assert.match(css, /#btn-pot-print\s*\{\s*\n\s*background:\s*#B45309\s*!important;/);
+    assert.match(mainJs, /espectro_info:\s*'#047857'[\s\S]*?geotecnia_info:\s*'#047857'[\s\S]*?pot_info:\s*'#B45309'[\s\S]*?infra_info:\s*'#B45309'/);
     assert.match(html, /class="toggle-btn vis-mode-btn"[^>]*id="btn-calor"/);
     assert.ok(html.includes('id="btn-panel-collapse"'));
     assert.ok(html.includes('id="active-filters-bar"'));

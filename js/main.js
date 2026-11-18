@@ -403,9 +403,9 @@ async function querySgcOfficialPoint(lng, lat, customLabel = null) {
         const htmlOut = `
             <div><strong>${titleLabel}</strong> <span style="color:var(--text-tertiary);">(${coordTxt})</span></div>
             <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-top:6px;">
-                <div style="background:rgba(255,255,255,0.05); border-radius:6px; padding:4px 6px;"><span style="color:var(--text-tertiary); display:block;">PGA 475a</span><strong style="color:#ffd60a;">${pga !== null ? pga.toFixed(3) + ' g' : '--'}</strong></div>
-                <div style="background:rgba(255,255,255,0.05); border-radius:6px; padding:4px 6px;"><span style="color:var(--text-tertiary); display:block;">Sa(0.2s)</span><strong style="color:#fb923c;">${sa02 !== null ? sa02.toFixed(3) + ' g' : '--'}</strong></div>
-                <div style="background:rgba(255,255,255,0.05); border-radius:6px; padding:4px 6px;"><span style="color:var(--text-tertiary); display:block;">Sa(1.0s)</span><strong style="color:#38bdf8;">${sa10 !== null ? sa10.toFixed(3) + ' g' : '--'}</strong></div>
+                <div class="surface-card-soft" style="border-radius:6px; padding:4px 6px;"><span style="color:var(--text-tertiary); display:block;">PGA 475a</span><strong class="tabular-num" style="color:var(--pill-warn-fg);">${pga !== null ? pga.toFixed(3) + ' g' : '--'}</strong></div>
+                <div class="surface-card-soft" style="border-radius:6px; padding:4px 6px;"><span style="color:var(--text-tertiary); display:block;">Sa(0.2s)</span><strong class="tabular-num" style="color:var(--pill-crit-fg);">${sa02 !== null ? sa02.toFixed(3) + ' g' : '--'}</strong></div>
+                <div class="surface-card-soft" style="border-radius:6px; padding:4px 6px;"><span style="color:var(--text-tertiary); display:block;">Sa(1.0s)</span><strong class="tabular-num" style="color:var(--accent-ui);">${sa10 !== null ? sa10.toFixed(3) + ' g' : '--'}</strong></div>
             </div>
             ${nsrRefHtml}
         `;
@@ -414,7 +414,7 @@ async function querySgcOfficialPoint(lng, lat, customLabel = null) {
         if (legendIdentify) legendIdentify.innerHTML = htmlOut;
     } catch (err) {
         if (resultBox) {
-            resultBox.innerHTML = `<span style="color:#fca5a5;">No fue posible consultar el servicio OGC del SGC en este momento.</span>`;
+            resultBox.innerHTML = `<span style="color:var(--pill-crit-fg);">No fue posible consultar el servicio OGC del SGC en este momento.</span>`;
         }
     }
 }
@@ -442,6 +442,11 @@ let showFaultBuffer = false;
 let showLiveSGC = false;
 let showSgcWms = false;
 let showML = false;
+let viewportFilterEnabled = false;
+let currentViewportState = { longitude: -77.0, latitude: 6.0, zoom: 6.5 };
+let _viewportRenderTimer = null;
+let pinnedInspectorItem = null;
+let pinnedCompareItem = null;
 
 // Variables de Estado (NSR-10, POT, Benioff, ShakeMap, Time-Lapse)
 let currentProfile = 'sismologia';
@@ -453,7 +458,7 @@ let selectedPotMunicipio = null;
 
 // ShakeMap Simulado y Cinemática de Frentes de Onda
 let isSimulatorActive = false;
-let activeShakemapScenario = 'murindo_73';
+let activeShakemapScenario = 'palmar_74';
 let currentShakemapData = null;
 let waveAnimTimeSec = 0.0;
 let isWaveAnimPlaying = false;
@@ -479,6 +484,401 @@ let currentMapStyle = BASEMAP_STYLES['voy'];
 
 let currentDeckZoom = 6.5;
 
+function normalizeSearchText(str) {
+    return String(str || '')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .trim();
+}
+
+function computeApproxMercatorBounds(viewState, widthPx = 1024, heightPx = 768) {
+    if (!viewState || !Number.isFinite(viewState.longitude) || !Number.isFinite(viewState.latitude) || !Number.isFinite(viewState.zoom)) {
+        return null;
+    }
+    const worldSize = 512 * Math.pow(2, viewState.zoom);
+    const degPerPxLng = 360 / worldSize;
+    const latRad = Math.max(-85, Math.min(85, viewState.latitude)) * Math.PI / 180;
+    const degPerPxLat = degPerPxLng * Math.cos(latRad);
+    const halfLng = Math.min(180, (Math.max(200, widthPx) / 2) * degPerPxLng);
+    const halfLat = Math.min(85, (Math.max(200, heightPx) / 2) * degPerPxLat);
+    return {
+        minLng: viewState.longitude - halfLng,
+        maxLng: viewState.longitude + halfLng,
+        minLat: viewState.latitude - halfLat,
+        maxLat: viewState.latitude + halfLat
+    };
+}
+
+function buildActiveFilterChipsState(state) {
+    const chips = [];
+    if (!state) return chips;
+    const modeLabels = {
+        puntos: 'Eventos 3D',
+        calor: 'Concentración Energía',
+        hex: 'Agrupación Hexagonal'
+    };
+    if (state.viewMode && state.viewMode !== 'none' && modeLabels[state.viewMode]) {
+        chips.push({ key: 'viewMode', label: modeLabels[state.viewMode] });
+    }
+    if (state.isBenioffMode) chips.push({ key: 'benioff', label: 'Perfil Benioff 3D' });
+    if (Number(state.currentMag) > 0) chips.push({ key: 'mag', label: `M ≥ ${Number(state.currentMag).toFixed(1)}` });
+    if (Number(state.currentTime) > 1993) chips.push({ key: 'time', label: `Desde ${state.currentTime}` });
+    if (Number(state.currentMaxDepth) < 250) chips.push({ key: 'depth', label: `Prof. ≤ ${Math.round(state.currentMaxDepth)} km` });
+    if (state.highQualityOnly) chips.push({ key: 'calidad', label: 'Alta precisión' });
+    if (state.viewportFilterEnabled) chips.push({ key: 'viewport', label: 'Encuadre visible' });
+    if (state.showFaults) chips.push({ key: 'fallas', label: 'Fallas geológicas' });
+    if (state.showML) chips.push({ key: 'ml', label: 'Zonas DBSCAN' });
+    if (state.showLiveSGC) chips.push({ key: 'liveSgc', label: 'FDSN Live 14d' });
+    if (state.showSgcWms) chips.push({ key: 'sgcWms', label: 'SGC OGC (Tr=475a)' });
+    if (state.showInfra) chips.push({ key: 'infra', label: 'Líneas vitales' });
+    if (state.isSimulatorActive) chips.push({ key: 'shakemap', label: 'ShakeMap activo' });
+    return chips;
+}
+
+function extractInspectorData(object, layerId) {
+    if (!object) return null;
+    const p = object.properties || {};
+    if (layerId === 'fallas-core-layer' || layerId === 'fallas-layer') {
+        const coords = object.geometry && object.geometry.coordinates;
+        const samplePt = Array.isArray(coords) && Array.isArray(coords[0])
+            ? (Array.isArray(coords[0][0]) ? coords[0][0] : coords[0])
+            : [-76.6, 5.7];
+        return {
+            id: p.id || p.nombre || 'falla',
+            kicker: 'Estructura Tectónica',
+            title: p.nombre || 'Falla Geológica Activa',
+            lng: samplePt[0],
+            lat: samplePt[1],
+            accentColor: '#D97706',
+            metrics: [
+                { label: 'Mmax', value: `${p.m_max || '--'} Mw` },
+                { label: 'Tasa', value: `${p.tasa_mm_ano || '--'} mm/año` },
+                { label: 'Longitud', value: `${p.longitud_km || '--'} km` },
+                { label: 'Cinemática', value: p.tipo || 'Activa' }
+            ],
+            compareVal: Number(p.m_max) || 0,
+            compareUnit: 'Mw'
+        };
+    }
+    if (layerId === 'infra-iconos' || layerId === 'infra-lineas') {
+        const coords = object.geometry && object.geometry.coordinates;
+        const samplePt = Array.isArray(coords)
+            ? (typeof coords[0] === 'number' ? coords : (Array.isArray(coords[0]) && typeof coords[0][0] === 'number' ? coords[0] : [-76.6, 5.7]))
+            : [-76.6, 5.7];
+        return {
+            id: p.id || p.nombre || 'infra',
+            kicker: 'Infraestructura Crítica',
+            title: p.nombre || 'Nodo Estratégico',
+            lng: samplePt[0],
+            lat: samplePt[1],
+            accentColor: '#0284C7',
+            metrics: [
+                { label: 'Tipo', value: (p.tipo || 'Red').toUpperCase() },
+                { label: 'Ciudad / Eje', value: p.ciudad || p.ruta || 'Chocó' },
+                { label: 'Criticidad', value: p.grupo_nsr10 || 'Estratégica' },
+                { label: 'Estado', value: p.estado || 'Referencial' }
+            ],
+            compareVal: null,
+            compareUnit: ''
+        };
+    }
+    if (layerId === 'pot-municipio-pin' && object.m) {
+        const m = object.m;
+        return {
+            id: m.id || m.nombre,
+            kicker: `Cabecera Municipal · ${m.departamento}`,
+            title: m.nombre,
+            lng: m.lng,
+            lat: m.lat,
+            accentColor: '#16A34A',
+            metrics: [
+                { label: 'Aa (NSR-10)', value: `${Number(m.aa).toFixed(2)} g` },
+                { label: 'Av (NSR-10)', value: `${Number(m.av).toFixed(2)} g` },
+                { label: 'Suelo ref.', value: `Tipo ${m.suelo_defecto || 'E'}` },
+                { label: 'Población', value: (m.poblacion || 0).toLocaleString() }
+            ],
+            compareVal: Number(m.aa) || 0,
+            compareUnit: 'g (Aa)'
+        };
+    }
+    if (object.geometry && Array.isArray(object.geometry.coordinates)) {
+        const coords = object.geometry.coordinates;
+        const mag = Number(p.magnitud ?? p.mag ?? 0);
+        const prof = Number(p.profundidad ?? 0);
+        return {
+            id: p.id || `${p.fecha || ''}_${coords[0]}_${coords[1]}`,
+            kicker: (layerId === 'sgc-live-layer-core' || layerId === 'sgc-live-dots') ? 'Telemetría FDSN en Vivo' : 'Evento Sísmico Catalogado',
+            title: p.municipio || 'Región Pacífica / Chocó',
+            lng: coords[0],
+            lat: coords[1],
+            accentColor: mag >= 5.0 ? '#DC2626' : '#0066CC',
+            metrics: [
+                { label: 'Magnitud', value: `${mag.toFixed(1)} Mw` },
+                { label: 'Profundidad', value: `${prof.toFixed(1)} km` },
+                { label: 'Fecha', value: p.fecha ? String(p.fecha).slice(0, 10) : String(p.anio || '--') },
+                { label: 'GAP / RMS', value: p.gap !== undefined ? `${p.gap}° / ${p.rms || '-'}s` : (p.fuente || 'SGC') }
+            ],
+            compareVal: mag,
+            compareUnit: 'Mw'
+        };
+    }
+    return null;
+}
+
+function openAccordionForElement(el) {
+    if (!el) return;
+    const acc = el.closest ? el.closest('details.bento-accordion') : null;
+    if (acc && !acc.open) acc.open = true;
+}
+
+function renderPinnedInspector() {
+    const box = document.getElementById('pinned-inspector');
+    if (!box) return;
+    if (!pinnedInspectorItem) {
+        box.style.display = 'none';
+        box.innerHTML = '';
+        return;
+    }
+    const item = pinnedInspectorItem;
+    const cellsHtml = item.metrics.map(mt => `
+        <div class="pinned-inspector-cell">
+            <span>${escapeHtml(mt.label)}</span>
+            <strong>${escapeHtml(mt.value)}</strong>
+        </div>
+    `).join('');
+
+    let compareHtml = '';
+    if (pinnedCompareItem && pinnedCompareItem.id !== item.id) {
+        let deltaText = '';
+        if (item.compareVal !== null && pinnedCompareItem.compareVal !== null && item.compareUnit === pinnedCompareItem.compareUnit) {
+            const diff = item.compareVal - pinnedCompareItem.compareVal;
+            const sign = diff >= 0 ? '+' : '';
+            deltaText = ` (Δ ${sign}${diff.toFixed(2)} ${item.compareUnit})`;
+        }
+        compareHtml = `
+            <div class="pinned-compare-box">
+                <strong>Referencia A:</strong> ${escapeHtml(pinnedCompareItem.title)}${escapeHtml(deltaText)}
+                <button type="button" id="btn-clear-pin-compare" class="filter-chip-close" title="Limpiar referencia" aria-label="Limpiar comparación">✕</button>
+            </div>
+        `;
+    } else if (pinnedCompareItem && pinnedCompareItem.id === item.id) {
+        compareHtml = `
+            <div class="pinned-compare-box">
+                <span>Fijado como Referencia A. Seleccione otra entidad en el mapa para comparar.</span>
+            </div>
+        `;
+    }
+
+    box.style.borderLeftColor = item.accentColor || 'var(--accent)';
+    box.innerHTML = `
+        <div class="pinned-inspector-head">
+            <div>
+                <div class="pinned-inspector-kicker">${escapeHtml(item.kicker)}</div>
+                <h4 class="pinned-inspector-title">${escapeHtml(item.title)}</h4>
+            </div>
+            <button type="button" id="btn-close-pin" class="filter-chip-close" aria-label="Cerrar inspector fijado" title="Cerrar inspector (Esc)">✕</button>
+        </div>
+        <div class="pinned-inspector-grid">${cellsHtml}</div>
+        <div class="pinned-inspector-actions">
+            <button type="button" id="btn-pin-focus" class="overview-cta-btn">Enfocar</button>
+            <button type="button" id="btn-pin-compare" class="overview-cta-btn overview-cta-btn--ghost">${pinnedCompareItem && pinnedCompareItem.id === item.id ? 'Referencia A activa' : 'Comparar A/B'}</button>
+        </div>
+        ${compareHtml}
+    `;
+    box.style.display = 'block';
+
+    const closeBtn = document.getElementById('btn-close-pin');
+    if (closeBtn) closeBtn.addEventListener('click', () => { pinnedInspectorItem = null; renderPinnedInspector(); });
+    const focusBtn = document.getElementById('btn-pin-focus');
+    if (focusBtn && deckgl && Number.isFinite(item.lng) && Number.isFinite(item.lat)) {
+        focusBtn.addEventListener('click', () => {
+            deckgl.setProps({
+                initialViewState: {
+                    longitude: item.lng,
+                    latitude: item.lat,
+                    zoom: 9.8,
+                    pitch: 45,
+                    bearing: 15,
+                    transitionDuration: 1100,
+                    transitionInterpolator: new deck.FlyToInterpolator()
+                }
+            });
+        });
+    }
+    const cmpBtn = document.getElementById('btn-pin-compare');
+    if (cmpBtn) {
+        cmpBtn.addEventListener('click', () => {
+            pinnedCompareItem = item;
+            renderPinnedInspector();
+        });
+    }
+    const clrCmpBtn = document.getElementById('btn-clear-pin-compare');
+    if (clrCmpBtn) {
+        clrCmpBtn.addEventListener('click', () => {
+            pinnedCompareItem = null;
+            renderPinnedInspector();
+        });
+    }
+}
+
+function pinInspectorFromPick(info) {
+    if (!info || !info.object) return;
+    const layerId = info.layer && info.layer.id ? info.layer.id : '';
+    const extracted = extractInspectorData(info.object, layerId);
+    if (!extracted) return;
+    pinnedInspectorItem = extracted;
+    renderPinnedInspector();
+}
+
+function updateCapasActiveBadge() {
+    const badge = document.getElementById('capas-active-count');
+    if (!badge) return;
+    const count = [highQualityOnly, showFaults, showML, showLiveSGC, showSgcWms].filter(Boolean).length;
+    badge.innerText = count === 1 ? '1 activa' : `${count} activas`;
+    badge.classList.toggle('has-active', count > 0);
+}
+
+function renderActiveFiltersBar(filteredCount) {
+    const bar = document.getElementById('active-filters-bar');
+    if (!bar) return;
+    const chips = buildActiveFilterChipsState({
+        viewMode,
+        isBenioffMode,
+        currentMag,
+        currentTime,
+        currentMaxDepth,
+        highQualityOnly,
+        viewportFilterEnabled,
+        showFaults,
+        showML,
+        showLiveSGC,
+        showSgcWms,
+        showInfra,
+        isSimulatorActive
+    });
+
+    const totalLoaded = mapData && Array.isArray(mapData.features) ? mapData.features.length : 0;
+    if (chips.length === 0) {
+        const readyText = totalLoaded > 0
+            ? `Vista base lista · ${totalLoaded.toLocaleString()} eventos`
+            : 'Cargando catálogo sísmico...';
+        bar.innerHTML = `
+            <div class="overview-prompt-pill">
+                <span>${readyText}</span>
+                <button type="button" id="btn-overview-explore" class="overview-cta-btn">Activar Eventos 3D</button>
+                <button type="button" id="btn-overview-layers" class="overview-cta-btn overview-cta-btn--ghost">Capas</button>
+            </div>
+        `;
+        const exploreBtn = document.getElementById('btn-overview-explore');
+        if (exploreBtn) {
+            exploreBtn.addEventListener('click', () => {
+                const btnPuntos = document.getElementById('btn-puntos');
+                if (btnPuntos) btnPuntos.click();
+            });
+        }
+        const layersBtn = document.getElementById('btn-overview-layers');
+        if (layersBtn) {
+            layersBtn.addEventListener('click', () => {
+                const secCapas = document.getElementById('sec-capas-avanzadas');
+                if (secCapas) {
+                    secCapas.open = true;
+                    secCapas.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+            });
+        }
+        return;
+    }
+
+    let html = chips.map(ch => `
+        <span class="filter-chip">
+            <span>${escapeHtml(ch.label)}</span>
+            <button type="button" class="filter-chip-close" data-chip-key="${escapeHtml(ch.key)}" aria-label="Desactivar ${escapeHtml(ch.label)}" title="Quitar filtro">✕</button>
+        </span>
+    `).join('');
+
+    if (typeof filteredCount === 'number' && filteredCount === 0 && totalLoaded > 0) {
+        html += `
+            <span class="empty-state-pill">
+                <span>0 sismos cumplen estos filtros</span>
+                <button type="button" id="btn-empty-recover" class="overview-cta-btn">Restablecer filtros</button>
+            </span>
+        `;
+    }
+
+    bar.innerHTML = html;
+
+    bar.querySelectorAll('.filter-chip-close[data-chip-key]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const key = btn.getAttribute('data-chip-key');
+            if (key === 'viewMode') {
+                viewMode = 'none';
+                ['btn-puntos', 'btn-calor', 'btn-hex'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.classList.remove('active');
+                });
+            } else if (key === 'benioff' && isBenioffMode) {
+                toggleBenioffMode(false);
+                return;
+            } else if (key === 'mag') {
+                currentMag = 0;
+                const el = document.getElementById('mag-slider');
+                const lbl = document.getElementById('mag-val');
+                if (el) el.value = '0';
+                if (lbl) lbl.innerText = '0.0';
+            } else if (key === 'time') {
+                currentTime = 1993;
+                const el = document.getElementById('time-slider');
+                const lbl = document.getElementById('time-val');
+                if (el) el.value = '1993';
+                if (lbl) lbl.innerText = '1993';
+            } else if (key === 'depth') {
+                currentMaxDepth = 250;
+                const el = document.getElementById('depth-slider');
+                const lbl = document.getElementById('depth-val');
+                if (el) el.value = '250';
+                if (lbl) lbl.innerText = '250 km (Todos)';
+            } else if (key === 'calidad') {
+                const el = document.getElementById('check-calidad');
+                if (el) { el.checked = false; el.dispatchEvent(new Event('change')); return; }
+            } else if (key === 'viewport') {
+                viewportFilterEnabled = false;
+                const el = document.getElementById('check-viewport-filter');
+                if (el) el.checked = false;
+            } else if (key === 'fallas') {
+                const el = document.getElementById('check-fallas');
+                if (el) { el.checked = false; el.dispatchEvent(new Event('change')); return; }
+            } else if (key === 'ml') {
+                const el = document.getElementById('check-ml');
+                if (el) { el.checked = false; el.dispatchEvent(new Event('change')); return; }
+            } else if (key === 'liveSgc') {
+                const el = document.getElementById('check-live-sgc');
+                if (el) { el.checked = false; el.dispatchEvent(new Event('change')); return; }
+            } else if (key === 'sgcWms') {
+                const el = document.getElementById('check-sgc-wms');
+                if (el) { el.checked = false; el.dispatchEvent(new Event('change')); return; }
+            } else if (key === 'infra') {
+                const el = document.getElementById('check-infra');
+                if (el) { el.checked = false; el.dispatchEvent(new Event('change')); return; }
+            } else if (key === 'shakemap' && isSimulatorActive) {
+                deactivateShakemap();
+                return;
+            }
+            renderLayers();
+        });
+    });
+
+    const recoverBtn = document.getElementById('btn-empty-recover');
+    if (recoverBtn) {
+        recoverBtn.addEventListener('click', () => {
+            viewportFilterEnabled = false;
+            const vp = document.getElementById('check-viewport-filter');
+            if (vp) vp.checked = false;
+            resetParametricFilters(true);
+        });
+    }
+}
+
 const deckgl = new deck.DeckGL({
     container: 'map-container',
     mapStyle: currentMapStyle,
@@ -488,8 +888,21 @@ const deckgl = new deck.DeckGL({
     layers: [],
     getCursor: ({isDragging}) => isDragging ? 'grabbing' : 'default',
     onViewStateChange: ({ viewState }) => {
-        if (viewState && typeof viewState.zoom === 'number') {
-            currentDeckZoom = viewState.zoom;
+        if (viewState) {
+            currentViewportState = {
+                longitude: viewState.longitude,
+                latitude: viewState.latitude,
+                zoom: viewState.zoom
+            };
+            if (typeof viewState.zoom === 'number') {
+                currentDeckZoom = viewState.zoom;
+            }
+            if (viewportFilterEnabled) {
+                if (_viewportRenderTimer) clearTimeout(_viewportRenderTimer);
+                _viewportRenderTimer = setTimeout(() => {
+                    queueRender();
+                }, 140);
+            }
         }
     },
     onHover: (info) => {
@@ -500,6 +913,9 @@ const deckgl = new deck.DeckGL({
         }
     },
     onClick: (info) => {
+        if (info && info.picked && info.object) {
+            pinInspectorFromPick(info);
+        }
         if (showSgcWms && info && info.coordinate && !info.picked) {
             querySgcOfficialPoint(info.coordinate[0], info.coordinate[1]);
         }
@@ -1116,6 +1532,7 @@ function handleFaultClick(info) {
     if (!info.object || !info.object.properties) return;
     const p = info.object.properties;
     selectFault(p.id, true);
+    pinInspectorFromPick(info);
 }
 
 function selectFault(faultId, shouldFly = false) {
@@ -1259,12 +1676,23 @@ function renderLayers(options = {}) {
         }));
     }
 
+    const vpBounds = viewportFilterEnabled
+        ? computeApproxMercatorBounds(currentViewportState, window.innerWidth, window.innerHeight)
+        : null;
+
     const filteredData = mapData.features.filter(f => {
         const p = f.properties;
         if(p.anio < currentTime) return false; // Filtra descartando sismos anteriores al año mínimo
         if(p.magnitud < currentMag) return false;
         if(p.profundidad !== undefined && p.profundidad > currentMaxDepth) return false; // Filtro de profundidad hipocentral
         if(highQualityOnly && p.gap !== undefined && (p.gap > 180 || p.rms > 1.0)) return false;
+
+        if (vpBounds && f.geometry && Array.isArray(f.geometry.coordinates)) {
+            const [lng, lat] = f.geometry.coordinates;
+            if (lng < vpBounds.minLng || lng > vpBounds.maxLng || lat < vpBounds.minLat || lat > vpBounds.maxLat) {
+                return false;
+            }
+        }
 
         // Filtro de trinchera o corte transversal latitudinal en Modo Benioff
         if (isBenioffMode && benioffSector !== 'all') {
@@ -1278,6 +1706,8 @@ function renderLayers(options = {}) {
     });
 
     document.getElementById('count').innerText = filteredData.length.toLocaleString();
+    renderActiveFiltersBar(filteredData.length);
+    updateCapasActiveBadge();
     if (!options.skipChart) {
         updateChart(filteredData);
     }
@@ -1299,9 +1729,9 @@ function renderLayers(options = {}) {
                 getRadius: d => Math.pow(1.6, d.properties.magnitud) * (isBenioffMode ? 1400 : 1000),
                 getFillColor: d => {
                     const prof = d.properties.profundidad;
-                    if (prof < 30) return [235, 150, 0, 220];   // Naranja/Ámbar (Superficial - Ajustado para fondo blanco)
-                    if (prof < 70) return [255, 105, 180, 200]; // Rosa (Intermedio)
-                    return [75, 0, 130, 200];                   // Índigo oscuro (Profundo)
+                    if (prof < 30) return [230, 159, 0, 225];   // Ámbar Okabe-Ito (< 30 km)
+                    if (prof < 70) return [204, 121, 167, 215]; // Magenta-rosa Okabe-Ito (30-70 km)
+                    return [0, 114, 178, 220];                  // Azul profundo Okabe-Ito (> 70 km)
                 },
                 pickable: true, autoHighlight: true, highlightColor: [255, 255, 255, 200], onHover: handleHover,
                 updateTriggers: { 
@@ -2043,29 +2473,29 @@ function renderLayers(options = {}) {
         } else if (viewMode === 'puntos') {
             legend.style.display = 'block';
             legend.innerHTML = `
-                <h4 style="margin: 0 0 10px 0; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #F5F5F7;">Profundidad</h4>
-                <div style="display: flex; flex-direction: column; gap: 6px; color: #A1A1A6; font-size: var(--fs-xs); font-weight: 500;">
-                    <div style="display:flex; align-items:center; gap: 8px;"><span style="display:block; width:12px; height:12px; border-radius:50%; background:rgb(235,150,0);"></span> &lt; 30 km (Superficial)</div>
-                    <div style="display:flex; align-items:center; gap: 8px;"><span style="display:block; width:12px; height:12px; border-radius:50%; background:rgb(255,105,180);"></span> 30 - 70 km (Intermedio)</div>
-                    <div style="display:flex; align-items:center; gap: 8px;"><span style="display:block; width:12px; height:12px; border-radius:50%; background:rgb(75,0,130);"></span> &gt; 70 km (Profundo)</div>
+                <h4 style="margin: 0 0 10px 0; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-primary);">Profundidad (Okabe-Ito)</h4>
+                <div style="display: flex; flex-direction: column; gap: 6px; color: var(--text-secondary); font-size: var(--fs-xs); font-weight: 500;">
+                    <div style="display:flex; align-items:center; gap: 8px;"><span style="display:inline-flex; align-items:center; justify-content:center; width:12px; height:12px; border-radius:50%; background:rgb(230,159,0); border:1px solid rgba(255,255,255,0.4);"></span> &lt; 30 km (Superficial)</div>
+                    <div style="display:flex; align-items:center; gap: 8px;"><span style="display:inline-flex; align-items:center; justify-content:center; width:12px; height:12px; border-radius:2px; background:rgb(204,121,167); border:1px solid rgba(255,255,255,0.4);"></span> 30 – 70 km (Intermedio)</div>
+                    <div style="display:flex; align-items:center; gap: 8px;"><span style="display:inline-flex; align-items:center; justify-content:center; width:12px; height:12px; border-radius:50%; background:rgb(0,114,178); border:1px solid rgba(255,255,255,0.4);"></span> &gt; 70 km (Profundo)</div>
                 </div>
             `;
         } else if (viewMode === 'calor') {
             legend.style.display = 'block';
             if (isBenioffMode) {
                 legend.innerHTML = `
-                    <h4 style="margin: 0 0 10px 0; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #F5F5F7;">Energía Radiada 3D</h4>
+                    <h4 style="margin: 0 0 10px 0; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-primary);">Energía Radiada 3D</h4>
                     <div style="display: flex; align-items: center; justify-content: space-between; height: 12px; border-radius: 6px; margin-bottom: 5px; background: linear-gradient(to right, rgb(101,21,110), rgb(159,42,99), rgb(212,72,66), rgb(250,193,39), rgb(255,255,220));"></div>
-                    <div style="display: flex; justify-content: space-between; color: #A1A1A6; font-size: var(--fs-xs); font-weight: 500;">
+                    <div style="display: flex; justify-content: space-between; color: var(--text-secondary); font-size: var(--fs-xs); font-weight: 500;">
                         <span>10¹⁰ J (M3)</span>
                         <span>10¹⁵ J (M7+)</span>
                     </div>
                 `;
             } else {
                 legend.innerHTML = `
-                    <h4 style="margin: 0 0 10px 0; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #F5F5F7;">Densidad Térmica</h4>
+                    <h4 style="margin: 0 0 10px 0; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-primary);">Densidad Térmica</h4>
                     <div style="display: flex; align-items: center; justify-content: space-between; height: 12px; border-radius: 6px; margin-bottom: 5px; background: linear-gradient(to right, rgb(0,0,4), rgb(101,21,110), rgb(159,42,99), rgb(212,72,66), rgb(250,193,39), rgb(252,253,191));"></div>
-                    <div style="display: flex; justify-content: space-between; color: #A1A1A6; font-size: var(--fs-xs); font-weight: 500;">
+                    <div style="display: flex; justify-content: space-between; color: var(--text-secondary); font-size: var(--fs-xs); font-weight: 500;">
                         <span>Baja</span>
                         <span>Alta</span>
                     </div>
@@ -2075,18 +2505,18 @@ function renderLayers(options = {}) {
             legend.style.display = 'block';
             if (isBenioffMode) {
                 legend.innerHTML = `
-                    <h4 style="margin: 0 0 10px 0; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #F5F5F7;">Cúmulos 3D (Subducción)</h4>
+                    <h4 style="margin: 0 0 10px 0; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-primary);">Cúmulos 3D (Subducción)</h4>
                     <div style="display: flex; align-items: center; justify-content: space-between; height: 12px; border-radius: 6px; margin-bottom: 5px; background: linear-gradient(to right, rgb(68,1,84), rgb(59,82,139), rgb(33,145,140), rgb(94,201,98), rgb(253,231,37));"></div>
-                    <div style="display: flex; justify-content: space-between; color: #A1A1A6; font-size: var(--fs-xs); font-weight: 500;">
+                    <div style="display: flex; justify-content: space-between; color: var(--text-secondary); font-size: var(--fs-xs); font-weight: 500;">
                         <span>1 Sismo</span>
                         <span>20+ Sismos</span>
                     </div>
                 `;
             } else {
                 legend.innerHTML = `
-                    <h4 style="margin: 0 0 10px 0; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #F5F5F7;">Agrupación (8km)</h4>
+                    <h4 style="margin: 0 0 10px 0; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-primary);">Agrupación (8 km)</h4>
                     <div style="display: flex; align-items: center; justify-content: space-between; height: 12px; border-radius: 6px; margin-bottom: 5px; background: linear-gradient(to right, rgb(68,1,84), rgb(49,104,142), rgb(53,183,121), rgb(181,222,43), rgb(253,231,37));"></div>
-                    <div style="display: flex; justify-content: space-between; color: #A1A1A6; font-size: var(--fs-xs); font-weight: 500;">
+                    <div style="display: flex; justify-content: space-between; color: var(--text-secondary); font-size: var(--fs-xs); font-weight: 500;">
                         <span>1 Sismo</span>
                         <span>50+ Sismos</span>
                     </div>
@@ -2110,38 +2540,38 @@ function renderLayers(options = {}) {
                     <div><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:#d7191c;vertical-align:middle;margin-right:4px;"></span><strong>Muy Alta:</strong> &gt; 0.40 g</div>
                 </div>
                 <div id="legend-sgc-identify" style="font-size: var(--fs-xs); color: var(--text-secondary); line-height: 1.4; margin-bottom: 6px;">
-                    Pasa el cursor sobre cualquier color del mapa para ver su nivel de amenaza y haz clic para consultar el dato oficial SGC.
+                    Pase el cursor sobre cualquier color del mapa para ver su nivel de amenaza y haga clic para consultar el dato oficial SGC.
                 </div>
-                <a href="https://amenazasismica.sgc.gov.co/" target="_blank" rel="noopener noreferrer" style="color:var(--accent); font-size: var(--fs-xs); font-weight:600;">Consultar visor oficial SGC ↗</a>
+                <a href="https://amenazasismica.sgc.gov.co/" target="_blank" rel="noopener noreferrer" style="color:var(--accent-ui); font-size: var(--fs-xs); font-weight:600;">Consultar visor oficial SGC ↗</a>
             `;
         } else if (showInfra) {
             legend.style.display = 'block';
             legend.innerHTML = `
-                <h4 style="margin: 0 0 10px 0; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #F5F5F7;">Conectividad y Líneas Vitales</h4>
-                <div style="display: flex; flex-direction: column; gap: 7px; color: #CBD5E1; font-size: var(--fs-xs); font-weight: 500;">
+                <h4 style="margin: 0 0 10px 0; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-primary);">Conectividad y Líneas Vitales</h4>
+                <div style="display: flex; flex-direction: column; gap: 7px; color: var(--text-secondary); font-size: var(--fs-xs); font-weight: 500;">
                     <div style="display:flex; align-items:center; gap: 8px;">
                         <span style="display:inline-block; width:16px; height:4px; border-radius:2px; background:${INFRA_COLORS.vial.hex};"></span>
-                        <span>🛣️ <strong style="color:${INFRA_COLORS.vial.textHex};">Red Vial Primaria</strong></span>
+                        <span><strong style="color:${INFRA_COLORS.vial.textHex};">Red Vial Primaria</strong></span>
                     </div>
                     <div style="display:flex; align-items:center; gap: 8px;">
                         <span style="display:inline-block; width:16px; height:5px; border-radius:2px; background:${INFRA_COLORS.fluvial.hex};"></span>
-                        <span>🚢 <strong style="color:${INFRA_COLORS.fluvial.textHex};">Corredor Fluvial</strong></span>
+                        <span><strong style="color:${INFRA_COLORS.fluvial.textHex};">Corredor Fluvial</strong></span>
                     </div>
                     <div style="display:flex; align-items:center; gap: 8px;">
                         <span style="display:inline-block; width:16px; height:3px; border-radius:2px; background:${INFRA_COLORS.maritimo.hex};"></span>
-                        <span>⛵ <strong style="color:${INFRA_COLORS.maritimo.textHex};">Ruta Marítima</strong></span>
+                        <span><strong style="color:${INFRA_COLORS.maritimo.textHex};">Ruta Marítima</strong></span>
                     </div>
                     <div style="display:flex; align-items:center; gap: 8px;">
                         <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:${INFRA_COLORS.aeropuerto.hex}; border:1.5px solid #fff;"></span>
-                        <span>✈️ <strong style="color:${INFRA_COLORS.aeropuerto.textHex};">Terminal Aéreo</strong></span>
+                        <span><strong style="color:${INFRA_COLORS.aeropuerto.textHex};">Terminal Aéreo</strong></span>
                     </div>
                     <div style="display:flex; align-items:center; gap: 8px;">
                         <span style="display:inline-block; width:11px; height:11px; border-radius:50%; background:${INFRA_COLORS.hospital.hex}; border:1.5px solid #fff;"></span>
-                        <span>🏥 <strong style="color:${INFRA_COLORS.hospital.textHex};">Centro Asistencial</strong></span>
+                        <span><strong style="color:${INFRA_COLORS.hospital.textHex};">Centro Asistencial</strong></span>
                     </div>
                     <div style="display:flex; align-items:center; gap: 8px;">
                         <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:${INFRA_COLORS.puerto.hex}; border:1.5px solid #fff;"></span>
-                        <span>⚓ <strong style="color:${INFRA_COLORS.puerto.textHex};">Muelle / Puerto</strong></span>
+                        <span><strong style="color:${INFRA_COLORS.puerto.textHex};">Muelle / Puerto</strong></span>
                     </div>
                 </div>
             `;
@@ -2152,15 +2582,15 @@ function renderLayers(options = {}) {
         // Si hay una capa sismica activa y ademas estan visibles las lineas vitales, concatenar sub-leyenda compacta
         if (showInfra && (viewMode !== 'none' || showSgcWms || (isSimulatorActive && currentShakemapData))) {
             legend.innerHTML += `
-                <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.12);">
-                    <div style="font-size: var(--fs-2xs); font-weight: 700; text-transform: uppercase; color: #38bdf8; margin-bottom: 5px;">Líneas Vitales</div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; font-size: var(--fs-2xs); color: #D1D5DB;">
-                        <div style="display:flex; align-items:center; gap:5px;"><span style="width:12px; height:3px; background:${INFRA_COLORS.vial.hex}; display:inline-block; border-radius:1px;"></span> 🛣️ Vías</div>
-                        <div style="display:flex; align-items:center; gap:5px;"><span style="width:12px; height:4px; background:${INFRA_COLORS.fluvial.hex}; display:inline-block; border-radius:1px;"></span> 🚢 Fluvial</div>
-                        <div style="display:flex; align-items:center; gap:5px;"><span style="width:12px; height:3px; background:${INFRA_COLORS.maritimo.hex}; display:inline-block; border-radius:1px;"></span> ⛵ Marítimo</div>
-                        <div style="display:flex; align-items:center; gap:5px;"><span style="width:8px; height:8px; border-radius:50%; background:${INFRA_COLORS.aeropuerto.hex}; border:1px solid #fff; display:inline-block;"></span> ✈️ Aéreo</div>
-                        <div style="display:flex; align-items:center; gap:5px;"><span style="width:8px; height:8px; border-radius:50%; background:${INFRA_COLORS.hospital.hex}; border:1px solid #fff; display:inline-block;"></span> 🏥 Salud</div>
-                        <div style="display:flex; align-items:center; gap:5px;"><span style="width:8px; height:8px; border-radius:50%; background:${INFRA_COLORS.puerto.hex}; border:1px solid #fff; display:inline-block;"></span> ⚓ Puertos</div>
+                <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--border-subtle);">
+                    <div style="font-size: var(--fs-2xs); font-weight: 700; text-transform: uppercase; color: var(--accent-ui); margin-bottom: 5px;">Líneas Vitales</div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; font-size: var(--fs-2xs); color: var(--text-secondary);">
+                        <div style="display:flex; align-items:center; gap:5px;"><span style="width:12px; height:3px; background:${INFRA_COLORS.vial.hex}; display:inline-block; border-radius:1px;"></span> Vías</div>
+                        <div style="display:flex; align-items:center; gap:5px;"><span style="width:12px; height:4px; background:${INFRA_COLORS.fluvial.hex}; display:inline-block; border-radius:1px;"></span> Fluvial</div>
+                        <div style="display:flex; align-items:center; gap:5px;"><span style="width:12px; height:3px; background:${INFRA_COLORS.maritimo.hex}; display:inline-block; border-radius:1px;"></span> Marítimo</div>
+                        <div style="display:flex; align-items:center; gap:5px;"><span style="width:8px; height:8px; border-radius:50%; background:${INFRA_COLORS.aeropuerto.hex}; border:1px solid #fff; display:inline-block;"></span> Aéreo</div>
+                        <div style="display:flex; align-items:center; gap:5px;"><span style="width:8px; height:8px; border-radius:50%; background:${INFRA_COLORS.hospital.hex}; border:1px solid #fff; display:inline-block;"></span> Salud</div>
+                        <div style="display:flex; align-items:center; gap:5px;"><span style="width:8px; height:8px; border-radius:50%; background:${INFRA_COLORS.puerto.hex}; border:1px solid #fff; display:inline-block;"></span> Puertos</div>
                     </div>
                 </div>
             `;
@@ -2232,7 +2662,7 @@ function resetSpatialVisualization({ skipCameraReset = false, skipRender = false
             btnBen.style.borderColor = '';
             btnBen.style.boxShadow = '';
         }
-        if (btnBenTxt) btnBenTxt.innerHTML = '📐 Activar Perfil Benioff';
+        if (btnBenTxt) btnBenTxt.innerHTML = 'Activar Perfil Benioff';
         if (benCtrl) benCtrl.style.display = 'none';
     }
 
@@ -2249,9 +2679,10 @@ function resetAdvancedLayers({ skipRender = false } = {}) {
     showLiveSGC = false;
     showSgcWms = false;
     showML = false;
+    viewportFilterEnabled = false;
     alertMagThreshold = 4.0;
 
-    const checks = ['check-calidad', 'check-fallas', 'check-infra', 'check-live-sgc', 'check-sgc-wms', 'check-ml', 'check-fallas-buffer'];
+    const checks = ['check-calidad', 'check-fallas', 'check-infra', 'check-live-sgc', 'check-sgc-wms', 'check-ml', 'check-fallas-buffer', 'check-viewport-filter'];
     checks.forEach(id => {
         const el = document.getElementById(id);
         if (el) el.checked = false;
@@ -2266,8 +2697,13 @@ function resetAdvancedLayers({ skipRender = false } = {}) {
     const fallasPanel = document.getElementById('fallas-interactive-panel');
     if (fallasPanel) fallasPanel.style.display = 'none';
 
+    lastSgcIdentifyData = null;
     const sgcQueryBox = document.getElementById('sgc-wms-query-box');
     if (sgcQueryBox) sgcQueryBox.style.display = 'none';
+    const sgcIdentifyResult = document.getElementById('sgc-wms-identify-result');
+    if (sgcIdentifyResult) {
+        sgcIdentifyResult.innerHTML = 'Haga clic sobre cualquier punto del mapa o pulse <em>Consultar cabecera</em> para leer PGA, Sa(0.2s) y Sa(1.0s) desde el servidor oficial del SGC.';
+    }
     hideSgcRasterTooltipIfActive();
 
     const sgcSettings = document.getElementById('sgc-alert-settings');
@@ -2279,14 +2715,12 @@ function resetAdvancedLayers({ skipRender = false } = {}) {
 
     document.querySelectorAll('.falla-tipo-btn').forEach(b => {
         b.classList.remove('active');
-        b.style.background = 'transparent';
-        b.style.fontWeight = 'normal';
+        b.style.background = '';
+        b.style.fontWeight = '';
     });
     const allTipoBtn = document.querySelector('.falla-tipo-btn[data-tipo="all"]');
     if (allTipoBtn) {
         allTipoBtn.classList.add('active');
-        allTipoBtn.style.background = 'rgba(255,255,255,0.15)';
-        allTipoBtn.style.fontWeight = '600';
     }
 
     if (liveSocket) {
@@ -2297,9 +2731,15 @@ function resetAdvancedLayers({ skipRender = false } = {}) {
         clearInterval(livePollingInterval);
         livePollingInterval = null;
     }
+    if (bannerDismissTimeout) {
+        clearTimeout(bannerDismissTimeout);
+        bannerDismissTimeout = null;
+    }
     sgcData.features = [];
     const sgcBadge = document.getElementById('sgc-live-status-badge');
     if (sgcBadge) sgcBadge.style.display = 'none';
+    const sgcSubtext = document.getElementById('sgc-live-subtext');
+    if (sgcSubtext) sgcSubtext.innerText = 'FDSN en vivo 14d · EMSC / USGS (M≥3.5)';
     const alertBanner = document.getElementById('live-seismic-alert-banner');
     if (alertBanner) {
         alertBanner.style.opacity = '0';
@@ -2310,8 +2750,9 @@ function resetAdvancedLayers({ skipRender = false } = {}) {
         deactivateShakemap({ skipRender: true });
     }
     const shakemapSelect = document.getElementById('select-shakemap-escenario');
-    if (shakemapSelect) shakemapSelect.value = 'murindo_73';
+    if (shakemapSelect) shakemapSelect.value = 'palmar_74';
 
+    updateCapasActiveBadge();
     if (!skipRender) renderLayers();
 }
 
@@ -2332,6 +2773,21 @@ function resetBasemapAndThemeToDefault() {
 function resetSpecialtyAndThemeControls() {
     resetBasemapAndThemeToDefault();
 
+    document.body.classList.remove('panel-collapsed');
+    const uiPanelEl = document.getElementById('ui-panel');
+    if (uiPanelEl) uiPanelEl.inert = false;
+    const collapseBtn = document.getElementById('btn-panel-collapse');
+    if (collapseBtn) collapseBtn.setAttribute('aria-expanded', 'true');
+
+    ['sec-benioff', 'sec-capas-avanzadas', 'sec-shakemap', 'sec-export'].forEach(id => {
+        const det = document.getElementById(id);
+        if (det) det.open = false;
+    });
+
+    pinnedInspectorItem = null;
+    pinnedCompareItem = null;
+    renderPinnedInspector();
+
     currentProfile = 'sismologia';
     document.querySelectorAll('.profile-tab').forEach(t => {
         const isDefault = t.getAttribute('data-profile') === 'sismologia';
@@ -2345,6 +2801,16 @@ function resetSpecialtyAndThemeControls() {
     selectedNsrMunicipio = null;
     selectedPotMunicipio = null;
 
+    const nsrSearch = document.getElementById('nsr-municipio-search');
+    if (nsrSearch) nsrSearch.value = '';
+    const potSearch = document.getElementById('pot-municipio-search');
+    if (potSearch) potSearch.value = '';
+
+    const nsrSel = document.getElementById('nsr-municipio-select');
+    if (nsrSel) nsrSel.value = '';
+    const potSel = document.getElementById('pot-municipio-select');
+    if (potSel) potSel.value = '';
+
     const nsrSuelo = document.getElementById('nsr-suelo-select');
     if (nsrSuelo) nsrSuelo.value = 'E';
     const nsrUso = document.getElementById('nsr-grupo-uso-select');
@@ -2356,7 +2822,7 @@ function resetSpecialtyAndThemeControls() {
     const potSummary = document.getElementById('pot-tabular-summary');
     if (potSummary) potSummary.style.display = 'none';
     const potSummaryBtn = document.getElementById('btn-pot-summary-toggle');
-    if (potSummaryBtn) potSummaryBtn.innerText = '📊 Ver Tablero Municipal Simplificado';
+    if (potSummaryBtn) potSummaryBtn.innerText = 'Ver Tablero Municipal Simplificado';
 
     if (municipiosData && municipiosData.length > 0) {
         initMunicipiosUI();
@@ -2418,7 +2884,11 @@ document.getElementById('btn-reset-vis').addEventListener('click', () => {
 });
 
 // Reset Capas Avanzadas
-document.getElementById('btn-reset-capas').addEventListener('click', () => {
+document.getElementById('btn-reset-capas').addEventListener('click', (e) => {
+    if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
     resetAdvancedLayers({ skipRender: false });
 });
 
@@ -2431,19 +2901,19 @@ async function checkServerHealth() {
     try {
         const res = await fetch(ENDPOINTS.HEALTH_API, { cache: 'no-store' });
         if (res.ok) {
-            badge.innerText = '🟢 Online';
-            badge.style.background = 'rgba(50, 215, 75, 0.15)';
-            badge.style.color = '#32d74b';
-            badge.style.borderColor = 'rgba(50, 215, 75, 0.3)';
+            badge.innerHTML = '<span class="status-dot"></span> Online';
+            badge.style.background = 'var(--pill-ok-bg)';
+            badge.style.color = 'var(--pill-ok-fg)';
+            badge.style.borderColor = 'var(--pill-ok-border)';
             badge.title = 'Servidor FastAPI conectado y operativo';
         } else {
             throw new Error('Servidor retornó código ' + res.status);
         }
     } catch(e) {
-        badge.innerText = '🔴 Modo Offline / Local';
-        badge.style.background = 'rgba(255, 69, 58, 0.15)';
-        badge.style.color = '#ff453a';
-        badge.style.borderColor = 'rgba(255, 69, 58, 0.3)';
+        badge.innerHTML = '<span class="status-dot"></span> Offline / Local';
+        badge.style.background = 'var(--pill-crit-bg)';
+        badge.style.color = 'var(--pill-crit-fg)';
+        badge.style.borderColor = 'var(--pill-crit-border)';
         badge.title = 'Servidor local desconectado. Usando caché offline PWA.';
     }
 }
@@ -2549,6 +3019,11 @@ async function loadData() {
         if (countEl) countEl.innerText = 'Sin datos';
     }
 
+    ['count', 'b-value-badge', 'gr-recurrence-box'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.remove('is-skeleton');
+    });
+
     await auxPromise;
 
     try {
@@ -2626,12 +3101,10 @@ document.querySelectorAll('.falla-tipo-btn').forEach(btn => {
     btn.addEventListener('click', function() {
         document.querySelectorAll('.falla-tipo-btn').forEach(b => {
             b.classList.remove('active');
-            b.style.background = 'transparent';
-            b.style.fontWeight = 'normal';
+            b.style.background = '';
+            b.style.fontWeight = '';
         });
         this.classList.add('active');
-        this.style.background = 'rgba(255,255,255,0.15)';
-        this.style.fontWeight = '600';
         faultKinematicFilter = this.getAttribute('data-tipo') || 'all';
         renderLayers();
     });
@@ -2802,23 +3275,23 @@ function updateSgcLiveBadge(count, sourceName, meta = {}) {
         badge.style.display = 'inline-block';
         if (eventos24h > 0) {
             badge.innerText = `● HOY: ${eventos24h} (${count} en ${ventanaDias}d)`;
-            badge.style.color = '#34d399';
-            badge.style.borderColor = 'rgba(52,211,153,0.4)';
-            badge.style.background = 'rgba(52,211,153,0.15)';
+            badge.style.color = 'var(--pill-ok-fg)';
+            badge.style.borderColor = 'var(--pill-ok-border)';
+            badge.style.background = 'var(--pill-ok-bg)';
         } else {
             badge.innerText = `● 0 hoy · ${count} (${ventanaDias}d)`;
-            badge.style.color = '#38bdf8';
+            badge.style.color = 'var(--accent-ui)';
             badge.style.borderColor = 'rgba(56,189,248,0.4)';
             badge.style.background = 'rgba(56,189,248,0.12)';
         }
     }
     if (subtext) {
         if (count === 0) {
-            subtext.innerHTML = `<span style="color:#38bdf8;">● ${escapeHtml(sourceName)}:</span> Sin sismos M≥3.5 en últimos ${ventanaDias}d`;
+            subtext.innerHTML = `<span style="color:var(--accent-ui);">● ${escapeHtml(sourceName)}:</span> Sin sismos M≥3.5 en últimos ${ventanaDias}d`;
         } else if (eventos24h > 0) {
-            subtext.innerHTML = `<span style="color:#34d399;">● ${escapeHtml(sourceName)}:</span> ${eventos24h} últimos 24h · Último: ${escapeHtml(ultimoStr || 'hoy')}`;
+            subtext.innerHTML = `<span style="color:var(--pill-ok-fg);">● ${escapeHtml(sourceName)}:</span> ${eventos24h} últimos 24h · Último: ${escapeHtml(ultimoStr || 'hoy')}`;
         } else {
-            subtext.innerHTML = `<span style="color:#38bdf8;">● ${escapeHtml(sourceName)}:</span> Último ${escapeHtml(ultimoStr || '')} (sin sismos 24h; M≥3.5)`;
+            subtext.innerHTML = `<span style="color:var(--accent-ui);">● ${escapeHtml(sourceName)}:</span> Último ${escapeHtml(ultimoStr || '')} (sin sismos 24h; M≥3.5)`;
         }
     }
 }
@@ -3957,6 +4430,7 @@ if (infoModal && closeInfoModal) {
         infoModalDialog.style.borderTop = `4px solid ${accent}`;
     };
 
+    let _lastInfoTrigger = null;
     document.addEventListener('click', (e) => {
         const btn = e.target.closest('.info-btn');
         if (!btn) return;
@@ -3964,16 +4438,26 @@ if (infoModal && closeInfoModal) {
         e.stopPropagation();
         const key = btn.getAttribute('data-info');
         if (modalData[key] && infoContent) {
+            _lastInfoTrigger = btn;
             applyModalContextBorder(key);
             infoContent.innerHTML = modalData[key];
             infoModal.style.display = 'flex';
-            setTimeout(() => infoModal.style.opacity = '1', 10);
+            setTimeout(() => {
+                infoModal.style.opacity = '1';
+                closeInfoModal.focus();
+            }, 10);
         }
     });
 
     const closeModal = () => {
         infoModal.style.opacity = '0';
-        setTimeout(() => { infoModal.style.display = 'none'; }, 300);
+        setTimeout(() => {
+            infoModal.style.display = 'none';
+            if (_lastInfoTrigger && typeof _lastInfoTrigger.focus === 'function') {
+                _lastInfoTrigger.focus();
+                _lastInfoTrigger = null;
+            }
+        }, 300);
     };
 
     closeInfoModal.addEventListener('click', closeModal);
@@ -4081,7 +4565,51 @@ function resolvePotSelectedIdx(matchingItems, prevVal = '', filterMode = 'all') 
     return String(matchingItems[0].idx);
 }
 
-function populatePotSelect(filterMode = 'all') {
+const DEPTS_CATALOG = [
+    { name: 'Chocó', label: 'Chocó' },
+    { name: 'Risaralda', label: 'Risaralda' },
+    { name: 'Caldas', label: 'Caldas' },
+    { name: 'Valle del Cauca', label: 'Valle del Cauca' }
+];
+
+function populateNsrSelect(searchQuery = '') {
+    const nsrSelect = document.getElementById('nsr-municipio-select');
+    if (!nsrSelect || !municipiosData || municipiosData.length === 0) return;
+    const normQuery = normalizeSearchText(searchQuery);
+    const prevVal = nsrSelect.value;
+
+    const matching = municipiosData
+        .map((m, idx) => ({ m, idx }))
+        .filter(({ m }) => !normQuery || normalizeSearchText(`${m.nombre} ${m.departamento || ''}`).includes(normQuery));
+    const targetVal = resolvePotSelectedIdx(matching, prevVal, 'all');
+
+    nsrSelect.innerHTML = '';
+    DEPTS_CATALOG.forEach(d => {
+        const group = document.createElement('optgroup');
+        let countInGroup = 0;
+        matching.forEach(({ m, idx }) => {
+            if ((m.departamento || 'Chocó') === d.name) {
+                const opt = document.createElement('option');
+                opt.value = String(idx);
+                opt.textContent = `${m.nombre} (Aa = ${m.aa.toFixed(2)})`;
+                if (targetVal !== null && String(idx) === targetVal) {
+                    opt.selected = true;
+                }
+                group.appendChild(opt);
+                countInGroup++;
+            }
+        });
+        if (countInGroup > 0) {
+            group.label = `${d.label} (${countInGroup})`;
+            nsrSelect.appendChild(group);
+        }
+    });
+
+    if (targetVal !== null) nsrSelect.value = targetVal;
+    if (nsrSelect.options.length > 0 && nsrSelect.selectedIndex < 0) nsrSelect.selectedIndex = 0;
+}
+
+function populatePotSelect(filterMode = 'all', searchQuery = null) {
     const potSelect = document.getElementById('pot-municipio-select');
     if (!potSelect) return;
     if (!municipiosData || municipiosData.length === 0) {
@@ -4089,21 +4617,21 @@ function populatePotSelect(filterMode = 'all') {
         return;
     }
 
-    const depts = [
-        { name: 'Chocó', label: '📍 Chocó' },
-        { name: 'Risaralda', label: '☕ Risaralda' },
-        { name: 'Caldas', label: '🏔️ Caldas' },
-        { name: 'Valle del Cauca', label: '🌴 Valle del Cauca' }
-    ];
+    const searchInput = document.getElementById('pot-municipio-search');
+    const rawQuery = searchQuery !== null ? searchQuery : (searchInput ? searchInput.value : '');
+    const normQuery = normalizeSearchText(rawQuery);
 
     const prevVal = potSelect.value;
     const matchingItems = municipiosData
         .map((m, idx) => ({ m, idx }))
-        .filter(({ m }) => matchesPotPriorityFilter(m, filterMode));
+        .filter(({ m }) => (
+            matchesPotPriorityFilter(m, filterMode) &&
+            (!normQuery || normalizeSearchText(`${m.nombre} ${m.departamento || ''}`).includes(normQuery))
+        ));
     const targetVal = resolvePotSelectedIdx(matchingItems, prevVal, filterMode);
 
     potSelect.innerHTML = '';
-    depts.forEach(d => {
+    DEPTS_CATALOG.forEach(d => {
         const group = document.createElement('optgroup');
         let countInGroup = 0;
         matchingItems.forEach(({ m, idx }) => {
@@ -4137,20 +4665,23 @@ function populatePotSelect(filterMode = 'all') {
 function renderPotTabularSummary(filterMode = 'all') {
     const container = document.getElementById('pot-tabular-summary');
     if (!container || !municipiosData) return;
+    const potSearch = document.getElementById('pot-municipio-search');
+    const normQuery = normalizeSearchText(potSearch ? potSearch.value : '');
     const rows = municipiosData
         .map((m, idx) => ({ m, idx }))
         .filter(({ m }) => (
-            filterMode === 'all'
+            (filterMode === 'all'
                 ? m.departamento === 'Chocó'
-                : matchesPotPriorityFilter(m, filterMode)
+                : matchesPotPriorityFilter(m, filterMode)) &&
+            (!normQuery || normalizeSearchText(`${m.nombre} ${m.departamento || ''}`).includes(normQuery))
         ));
 
-    let html = `<div style="font-weight:700; color:#38bdf8; margin-bottom:6px;">Resumen Municipal Chocó (${rows.length} municipios)</div>`;
+    let html = `<div style="font-weight:700; color:var(--accent-ui); margin-bottom:6px;">Resumen Municipal Chocó (${rows.length} municipios)</div>`;
     html += `<table class="ficha-pot-table" style="font-size:var(--fs-2xs);"><thead><tr><th>Municipio</th><th>Aa</th><th>Cat. Ley 617</th><th>Acceso</th></tr></thead><tbody>`;
     rows.forEach(({ m, idx }) => {
         const catShort = m.id === 'quibdo' ? 'Cat. 4' : (String(m.categoria_ley617 || '').includes('Categoría 6') ? 'Cat. 6' : 'Ref.');
         const accShort = m.costero_pacifico ? 'Marítimo/Aéreo' : (m.aislamiento_modal ? 'Fluvial' : 'Terrestre');
-        html += `<tr data-mun-idx="${idx}" class="pot-summary-row" tabindex="0" role="button" aria-label="Seleccionar municipio ${escapeHtml(m.nombre)}" style="cursor:pointer;"><td>${escapeHtml(m.nombre)}</td><td>${m.aa.toFixed(2)}g</td><td>${catShort}</td><td>${accShort}</td></tr>`;
+        html += `<tr data-mun-idx="${idx}" class="pot-summary-row" tabindex="0" role="button" aria-label="Seleccionar municipio ${escapeHtml(m.nombre)}" style="cursor:pointer;"><td>${escapeHtml(m.nombre)}</td><td class="tabular-num">${m.aa.toFixed(2)}g</td><td>${catShort}</td><td>${accShort}</td></tr>`;
     });
     html += `</tbody></table>`;
     container.innerHTML = html;
@@ -4173,38 +4704,14 @@ function renderPotTabularSummary(filterMode = 'all') {
 }
 
 function initMunicipiosUI() {
-    const nsrSelect = document.getElementById('nsr-municipio-select');
     if (!municipiosData || municipiosData.length === 0) return;
-    
-    const depts = [
-        { name: 'Chocó', label: '📍 Chocó (31)' },
-        { name: 'Risaralda', label: '☕ Risaralda (14)' },
-        { name: 'Caldas', label: '🏔️ Caldas (10)' },
-        { name: 'Valle del Cauca', label: '🌴 Valle del Cauca (12)' }
-    ];
-    
-    if (nsrSelect) {
-        nsrSelect.innerHTML = '';
-        depts.forEach(d => {
-            const group = document.createElement('optgroup');
-            group.label = d.label;
-            municipiosData.forEach((m, idx) => {
-                if ((m.departamento || 'Chocó') === d.name) {
-                    const opt = document.createElement('option');
-                    opt.value = idx;
-                    opt.textContent = `${m.nombre} (Aa = ${m.aa.toFixed(2)})`;
-                    if (m.id === 'quibdo' || m.nombre.toLowerCase().includes('quibdó')) opt.selected = true;
-                    group.appendChild(opt);
-                }
-            });
-            if (group.children.length > 0) {
-                nsrSelect.appendChild(group);
-            }
-        });
-    }
-    
+
+    const nsrSearch = document.getElementById('nsr-municipio-search');
+    populateNsrSelect(nsrSearch ? nsrSearch.value : '');
+
     const priorityFilter = document.getElementById('pot-priority-filter');
-    populatePotSelect(priorityFilter ? priorityFilter.value : 'all');
+    const potSearch = document.getElementById('pot-municipio-search');
+    populatePotSelect(priorityFilter ? priorityFilter.value : 'all', potSearch ? potSearch.value : '');
 
     updateNSR10Metrics();
     updatePOTMetrics();
@@ -4564,13 +5071,13 @@ function updateNSR10Metrics() {
     // Nivel de demanda sísmica estructural
     if (elDemandaBadge) {
         if (spec.SaMax >= 1.15) {
-            elDemandaBadge.innerText = '🔴 Demanda Extrema';
+            elDemandaBadge.innerText = 'Demanda Extrema';
             elDemandaBadge.className = 'status-pill critico';
         } else if (spec.SaMax >= 0.85) {
-            elDemandaBadge.innerText = '🟠 Demanda Severa';
+            elDemandaBadge.innerText = 'Demanda Severa';
             elDemandaBadge.className = 'status-pill alerta';
         } else {
-            elDemandaBadge.innerText = '🟢 Demanda Moderada';
+            elDemandaBadge.innerText = 'Demanda Moderada';
             elDemandaBadge.className = 'status-pill normal';
         }
     }
@@ -4704,7 +5211,7 @@ function updatePOTMetrics() {
     if (elAisl) {
         if (m.aislamiento_modal) {
             elAisl.style.display = 'block';
-            elAisl.innerHTML = `<strong>⚠️ Alerta de Aislamiento Modal:</strong> Cabecera sin conexión vial pavimentada continua. Ante bloqueo fluvial o colapso de muelle/pista, la respuesta de emergencia depende de corredores alternos marítimos, fluviales o aéreos.`;
+            elAisl.innerHTML = `<strong>Alerta de Aislamiento Modal:</strong> Cabecera sin conexión vial pavimentada continua. Ante bloqueo fluvial o colapso de muelle/pista, la respuesta de emergencia depende de corredores alternos marítimos, fluviales o aéreos.`;
         } else {
             elAisl.style.display = 'none';
         }
@@ -4714,13 +5221,13 @@ function updatePOTMetrics() {
     if (elSemaforo) {
         if (m.aa >= 0.35 || sismos30km >= 50 || m.costero_pacifico) {
             elSemaforo.className = 'status-pill critico';
-            elSemaforo.innerText = '🔴 CRÍTICO';
+            elSemaforo.innerText = 'CRÍTICO';
         } else if (m.aa >= 0.25 || sismos30km >= 20) {
             elSemaforo.className = 'status-pill alerta';
-            elSemaforo.innerText = '🟠 ALTO';
+            elSemaforo.innerText = 'ALTO';
         } else {
             elSemaforo.className = 'status-pill normal';
-            elSemaforo.innerText = '🟡 MEDIO';
+            elSemaforo.innerText = 'MEDIO';
         }
     }
 }
@@ -4904,6 +5411,24 @@ document.querySelectorAll('.profile-tab').forEach(tab => {
     });
 });
 
+const btnPanelCollapse = document.getElementById('btn-panel-collapse');
+if (btnPanelCollapse) {
+    btnPanelCollapse.addEventListener('click', () => {
+        const isCollapsed = document.body.classList.toggle('panel-collapsed');
+        const uiPanelEl = document.getElementById('ui-panel');
+        if (uiPanelEl) uiPanelEl.inert = isCollapsed;
+        btnPanelCollapse.setAttribute('aria-expanded', String(!isCollapsed));
+    });
+}
+
+const checkViewportFilter = document.getElementById('check-viewport-filter');
+if (checkViewportFilter) {
+    checkViewportFilter.addEventListener('change', (e) => {
+        viewportFilterEnabled = !!e.target.checked;
+        queueRender();
+    });
+}
+
 const potPriorityFilter = document.getElementById('pot-priority-filter');
 if (potPriorityFilter) {
     potPriorityFilter.addEventListener('change', async (e) => {
@@ -4918,6 +5443,32 @@ if (potPriorityFilter) {
     });
 }
 
+const potMunicipioSearch = document.getElementById('pot-municipio-search');
+if (potMunicipioSearch) {
+    potMunicipioSearch.addEventListener('input', () => {
+        const mode = potPriorityFilter ? potPriorityFilter.value : 'all';
+        populatePotSelect(mode, potMunicipioSearch.value);
+        updatePOTMetrics();
+        queueRender();
+    });
+}
+
+const nsrMunicipioSearch = document.getElementById('nsr-municipio-search');
+if (nsrMunicipioSearch) {
+    nsrMunicipioSearch.addEventListener('input', () => {
+        populateNsrSelect(nsrMunicipioSearch.value);
+        const nsrSelEl = document.getElementById('nsr-municipio-select');
+        const idx = nsrSelEl ? (parseInt(nsrSelEl.value, 10) || 0) : 0;
+        const m = (municipiosData && municipiosData[idx]) ? municipiosData[idx] : null;
+        if (m) {
+            const sueloSel = document.getElementById('nsr-suelo-select');
+            if (sueloSel) sueloSel.value = m.suelo_defecto || 'E';
+        }
+        updateNSR10Metrics();
+        queueRender();
+    });
+}
+
 const btnPotSummaryToggle = document.getElementById('btn-pot-summary-toggle');
 if (btnPotSummaryToggle) {
     btnPotSummaryToggle.addEventListener('click', () => {
@@ -4925,7 +5476,7 @@ if (btnPotSummaryToggle) {
         if (!box) return;
         const isHidden = box.style.display === 'none' || !box.style.display;
         box.style.display = isHidden ? 'block' : 'none';
-        btnPotSummaryToggle.innerText = isHidden ? '✖ Ocultar Tablero Municipal' : '📊 Ver Tablero Municipal Simplificado';
+        btnPotSummaryToggle.innerText = isHidden ? 'Ocultar Tablero Municipal' : 'Ver Tablero Municipal Simplificado';
     });
 }
 
@@ -5150,7 +5701,7 @@ function toggleBenioffMode(forceState, { skipCameraReset = false, skipRender = f
             btn.style.borderColor = '';
             btn.style.boxShadow = '';
         }
-        if (btnText) btnText.innerHTML = '📐 Activar Perfil Benioff';
+        if (btnText) btnText.innerHTML = 'Activar Perfil Benioff';
         if (controls) controls.style.display = 'none';
 
         if (!skipCameraReset && deckgl) {
@@ -6128,7 +6679,25 @@ function panMapWithArrows(dx, dy, isShift) {
 
 function initKeyboardShortcuts() {
     window.addEventListener('keydown', (e) => {
-        // Ignorar si el usuario está interactuando con campos de formulario editables
+        if (e.key === 'Escape') {
+            const im = document.getElementById('info-modal');
+            const fm = document.getElementById('modal-ficha-pot');
+            if (im && im.style.display !== 'none') {
+                im.style.opacity = '0';
+                setTimeout(() => { im.style.display = 'none'; }, 250);
+            }
+            if (fm && fm.style.display !== 'none') {
+                fm.style.opacity = '0';
+                setTimeout(() => { fm.style.display = 'none'; }, 250);
+            }
+            if (pinnedInspectorItem) {
+                pinnedInspectorItem = null;
+                renderPinnedInspector();
+            }
+            return;
+        }
+
+        // Ignorar atajos de una letra si el usuario está interactuando con campos editables
         const target = e.target;
         const tag = (target && target.tagName) ? target.tagName.toUpperCase() : '';
         const isEditable = target && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(tag));
@@ -6175,6 +6744,21 @@ function initKeyboardShortcuts() {
                 if (fm && fm.style.display !== 'none') {
                     fm.style.opacity = '0';
                     setTimeout(() => { fm.style.display = 'none'; }, 250);
+                }
+                if (pinnedInspectorItem) {
+                    pinnedInspectorItem = null;
+                    renderPinnedInspector();
+                }
+                break;
+            }
+            case 'c':
+            case 'C': {
+                const btnCol = document.getElementById('btn-panel-collapse');
+                if (btnCol) {
+                    e.preventDefault();
+                    triggerProgrammaticClick(btnCol);
+                    const collapsed = document.body.classList.contains('panel-collapsed');
+                    showShortcutToast('C', collapsed ? 'Panel Lateral Oculto' : 'Panel Lateral Visible', '▣');
                 }
                 break;
             }
@@ -6243,9 +6827,10 @@ function initKeyboardShortcuts() {
                 interactionTelemetry.record('keyboard', 'Corte Benioff 3D', { key: '7' });
                 const btnBenioff = document.getElementById('btn-benioff');
                 if (btnBenioff) {
+                    openAccordionForElement(btnBenioff);
                     triggerProgrammaticClick(btnBenioff);
                     const estado = isBenioffMode ? 'Activado' : 'Desactivado';
-                    showShortcutToast('7', `Corte Benioff 3D: ${estado}`, '📐');
+                    showShortcutToast('7', `Corte Benioff 3D: ${estado}`, '▣');
                 }
                 break;
             }
@@ -6254,10 +6839,11 @@ function initKeyboardShortcuts() {
                 interactionTelemetry.record('keyboard', 'Telemetría FDSN Live', { key: '8' });
                 const checkLive = document.getElementById('check-live-sgc');
                 if (checkLive) {
+                    openAccordionForElement(checkLive);
                     checkLive.checked = !checkLive.checked;
                     checkLive.dispatchEvent(new Event('change', { bubbles: true }));
                     const estado = checkLive.checked ? 'Conectado (En Vivo)' : 'Desconectado';
-                    showShortcutToast('8', `Telemetría FDSN: ${estado}`, '📡');
+                    showShortcutToast('8', `Telemetría FDSN: ${estado}`, '●');
                 }
                 break;
             }
@@ -6266,6 +6852,7 @@ function initKeyboardShortcuts() {
                 interactionTelemetry.record('keyboard', 'Fallas Geológicas', { key: '9' });
                 const checkFallas = document.getElementById('check-fallas');
                 if (checkFallas) {
+                    openAccordionForElement(checkFallas);
                     checkFallas.checked = !checkFallas.checked;
                     checkFallas.dispatchEvent(new Event('change', { bubbles: true }));
                     const estado = checkFallas.checked ? 'Visibles' : 'Ocultas';

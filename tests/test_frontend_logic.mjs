@@ -37,6 +37,10 @@ const fns = [
     'getInfraPixelOffset',
     'matchesPotPriorityFilter',
     'resolvePotSelectedIdx',
+    'normalizeSearchText',
+    'computeApproxMercatorBounds',
+    'buildActiveFilterChipsState',
+    'extractInspectorData',
 ];
 const infraMatch = /const INFRA_COLORS = \{[\s\S]*?\n\};/.exec(mainJs);
 assert.ok(infraMatch, 'No se encontró INFRA_COLORS en main.js');
@@ -220,4 +224,51 @@ test('Al cargar la plataforma todos los controles se restablecen a cero sin rest
     assert.match(mainJs, /resetAllControlsToZero\(\{\s*resetCamera:\s*false,\s*skipRender:\s*true\s*\}\);\s*\n\s*window\.addEventListener\('pageshow'/);
     assert.match(mainJs, /function restoreSavedPreferences\(\)\s*\{\s*try\s*\{\s*localStorage\.removeItem\('sismochoco_prefs_v1'\);/);
     assert.doesNotMatch(mainJs, /const raw = localStorage\.getItem\('sismochoco_prefs_v1'\)/);
+});
+
+test('Chips de filtros activos, encuadre Mercator, búsqueda acento-agnóstica e inspector fijable', () => {
+    assert.equal(context.normalizeSearchText('  Quibdó  '), 'quibdo');
+    assert.equal(context.normalizeSearchText('Bahía Solano'), 'bahia solano');
+
+    const bounds = context.computeApproxMercatorBounds({ longitude: -76.66, latitude: 5.69, zoom: 6.5 }, 1200, 800);
+    assert.ok(bounds && bounds.minLng < -76.66 && bounds.maxLng > -76.66);
+    assert.ok(bounds.minLat < 5.69 && bounds.maxLat > 5.69);
+
+    assert.deepEqual(Array.from(context.buildActiveFilterChipsState({ viewMode: 'none', currentMag: 0, currentTime: 1993, currentMaxDepth: 250 })), []);
+    const chips = context.buildActiveFilterChipsState({
+        viewMode: 'puntos',
+        currentMag: 4.5,
+        currentTime: 2010,
+        currentMaxDepth: 70,
+        highQualityOnly: true,
+        viewportFilterEnabled: true,
+        showFaults: true,
+        showInfra: true
+    });
+    assert.equal(chips.length, 8);
+    assert.ok(chips.some(c => c.key === 'viewport') && chips.some(c => c.key === 'mag'));
+
+    const eqInsp = context.extractInspectorData({
+        geometry: { coordinates: [-76.66, 5.69, 0] },
+        properties: { id: 'eq1', magnitud: 5.4, profundidad: 22.0, fecha: '2024-03-10T12:00:00Z', municipio: 'Quibdó', gap: 85, rms: 0.4 }
+    }, 'sismos-3d');
+    assert.equal(eqInsp.title, 'Quibdó');
+    assert.equal(eqInsp.compareVal, 5.4);
+    assert.equal(eqInsp.metrics.length, 4);
+
+    const faultInsp = context.extractInspectorData({
+        geometry: { coordinates: [[-76.7, 6.9], [-76.4, 6.2]] },
+        properties: { id: 'falla_murindo', nombre: 'Falla de Murindó', m_max: 7.3, tasa_mm_ano: 3.5, longitud_km: 185, tipo: 'Rumbo' }
+    }, 'fallas-core-layer');
+    assert.equal(faultInsp.kicker, 'Estructura Tectónica');
+    assert.equal(faultInsp.title, 'Falla de Murindó');
+    assert.equal(typeof faultInsp.lng, 'number');
+    assert.equal(typeof faultInsp.lat, 'number');
+
+    const html = fs.readFileSync(path.join(APP_DIR, 'index.html'), 'utf8');
+    assert.ok(html.includes('id="btn-panel-collapse"'));
+    assert.ok(html.includes('id="active-filters-bar"'));
+    assert.ok(html.includes('id="pinned-inspector"'));
+    assert.ok(html.includes('id="check-viewport-filter"'));
+    assert.ok(html.includes('id="nsr-municipio-search"') && html.includes('id="pot-municipio-search"'));
 });

@@ -42,10 +42,10 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="SismoChocó">
     
-    <!-- Fuentes de Google: Inter -->
+    <!-- Fuentes de Google: Inter (400-700) y JetBrains Mono (cifras tabulares) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
     
     <!-- Librerías: Deck.gl, MapLibre, Chart.js -->
     <!-- Librerías Locales (Offline PWA) -->
@@ -55,7 +55,7 @@
     <script src="lib/chart.js"></script>
     
     <!-- Estilos Bento Box -->
-    <link rel="stylesheet" href="css/styles.css?v=41">
+    <link rel="stylesheet" href="css/styles.css?v=43">
 
     <!-- Datos Estructurados Schema.org JSON-LD para Google Search & Google Dataset Search -->
     <script type="application/ld+json">
@@ -162,6 +162,12 @@
     <div id="map-container" role="application" aria-label="Mapa interactivo de sismicidad"></div>
     <div id="tooltip" role="tooltip" aria-live="polite"></div>
 
+    <!-- Barra flotante de filtros activos y guía panorámica (Overview-first) -->
+    <div id="active-filters-bar" class="active-filters-bar" role="region" aria-label="Filtros activos y estado del lienzo" aria-live="polite"></div>
+
+    <!-- Tarjeta inspectora fijable por clic (Details-on-demand y comparación) -->
+    <aside id="pinned-inspector" class="pinned-inspector" style="display:none;" aria-label="Inspector de entidad cartográfica" aria-live="polite"></aside>
+
     <!-- Membrete Académico de Impresión (Solo visible al imprimir en PDF) -->
     <header id="print-header">
         <div style="border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: flex-end; font-family: var(--font-sans);">
@@ -178,10 +184,21 @@
 
     <!-- Selector de Mapa Base Flotante -->
     <div id="basemap-selector" role="toolbar" aria-label="Estilo del mapa base">
-        <button type="button" class="basemap-btn active" data-style="voy" title="Mapa Físico / Relieve Topográfico">🏔️ Relieve</button>
-        <button type="button" class="basemap-btn" data-style="dark" title="Modo Oscuro / Contraste Sísmico">🌙 Oscuro</button>
+        <button type="button" class="basemap-btn active" data-style="voy" title="Mapa Físico / Relieve Topográfico">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 3 4 8 5-5 5 15H2L8 3z"></path></svg>
+            <span>Relieve</span>
+        </button>
+        <button type="button" class="basemap-btn" data-style="dark" title="Modo Oscuro / Contraste Sísmico">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path></svg>
+            <span>Oscuro</span>
+        </button>
     </div>
 
+    <!-- Botón de repliegue lateral del panel en escritorio (Atajo: C) -->
+    <button type="button" id="btn-panel-collapse" class="panel-collapse-btn" aria-expanded="true" aria-controls="ui-panel" title="Ocultar o mostrar panel lateral (Atajo: C)">
+        <svg class="collapse-chevron" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"></path></svg>
+        <span class="collapse-label">Panel</span>
+    </button>
 
     <nav id="ui-panel">
         <button id="mobile-toggle" aria-label="Deslizar panel de control" aria-expanded="false">
@@ -191,34 +208,40 @@
         <section class="header-section">
             <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px;">
                 <h2 style="margin: 0;">Sismicidad Chocó</h2>
-                <button type="button" id="btn-theme-toggle" class="panel-theme-btn" aria-pressed="false" title="Conmutar tema claro de alto contraste del panel para lectura en campo u oficina">☀️ Claro</button>
+                <button type="button" id="btn-theme-toggle" class="panel-theme-btn" aria-pressed="false" title="Conmutar tema claro de alto contraste del panel para lectura en campo u oficina">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path></svg>
+                    <span>Claro</span>
+                </button>
             </div>
             <div class="panel-theme-row">
-                <span id="server-status-badge" style="display:inline-flex; align-items:center; gap:5px; font-size:var(--fs-xs); color:#32D74B; background:rgba(50,215,75,0.12); padding:4px 10px; border-radius:8px; border:1px solid rgba(50,215,75,0.25); line-height:1; box-sizing:border-box;" title="Servidor Backend Conectado">
-                    <span style="width:6px; height:6px; border-radius:50%; background:#32D74B; box-shadow:0 0 6px #32D74B;"></span> Online
+                <span id="server-status-badge" class="server-status-pill" title="Estado de conexión con el backend">
+                    <span class="status-dot"></span> Online
                 </span>
                 <button type="button" class="info-btn rtd-pill-btn" data-info="rtd" aria-label="Marco Epistemológico: Research through Design" title="Marco Epistemológico: Research through Design (RtD)">RtD</button>
                 <button type="button" class="info-btn" data-info="guia" aria-label="Guía de uso de la plataforma" title="Guía de uso de la plataforma">?</button>
                 <button type="button" id="btn-home" class="reset-icon-btn" aria-label="Restablecer Todo" title="Restablecer Todo (Atajo: 0)">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
                         <path d="M3 3v5h5"></path>
                     </svg>
                     <span id="btn-home-tooltip" class="reset-tooltip reset-tooltip--below">
-                        🔄 Restablecer Todo (Atajo: 0): Restablece vista 3D por defecto, filtros y capas
+                        Restablecer Todo (Atajo: 0): Restablece vista 3D por defecto, filtros y capas
                     </span>
                 </button>
             </div>
-            <span class="subtitle">Research through Design en sismicidad (1993-2026).<br>Catálogo estructurado: <strong id="count" style="color:var(--text-primary)">0</strong> eventos.</span>
+            <span class="subtitle">Research through Design en sismicidad (1993-2026).<br>Catálogo estructurado: <strong id="count" class="tabular-num is-skeleton" style="color:var(--text-primary)">0</strong> eventos.</span>
             
             <!-- Banner contextual Mobile/Tablet: Sugerencia de visualización en PC -->
             <div id="mobile-device-advice" class="mobile-device-banner" role="note" aria-label="Sugerencia de visualización">
-                <span class="device-icon">💻</span>
+                <span class="device-icon" aria-hidden="true">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="3" rx="2"></rect><line x1="8" x2="16" y1="21" y2="21"></line><line x1="12" x2="12" y1="17" y2="21"></line></svg>
+                </span>
                 <div class="device-text">
                     <strong>Visualización recomendada en PC</strong>
                     <span>Para explorar en detalle los mapas interactivos, las gráficas y las herramientas de análisis, sugerimos acceder desde un computador.</span>
-                    <button id="btn-clear-cache-banner" type="button" style="display:inline-flex; align-items:center; gap:4px; margin-top:6px; background:rgba(255,255,255,0.12); color:#38bdf8; border:1px solid rgba(56,189,248,0.3); border-radius:6px; padding:3px 8px; font-size:var(--fs-2xs); font-weight:600; cursor:pointer;">
-                        <span>🧹 Limpiar Caché Móvil</span>
+                    <button id="btn-clear-cache-banner" type="button" class="clear-cache-btn">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
+                        <span>Limpiar caché móvil</span>
                     </button>
                 </div>
                 <button id="btn-dismiss-device-advice" class="btn-dismiss-advice" aria-label="Cerrar sugerencia">✕</button>
@@ -228,15 +251,21 @@
         <!-- Selector de Especialidad Multidisciplinar (Segmented Control Estilo iOS) -->
         <div class="profile-tabs" role="tablist" aria-label="Perfiles profesionales">
             <button class="profile-tab active" data-profile="sismologia" role="tab" aria-selected="true" title="Modo Sismo-Geología y Tectónica Regional (Atajo: 1)">
-                <span class="tab-icon">🌋</span>
+                <span class="tab-icon" aria-hidden="true">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h3l2-6 4 12 3-8 2 4h6"></path></svg>
+                </span>
                 <span>Sismo<br>Geología</span>
             </button>
             <button class="profile-tab" data-profile="nsr10" role="tab" aria-selected="false" title="Diseño Estructural y Norma NSR-10 (Atajo: 2)">
-                <span class="tab-icon">🏗️</span>
+                <span class="tab-icon" aria-hidden="true">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"></path><path d="M5 21V7l7-4 7 4v14"></path><path d="M9 21v-6h6v6"></path></svg>
+                </span>
                 <span>Diseño<br>Estructural</span>
             </button>
             <button class="profile-tab" data-profile="alcaldia" role="tab" aria-selected="false" title="Gestión Territorial y Ordenamiento del Riesgo - POT (Atajo: 3)">
-                <span class="tab-icon">🏛️</span>
+                <span class="tab-icon" aria-hidden="true">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"></polygon><line x1="9" x2="9" y1="3" y2="18"></line><line x1="15" x2="15" y1="6" y2="21"></line></svg>
+                </span>
                 <span>Gestión<br>Territorial</span>
             </button>
         </div>
@@ -246,128 +275,74 @@
              ================================================================== -->
         <div id="panel-sismologia" class="profile-panel">
             <!-- Grafico Estadistico: Ley de Gutenberg-Richter -->
-            <div id="chart-container" style="padding: 0 8px;">
+            <div id="chart-container" class="chart-card">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                    <span style="font-size:var(--fs-sm); font-weight:600; color:#A1A1A6; text-transform:uppercase; letter-spacing:0.05em;">Ley Gutenberg-Richter</span>
+                    <span class="chart-section-label">Ley Gutenberg-Richter</span>
                     <div style="display:flex; align-items:center; gap:6px;">
-                        <span id="b-value-badge" style="background:rgba(56,189,248,0.15); color:#38bdf8; border:1px solid rgba(56,189,248,0.3); padding:2px 8px; border-radius:10px; font-size:var(--fs-2xs); font-weight:600; font-family: var(--font-mono);" title="Estimación Aki-Utsu por máxima verosimilitud (ref. exploratoria sobre catálogo heterogéneo)">b = --</span>
+                        <span id="b-value-badge" class="b-value-pill tabular-num is-skeleton" title="Estimación Aki-Utsu por máxima verosimilitud (ref. exploratoria sobre catálogo heterogéneo)">b = --</span>
                         <button type="button" class="info-btn" data-info="grafico" aria-label="Instrucciones: Ley de Gutenberg-Richter" title="Instrucciones de uso: Ley de Gutenberg-Richter">?</button>
                     </div>
                 </div>
                 <canvas id="gr-chart" style="max-height: 80px;"></canvas>
                 <!-- Períodos de Retorno Estimados -->
-                <div id="gr-recurrence-box" style="margin-top:8px; background:rgba(0,0,0,0.35); border:1px solid rgba(56,189,248,0.2); border-radius:8px; padding:6px 10px; font-size:var(--fs-2xs); color:var(--text-secondary);">
-                    <div style="display:flex; justify-content:space-between; margin-bottom:3px;">
-                        <span>Retorno / Excedencia (50a M≥6):</span>
-                        <span id="gr-meta-note" style="color:var(--text-tertiary); font-size:var(--fs-2xs);">Aki-Utsu MLE</span>
+                <div id="gr-recurrence-box" class="surface-inset is-skeleton" style="margin-top:8px; padding:8px 10px; font-size:var(--fs-2xs);">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                        <span class="text-secondary">Retorno / Excedencia (50a M≥6):</span>
+                        <span id="gr-meta-note" class="text-tertiary tabular-num">Aki-Utsu MLE</span>
                     </div>
-                    <div style="display:flex; justify-content:space-between; font-family: var(--font-mono); color:#38bdf8;">
+                    <div class="gr-return-row tabular-num">
                         <span>M ≥ 5: <strong id="tr-m5">--</strong></span>
                         <span>M ≥ 6: <strong id="tr-m6">--</strong></span>
                         <span>M ≥ 7: <strong id="tr-m7">--</strong></span>
                     </div>
-                    <div id="gr-poisson-row" style="margin-top:3px; font-size:var(--fs-2xs); color:var(--text-tertiary); display:flex; justify-content:space-between;">
-                        <span>P(M≥6.0 en 50 años): <strong id="tr-p50-m6" style="color:#ffd60a;">--</strong></span>
-                        <span title="Catálogo mixto ML/Mw/mb: interpretación exploratoria">Escala mixta (ML/Mw/mb)</span>
+                    <div id="gr-poisson-row" class="gr-poisson-row">
+                        <span>P(M≥6.0 en 50 años): <strong id="tr-p50-m6" class="text-highlight-warn tabular-num">--</strong></span>
+                        <span title="Catálogo mixto ML/Mw/mb: interpretación exploratoria">Escala mixta</span>
                     </div>
                 </div>
+                <!-- Brushing & Linking bidireccional con encuadre del mapa -->
+                <label for="check-viewport-filter" class="viewport-link-toggle">
+                    <input type="checkbox" id="check-viewport-filter">
+                    <span>Vincular gráfica y conteo al encuadre visible del mapa</span>
+                </label>
             </div>
 
-            <!-- Corte Transversal 3D: Subducción de Nazca (Benioff) -->
+            <!-- Controles Visuales (Principales, siempre visibles) -->
             <section class="control-group">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <h3>Perfil 3D de Subducción</h3>
-                    <button type="button" class="info-btn" data-info="benioff" aria-label="Instrucciones: Perfil 3D de Subducción" title="Instrucciones de uso: Perfil 3D de Subducción">?</button>
-                </div>
-                <p style="font-size: var(--fs-xs); color: var(--text-secondary); margin: 0; line-height: 1.4;">
-                    Visualiza la inclinación de la <strong>Placa de Nazca</strong> subduciéndose bajo Sudamérica hasta 250 km de profundidad.
-                </p>
-                <button type="button" class="btn-secondary" id="btn-benioff" style="width:100%;" title="Activar o desactivar corte transversal 3D Benioff (Atajo: 7)">
-                    <span id="btn-benioff-text">📐 Activar Perfil Benioff</span>
-                </button>
-
-                <!-- Panel de Controles Específicos del Perfil Benioff (Se despliega al activar el modo) -->
-                <div id="benioff-controls" style="display:none; flex-direction:column; gap:10px; margin-top:12px; padding:12px; background:rgba(10,132,255,0.06); border:1px solid rgba(10,132,255,0.25); border-radius:12px;">
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <span style="font-size:var(--fs-xs); font-weight:700; color:#38bdf8; text-transform:uppercase; letter-spacing:0.04em;">Corte Transversal Activo</span>
-                        <span id="benioff-status-badge" class="status-pill normal" style="font-size:var(--fs-2xs); padding:2px 8px;">Vista Oeste → Este</span>
-                    </div>
-
-                    <!-- Selector de Trinchera / Sector de Corte -->
-                    <div>
-                        <label for="benioff-sector-select" style="font-size:var(--fs-xs); color:var(--text-secondary); display:block; margin-bottom:4px; font-weight:600;">Sector de Corte Transversal (Latitud):</label>
-                        <select id="benioff-sector-select" class="custom-select" style="font-size:var(--fs-xs); padding:6px 10px;">
-                            <option value="all">🌎 Toda la Región (4.0°N a 8.5°N)</option>
-                            <option value="norte">🏔️ Sector Norte: Bahía Solano - Murindó (6.0° a 8.0°N)</option>
-                            <option value="centro">📍 Sector Centro: Nuquí - Quibdó (5.0° a 6.0°N)</option>
-                            <option value="sur">🌴 Sector Sur: San Juan - Buenaventura (4.0° a 5.0°N)</option>
-                        </select>
-                    </div>
-
-                    <!-- Slider de Exageración Vertical de Profundidad -->
-                    <div>
-                        <div style="display:flex; justify-content:space-between; font-size:var(--fs-xs); margin-bottom:4px;">
-                            <label for="benioff-exag-slider" style="color:var(--text-secondary); font-weight:600;">Exageración Vertical Hipocentros (Z):</label>
-                            <span id="benioff-exag-val" style="color:#38bdf8; font-weight:700; font-family: var(--font-mono);">1.50x</span>
-                        </div>
-                        <input type="range" id="benioff-exag-slider" min="0.5" max="3.0" step="0.25" value="1.5" style="width:100%;">
-                        <div style="display:flex; justify-content:space-between; font-size:var(--fs-2xs); color:var(--text-tertiary); margin-top:2px;">
-                            <span>0.5x (Real)</span>
-                            <span>1.5x (Recomendado)</span>
-                            <span>3.0x (Pronunciado)</span>
-                        </div>
-                    </div>
-
-                    <!-- Métricas Geodinámicas de la Losa Tectónica -->
-                    <div style="background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.06); border-radius:8px; padding:8px 10px; font-size:var(--fs-xs); color:var(--text-secondary); line-height:1.4;">
-                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
-                            <div><strong>Buzamiento Losa:</strong> <span style="color:#38bdf8;">~32° hacia el Este</span></div>
-                            <div><strong>Convergencia:</strong> <span style="color:#38bdf8;">5.4 cm/año</span></div>
-                            <div><strong>Fosa (Oeste):</strong> <span style="color:#ffd60a;">0 - 30 km prof.</span></div>
-                            <div><strong>Losa Benioff (Este):</strong> <span style="color:#ff7b72;">80 - 140 km prof.</span></div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-
-            <!-- Controles Visuales -->
-            <!-- Controles Visuales -->
-            <section class="control-group">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; gap: 10px;">
                     <div style="display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1;">
-                        <h3 style="margin: 0; font-size: var(--fs-sm); letter-spacing: 0.05em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-bottom: none; padding-bottom: 0;">Visualización Espacial</h3>
+                        <h3 style="margin: 0; border-bottom: none; padding-bottom: 0;">Visualización Espacial</h3>
                         <button type="button" class="info-btn" data-info="vis_espacial" aria-label="Instrucciones: Visualización Espacial" title="Instrucciones de uso: Visualización Espacial">?</button>
                     </div>
                     <div style="display: flex; align-items: center; flex-shrink: 0;">
                         <button type="button" id="btn-reset-vis" class="reset-icon-btn" aria-label="Restablecer visualización espacial" title="Restablecer visualización espacial">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                 <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
                                 <path d="M3 3v5h5"></path>
                             </svg>
                             <span id="btn-reset-vis-tt" class="reset-tooltip">
-                                🔄 Restablecer visualización espacial
+                                Restablecer visualización espacial
                             </span>
                         </button>
                     </div>
                 </div>
-                <div class="toggle-group" style="align-items: stretch; background: transparent; padding: 0; border: none; gap: 6px; width: 100%;">
-                    <div style="flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; justify-content:space-between; gap:8px; background:rgba(0,0,0,0.4); border-radius:12px; border:1px solid rgba(255,255,255,0.05); padding:6px 3px;">
-                        <button type="button" class="toggle-btn" id="btn-puntos" style="width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:6px 2px; line-height:1.2; font-size:var(--fs-xs);" title="Eventos Individuales 3D (Atajo: 4)">
+                <div class="toggle-group vis-mode-grid">
+                    <div class="vis-mode-cell">
+                        <button type="button" class="toggle-btn vis-mode-btn" id="btn-puntos" title="Eventos Individuales 3D (Atajo: 4)">
                             <span>Eventos</span>
                             <span>Individuales</span>
                         </button>
                         <button type="button" class="info-btn" data-info="puntos" aria-label="Instrucciones: Eventos Individuales" title="Instrucciones de uso: Eventos Individuales (Scatter 3D)">?</button>
                     </div>
-                    <div style="flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; justify-content:space-between; gap:8px; background:rgba(0,0,0,0.4); border-radius:12px; border:1px solid rgba(255,255,255,0.05); padding:6px 3px;">
-                        <button type="button" class="toggle-btn" id="btn-calor" style="width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:6px 2px; line-height:1.2; font-size:var(--fs-xs);" title="Concentración de Energía / Calor (Atajo: 5)">
+                    <div class="vis-mode-cell">
+                        <button type="button" class="toggle-btn vis-mode-btn" id="btn-calor" title="Concentración de Energía / Calor (Atajo: 5)">
                             <span>Concentración</span>
                             <span>Energía</span>
                         </button>
                         <button type="button" class="info-btn" data-info="calor" aria-label="Instrucciones: Concentración de Energía" title="Instrucciones de uso: Concentración de Energía (Heatmap)">?</button>
                     </div>
-                    <div style="flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; justify-content:space-between; gap:8px; background:rgba(0,0,0,0.4); border-radius:12px; border:1px solid rgba(255,255,255,0.05); padding:6px 3px;">
-                        <button type="button" class="toggle-btn" id="btn-hex" style="width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:6px 2px; line-height:1.2; font-size:var(--fs-xs);" title="Agrupación Espacial / Hexbins (Atajo: 6)">
+                    <div class="vis-mode-cell">
+                        <button type="button" class="toggle-btn vis-mode-btn" id="btn-hex" title="Agrupación Espacial / Hexbins (Atajo: 6)">
                             <span>Agrupación</span>
                             <span>Espacial</span>
                         </button>
@@ -376,62 +351,62 @@
                 </div>
             </section>
 
-            <!-- Filtros Paramétricos -->
+            <!-- Filtros Paramétricos (Principales, siempre visibles) -->
             <section class="control-group">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
                     <div style="display: flex; align-items: center; gap: 8px;">
                         <h3 style="margin: 0;">Filtros Paramétricos</h3>
                         <button type="button" class="info-btn" data-info="filtros_parametricos" aria-label="Instrucciones: Filtros Paramétricos" title="Instrucciones de uso: Filtros Paramétricos">?</button>
                     </div>
                     <button type="button" id="btn-reset" class="reset-icon-btn" aria-label="Restablecer Filtros Paramétricos" title="Restablecer Filtros Paramétricos">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                             <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
                             <path d="M3 3v5h5"></path>
                         </svg>
                         <span id="btn-reset-tt" class="reset-tooltip">
-                            🔄 Restablecer Filtros Paramétricos
+                            Restablecer Filtros Paramétricos
                         </span>
                     </button>
                 </div>
                 
                 <!-- Filtro Magnitud -->
                 <div class="slider-container">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
                         <label for="mag-slider" style="display:flex; align-items:center; gap:8px; cursor:pointer;">
                             <span>Magnitud (M):</span>
-                            <span id="mag-val" class="val-display">0.0</span>
+                            <span id="mag-val" class="val-display tabular-num">0.0</span>
                         </label>
                         <button type="button" class="info-btn" data-info="magnitud" aria-label="Instrucciones: Magnitud" title="Instrucciones de uso: Magnitud Sísmica">?</button>
                     </div>
                     <input type="range" id="mag-slider" min="0" max="8" step="0.1" value="0">
                 </div>
 
-                <!-- FILTRO DE PROFUNDIDAD HIPOCENTRAL (SLIDER RANGO Z COMPLETO 250 KM) -->
-                <div class="slider-container" style="margin-top: 15px;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                <!-- Filtro Profundidad Hipocentral -->
+                <div class="slider-container">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
                         <label for="depth-slider" style="display:flex; align-items:center; gap:8px; cursor:pointer;">
-                            <span>Profundidad Máxima:</span>
-                            <span id="depth-val" class="val-display" style="color:#c084fc;">250 km (Todos)</span>
+                            <span>Profundidad máxima:</span>
+                            <span id="depth-val" class="val-display tabular-num" style="color:var(--accent-depth-ui, #c084fc);">250 km (Todos)</span>
                         </label>
                         <button type="button" class="info-btn" data-info="profundidad" aria-label="Instrucciones: Profundidad Hipocentral" title="Instrucciones de uso: Profundidad Hipocentral">?</button>
                     </div>
                     <input type="range" id="depth-slider" min="10" max="250" step="5" value="250">
-                    <div style="display:flex; justify-content:space-between; font-size:var(--fs-2xs); color:var(--text-tertiary); margin-top:2px;">
+                    <div class="slider-scale-hints">
                         <span>&lt; 30 km (Cortical)</span>
                         <span>70–150 km</span>
                         <span>250 km (Todos)</span>
                     </div>
                 </div>
                 
-                <!-- FILTRO TEMPORAL Y REPRODUCTOR TIME-LAPSE -->
-                <div class="slider-container" style="margin-top: 15px;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                <!-- Filtro Temporal y Reproductor Time-Lapse -->
+                <div class="slider-container">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
                         <label for="time-slider" style="display:flex; align-items:center; gap:8px; cursor:pointer;">
-                            <span style="font-size:var(--fs-base); font-weight:500;">Año:</span>
-                            <span id="time-val" class="val-display">1993</span>
+                            <span>Año inicial:</span>
+                            <span id="time-val" class="val-display tabular-num">1993</span>
                         </label>
                         <div style="display:flex; align-items:center; gap:6px;">
-                            <button type="button" id="btn-timelapse-play" style="background:var(--accent); border:none; color:white; border-radius:6px; padding:3px 10px; font-size:var(--fs-xs); font-weight:600; cursor:pointer; display:flex; align-items:center; gap:4px; transition:0.2s;" title="Reproducir evolución cronológica de la sismicidad">
+                            <button type="button" id="btn-timelapse-play" class="timelapse-btn" title="Reproducir evolución cronológica de la sismicidad">
                                 <span id="timelapse-icon">▶</span>
                                 <span id="timelapse-btn-text">Reproducir</span>
                             </button>
@@ -442,25 +417,86 @@
                 </div>
             </section>
 
-            <!-- Capas Avanzadas -->
-            <section class="control-group">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <h3 style="margin: 0;">Capas Avanzadas</h3>
+            <!-- Corte Transversal 3D: Subducción de Nazca (Benioff) [Divulgación progresiva] -->
+            <details class="control-group bento-accordion" id="sec-benioff">
+                <summary class="accordion-summary">
+                    <div class="accordion-title-wrap">
+                        <h3>Perfil 3D de Subducción</h3>
+                        <button type="button" class="info-btn" data-info="benioff" aria-label="Instrucciones: Perfil 3D de Subducción" title="Instrucciones de uso: Perfil 3D de Subducción">?</button>
+                    </div>
+                    <svg class="accordion-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg>
+                </summary>
+                <div class="accordion-body">
+                    <p style="font-size: var(--fs-xs); color: var(--text-secondary); margin: 0; line-height: 1.45;">
+                        Visualiza la inclinación de la <strong>Placa de Nazca</strong> subduciéndose bajo Sudamérica hasta 250 km de profundidad.
+                    </p>
+                    <button type="button" class="btn-secondary" id="btn-benioff" style="width:100%;" title="Activar o desactivar corte transversal 3D Benioff (Atajo: 7)">
+                        <span id="btn-benioff-text">Activar Perfil Benioff</span>
+                    </button>
+
+                    <div id="benioff-controls" class="subpanel-box subpanel-box--info" style="display:none;">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <span class="subpanel-kicker">Corte Transversal Activo</span>
+                            <span id="benioff-status-badge" class="status-pill normal" style="font-size:var(--fs-2xs); padding:2px 8px;">Vista Oeste → Este</span>
+                        </div>
+
+                        <div>
+                            <label for="benioff-sector-select" class="field-label">Sector de corte transversal (Latitud):</label>
+                            <select id="benioff-sector-select" class="custom-select" style="font-size:var(--fs-xs); padding:6px 10px;">
+                                <option value="all">Toda la región (4.0°N a 8.5°N)</option>
+                                <option value="norte">Sector Norte: Bahía Solano - Murindó (6.0° a 8.0°N)</option>
+                                <option value="centro">Sector Centro: Nuquí - Quibdó (5.0° a 6.0°N)</option>
+                                <option value="sur">Sector Sur: San Juan - Buenaventura (4.0° a 5.0°N)</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <div style="display:flex; justify-content:space-between; font-size:var(--fs-xs); margin-bottom:4px;">
+                                <label for="benioff-exag-slider" style="color:var(--text-secondary); font-weight:600;">Exageración vertical (Z):</label>
+                                <span id="benioff-exag-val" class="tabular-num" style="color:var(--accent-ui); font-weight:700;">1.50x</span>
+                            </div>
+                            <input type="range" id="benioff-exag-slider" min="0.5" max="3.0" step="0.25" value="1.5" style="width:100%;">
+                            <div class="slider-scale-hints">
+                                <span>0.5x (Real)</span>
+                                <span>1.5x (Recomendado)</span>
+                                <span>3.0x (Pronunciado)</span>
+                            </div>
+                        </div>
+
+                        <div class="surface-inset" style="padding:8px 10px; font-size:var(--fs-xs); color:var(--text-secondary); line-height:1.4;">
+                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
+                                <div><strong>Buzamiento:</strong> <span class="tabular-num" style="color:var(--accent-ui);">~32° Este</span></div>
+                                <div><strong>Convergencia:</strong> <span class="tabular-num" style="color:var(--accent-ui);">5.4 cm/año</span></div>
+                                <div><strong>Fosa (Oeste):</strong> <span class="tabular-num">0–30 km</span></div>
+                                <div><strong>Losa Benioff:</strong> <span class="tabular-num">80–140 km</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </details>
+
+            <!-- Capas Avanzadas [Divulgación progresiva] -->
+            <details class="control-group bento-accordion" id="sec-capas-avanzadas">
+                <summary class="accordion-summary">
+                    <div class="accordion-title-wrap">
+                        <h3>Capas Avanzadas</h3>
+                        <span id="capas-active-count" class="accordion-count-pill tabular-num">0 activas</span>
                         <button type="button" class="info-btn" data-info="capas_avanzadas" aria-label="Instrucciones: Capas Avanzadas" title="Instrucciones de uso: Capas Avanzadas">?</button>
                     </div>
-                    <button type="button" id="btn-reset-capas" class="reset-icon-btn" aria-label="Restablecer Capas Avanzadas" title="Restablecer Capas Avanzadas">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
-                            <path d="M3 3v5h5"></path>
-                        </svg>
-                        <span id="btn-reset-capas-tt" class="reset-tooltip">
-                            🔄 Restablecer Capas Avanzadas
-                        </span>
-                    </button>
-                </div>
-                <div style="display:flex; flex-direction:column;">
-                    
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <button type="button" id="btn-reset-capas" class="reset-icon-btn" aria-label="Restablecer Capas Avanzadas" title="Restablecer Capas Avanzadas">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                                <path d="M3 3v5h5"></path>
+                            </svg>
+                            <span id="btn-reset-capas-tt" class="reset-tooltip">
+                                Restablecer Capas Avanzadas
+                            </span>
+                        </button>
+                        <svg class="accordion-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg>
+                    </div>
+                </summary>
+                <div class="accordion-body">
                     <div class="switch-container" style="display: flex; align-items: flex-start; justify-content: space-between;">
                         <label for="check-calidad" style="flex: 1; margin-right: 16px; cursor: pointer;">
                             <strong style="margin-bottom: 2px;">Sismos de Alta Precisión</strong>
@@ -483,60 +519,54 @@
                         </div>
                     </div>
 
-                    <!-- Panel Interactivo de Fallas Geológicas (Se activa al encender check-fallas) -->
-                    <div id="fallas-interactive-panel" style="display: none; flex-direction: column; gap: 8px; margin: 4px 0 10px 0; padding: 10px; background: rgba(239,68,68,0.06); border: 1px solid rgba(239,68,68,0.25); border-radius: 10px;">
-                        <!-- Selector de Falla -->
+                    <div id="fallas-interactive-panel" class="subpanel-box subpanel-box--warn" style="display: none;">
                         <div>
-                            <label for="select-falla-activa" style="font-size: var(--fs-xs); color: var(--text-secondary); display: block; margin-bottom: 4px; font-weight: 600;">Estructura Tectónica / Falla Activa:</label>
+                            <label for="select-falla-activa" class="field-label">Estructura tectónica / falla activa:</label>
                             <select id="select-falla-activa" class="custom-select" style="font-size: var(--fs-xs); padding: 5px 8px; width: 100%;">
-                                <option value="all">⚡ Todas las Fallas (11 Sistemas)</option>
-                                <option value="fosa_nazca">🌊 Fosa de Subducción de Nazca (Mmax 8.8)</option>
-                                <option value="falla_murindo">↔️ Falla de Murindó (Mmax 7.3 - Sismo 1992)</option>
-                                <option value="falla_atrato">↔️ Falla Atrato - Uramita (Mmax 7.0 - Quibdó)</option>
-                                <option value="falla_bahia_solano">⛰️ Falla de Bahía Solano (Mmax 6.8 - Sismo 1970)</option>
-                                <option value="falla_garrapatas">↔️ Falla Garrapatas (Mmax 6.9 - Chocó/Valle)</option>
-                                <option value="falla_romeral">⛰️ Sistema Romeral (Mmax 7.2 - Eje Cafetero)</option>
-                                <option value="falla_san_juan">↔️ Falla San Juan - Condoto (Mmax 6.7)</option>
-                                <option value="falla_nuqui_baudo">⛰️ Falla Nuquí - Baudó (Mmax 6.7)</option>
-                                <option value="falla_dabeiba">↔️ Falla Dabeiba - Mutatá (Mmax 7.0 - Urabá)</option>
-                                <option value="falla_mistrato">⛰️ Falla Mistrató - Pueblo Rico (Mmax 6.6)</option>
-                                <option value="falla_cauca">↔️ Falla Cauca - Almaguer (Mmax 7.1)</option>
+                                <option value="all">Todas las Fallas (11 Sistemas)</option>
+                                <option value="fosa_nazca">Fosa de Subducción de Nazca (Mmax 8.8)</option>
+                                <option value="falla_murindo">Falla de Murindó (Mmax 7.3 · Sismo 1992)</option>
+                                <option value="falla_atrato">Falla Atrato - Uramita (Mmax 7.0 · Quibdó)</option>
+                                <option value="falla_bahia_solano">Falla de Bahía Solano (Mmax 6.8 · Sismo 1970)</option>
+                                <option value="falla_garrapatas">Falla Garrapatas (Mmax 6.9 · Chocó/Valle)</option>
+                                <option value="falla_romeral">Sistema Romeral (Mmax 7.2 · Eje Cafetero)</option>
+                                <option value="falla_san_juan">Falla San Juan - Condoto (Mmax 6.7)</option>
+                                <option value="falla_nuqui_baudo">Falla Nuquí - Baudó (Mmax 6.7)</option>
+                                <option value="falla_dabeiba">Falla Dabeiba - Mutatá (Mmax 7.0 · Urabá)</option>
+                                <option value="falla_mistrato">Falla Mistrató - Pueblo Rico (Mmax 6.6)</option>
+                                <option value="falla_cauca">Falla Cauca - Almaguer (Mmax 7.1)</option>
                             </select>
                         </div>
 
-                        <!-- Filtros Cinemáticos Rápidos -->
                         <div style="display: flex; gap: 4px; align-items: center;">
-                            <button type="button" class="falla-tipo-btn active" data-tipo="all" style="flex:1; font-size:var(--fs-2xs); padding:4px 2px; border-radius:6px; background:rgba(255,255,255,0.15); color:#fff; border:1px solid rgba(255,255,255,0.25); cursor:pointer; font-weight:600;">Todas</button>
-                            <button type="button" class="falla-tipo-btn" data-tipo="subduccion" style="flex:1; font-size:var(--fs-2xs); padding:4px 2px; border-radius:6px; background:transparent; color:#38bdf8; border:1px solid rgba(56,189,248,0.3); cursor:pointer;">Subducción</button>
-                            <button type="button" class="falla-tipo-btn" data-tipo="rumbo" style="flex:1; font-size:var(--fs-2xs); padding:4px 2px; border-radius:6px; background:transparent; color:#fbbf24; border:1px solid rgba(251,191,36,0.3); cursor:pointer;">Rumbo</button>
-                            <button type="button" class="falla-tipo-btn" data-tipo="inversa" style="flex:1; font-size:var(--fs-2xs); padding:4px 2px; border-radius:6px; background:transparent; color:#f87171; border:1px solid rgba(248,113,113,0.3); cursor:pointer;">Inversas</button>
+                            <button type="button" class="falla-tipo-btn active" data-tipo="all">Todas</button>
+                            <button type="button" class="falla-tipo-btn" data-tipo="subduccion">Subducción</button>
+                            <button type="button" class="falla-tipo-btn" data-tipo="rumbo">Rumbo</button>
+                            <button type="button" class="falla-tipo-btn" data-tipo="inversa">Inversas</button>
                         </div>
 
-                        <!-- Switch de Franja de Retiro / Amortiguamiento (Buffer 5 km) -->
-                        <label for="check-fallas-buffer" style="display: flex; align-items: center; justify-content: space-between; padding: 6px 0; border-top: 1px solid rgba(255,255,255,0.08); cursor: pointer; user-select: none;">
-                            <span style="font-size: var(--fs-xs); color: #e2e8f0; font-weight: 500;">Zona de Influencia / Retiro (5 km)</span>
-                            <span class="switch" style="transform: scale(0.85); cursor: pointer; pointer-events: auto;">
-                                <input type="checkbox" id="check-fallas-buffer" style="cursor: pointer;">
+                        <label for="check-fallas-buffer" class="subpanel-check-row">
+                            <span>Zona de influencia / retiro (5 km)</span>
+                            <span class="switch" style="transform: scale(0.85);">
+                                <input type="checkbox" id="check-fallas-buffer">
                                 <span class="slider"></span>
                             </span>
                         </label>
 
-                        <!-- Tarjeta Informativa de la Falla Seleccionada -->
-                        <div id="falla-info-card" style="display: flex; flex-direction: column; background: rgba(0,0,0,0.35); border-radius: 8px; padding: 8px; border: 1px solid rgba(255,255,255,0.08); font-size: var(--fs-xs); line-height: 1.4;">
+                        <div id="falla-info-card" class="surface-inset" style="padding: 8px; font-size: var(--fs-xs); line-height: 1.4;">
                             <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:4px;">
-                                <strong id="falla-card-nombre" style="color:#fff; font-size:var(--fs-xs);">Falla de Murindó</strong>
-                                <span id="falla-card-badge" class="status-pill normal" style="font-size:var(--fs-2xs); padding:1px 6px; background:rgba(245,158,11,0.2); color:#fbbf24; border:1px solid rgba(245,158,11,0.4);">Rumbo Dextral</span>
+                                <strong id="falla-card-nombre" style="color:var(--text-primary); font-size:var(--fs-xs);">Falla de Murindó</strong>
+                                <span id="falla-card-badge" class="status-pill alerta" style="font-size:var(--fs-2xs); padding:1px 6px;">Rumbo Dextral</span>
                             </div>
                             <div style="display:grid; grid-template-columns:1fr 1fr; gap:4px; color:var(--text-secondary); margin-bottom:6px;">
-                                <div>Tasa: <strong id="falla-card-tasa" style="color:#e2e8f0;">3.5 mm/año</strong></div>
-                                <div>Mmax: <strong id="falla-card-mmax" style="color:#ef4444;">7.3 Mw</strong></div>
-                                <div>Longitud: <strong id="falla-card-longitud" style="color:#e2e8f0;">185 km</strong></div>
-                                <div>Sismos cerca: <strong id="falla-card-sismos" style="color:#38bdf8;">--</strong></div>
+                                <div>Tasa: <strong id="falla-card-tasa" class="tabular-num" style="color:var(--text-primary);">3.5 mm/año</strong></div>
+                                <div>Mmax: <strong id="falla-card-mmax" class="tabular-num" style="color:var(--danger);">7.3 Mw</strong></div>
+                                <div>Longitud: <strong id="falla-card-longitud" class="tabular-num" style="color:var(--text-primary);">185 km</strong></div>
+                                <div>Sismos cerca: <strong id="falla-card-sismos" class="tabular-num" style="color:var(--accent-ui);">--</strong></div>
                             </div>
-                            <p id="falla-card-sismo-hist" style="margin:0; color:#fbbf24; font-size:var(--fs-2xs); font-style:italic;">Sismo 1992 (Mw 7.1 y 7.2)</p>
+                            <p id="falla-card-sismo-hist" style="margin:0; color:var(--pill-warn-fg); font-size:var(--fs-2xs); font-style:italic;">Sismo 1992 (Mw 7.1 y 7.2)</p>
                         </div>
                     </div>
-
 
                     <div class="switch-container" style="display: flex; align-items: flex-start; justify-content: space-between;">
                         <label for="check-ml" style="flex: 1; margin-right: 16px; cursor: pointer;">
@@ -553,7 +583,7 @@
                         <label for="check-live-sgc" style="flex: 1; margin-right: 16px; cursor: pointer;">
                             <span style="display:flex; align-items:center; gap:6px; margin-bottom:2px;">
                                 <strong>Telemetría FDSN Live</strong>
-                                <span id="sgc-live-status-badge" style="display:none; font-size:var(--fs-2xs); padding:1px 6px; border-radius:8px; font-weight:600; background:rgba(52,211,153,0.15); color:#34d399; border:1px solid rgba(52,211,153,0.3); font-family: var(--font-mono);">● EN VIVO</span>
+                                <span id="sgc-live-status-badge" class="status-pill seguro" style="display:none; font-size:var(--fs-2xs); padding:1px 6px;">EN VIVO</span>
                             </span>
                             <span id="sgc-live-subtext" style="display:block; font-size:var(--fs-xs); color:var(--text-secondary);">FDSN en vivo 14d · EMSC / USGS (M≥3.5)</span>
                         </label>
@@ -563,11 +593,10 @@
                         </div>
                     </div>
 
-                    <!-- Configuración Personalizada de Alerta Telemétrica (Umbral de Alerta Visual) -->
-                    <div id="sgc-alert-settings" style="display:none; flex-direction:column; gap:8px; margin-top:-6px; margin-bottom:8px; padding:10px 12px; background:rgba(16,185,129,0.06); border:1px solid rgba(16,185,129,0.25); border-radius:10px;">
+                    <div id="sgc-alert-settings" class="subpanel-box subpanel-box--ok" style="display:none;">
                         <div style="display:flex; justify-content:space-between; align-items:center;">
-                            <label for="slider-alert-threshold" style="font-size:var(--fs-xs); color:var(--text-secondary); cursor:pointer;">Umbral de Alerta Visual en Vivo:</label>
-                            <strong id="alert-mag-threshold-val" style="font-size:var(--fs-sm); color:#ffd60a; font-family: var(--font-mono);">≥ 4.0 M</strong>
+                            <label for="slider-alert-threshold" style="font-size:var(--fs-xs); color:var(--text-secondary); cursor:pointer;">Umbral de alerta visual en vivo:</label>
+                            <strong id="alert-mag-threshold-val" class="tabular-num" style="font-size:var(--fs-sm); color:var(--pill-warn-fg);">≥ 4.0 M</strong>
                         </div>
                         <input type="range" id="slider-alert-threshold" min="3.0" max="6.5" step="0.1" value="4.0" style="width:100%; height:4px; accent-color:#10b981; cursor:pointer;" title="Ajustar magnitud mínima para despliegue de banner flotante">
                     </div>
@@ -583,126 +612,141 @@
                         </div>
                     </div>
 
-                    <!-- Panel Interactivo de Consulta Puntual SGC OGC (Se despliega al activar check-sgc-wms) -->
-                    <div id="sgc-wms-query-box" style="display:none; flex-direction:column; gap:6px; margin-top:-4px; margin-bottom:8px; padding:10px 12px; background:rgba(56,189,248,0.06); border:1px solid rgba(56,189,248,0.28); border-radius:10px;">
+                    <div id="sgc-wms-query-box" class="subpanel-box subpanel-box--info" style="display:none;">
                         <div style="display:flex; justify-content:space-between; align-items:center; gap:6px;">
-                            <span style="font-size:var(--fs-xs); font-weight:600; color:#38bdf8;">Consulta OGC SGC (Tr=475a)</span>
-                            <button type="button" id="btn-sgc-query-municipio" style="background:rgba(56,189,248,0.16); border:1px solid rgba(56,189,248,0.35); color:#38bdf8; border-radius:6px; padding:3px 8px; font-size:var(--fs-2xs); font-weight:600; cursor:pointer;">📍 Consultar cabecera</button>
+                            <span style="font-size:var(--fs-xs); font-weight:600; color:var(--accent-ui);">Consulta OGC SGC (Tr=475a)</span>
+                            <button type="button" id="btn-sgc-query-municipio" class="compact-action-btn">Consultar cabecera</button>
                         </div>
                         <div id="sgc-wms-identify-result" style="font-size:var(--fs-xs); color:var(--text-secondary); line-height:1.4;">
-                            Haz clic sobre cualquier punto del mapa o pulsa <em>Consultar cabecera</em> para leer PGA, Sa(0.2s) y Sa(1.0s) desde el servidor oficial del SGC.
+                            Haga clic sobre cualquier punto del mapa o pulse <em>Consultar cabecera</em> para leer PGA, Sa(0.2s) y Sa(1.0s) desde el servidor oficial del SGC.
                         </div>
                     </div>
+                </div>
+            </details>
 
-                </div>
-            </section>
-
-            <!-- ESCENARIOS SÍSMICOS DETERMINISTAS (SHAKEMAP / MMI & PGA) -->
-            <section class="control-group">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <h3>Escenario Sísmico Determinista (ShakeMap)</h3>
-                    <button type="button" class="info-btn" data-info="shakemap_info" aria-label="Instrucciones: Simulador ShakeMap" title="Instrucciones de uso: Escenario Sísmico Determinista (ShakeMap)">?</button>
-                </div>
-                <p style="font-size: var(--fs-xs); color: var(--text-secondary); margin: 0; line-height: 1.4;">
-                    Modelado sismotectónico de propagación de ondas y ruptura cosísmica finita mediante relaciones GMPE y atenuación regional.
-                </p>
-                <div>
-                    <label for="select-shakemap-escenario" style="font-size: var(--fs-xs); color: var(--text-secondary); display: block; margin-bottom: 4px; font-weight: 600;">Escenario Determinista de Ruptura:</label>
-                    <select id="select-shakemap-escenario" class="custom-select" style="font-size: var(--fs-xs); padding: 6px 10px; width: 100%;">
-                        <option value="palmar_74" selected>⚡ Sismo 10 de Agosto de 2026 (Mw 7.4 - Losa Benioff 108 km)</option>
-                        <option value="murindo_73">💥 Falla Murindó - 1992 (Mw 7.3 - Superficial 15 km)</option>
-                        <option value="subduccion_82">🌊 Megaterremoto Subducción Nazca - 1906/1979 (Mw 8.2)</option>
-                        <option value="atrato_68">⚡ Falla Atrato - Quibdó - Modelo MCE (Mw 6.8 - 12 km)</option>
-                        <option value="bahia_solano_70">⛰️ Falla Bahía Solano - 1970 (Mw 7.0 - Costa Pacífica)</option>
-                    </select>
-                </div>
-                <div style="display: flex; gap: 8px;">
-                    <button type="button" class="btn-secondary" id="btn-toggle-shakemap" style="flex: 1; background: rgba(255,59,48,0.15); color: #ff453a; border-color: rgba(255,59,48,0.35); font-size: var(--fs-sm); padding: 9px 12px; cursor: pointer;">
-                        <span id="btn-shakemap-text">⚡ Simular Ruptura Sísmica</span>
-                    </button>
-                    <button type="button" class="btn-secondary" id="btn-clear-shakemap" title="Cerrar y limpiar simulación de ShakeMap" style="display: none; width: auto; padding: 9px 14px; background: rgba(255,255,255,0.08); color: #ff453a; border-color: rgba(255,69,58,0.3); font-size: var(--fs-xs); cursor: pointer;">
-                        <span>🧹 Limpiar</span>
-                    </button>
-                </div>
-                <!-- Panel Cinemático de Frentes de Onda (P & S) y Huella Lobular Continua -->
-                <div id="shakemap-wave-controls" style="display:none; margin-top:8px; background:rgba(15,23,42,0.75); border:1px solid rgba(56,189,248,0.3); border-radius:10px; padding:10px 12px;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                        <div style="display:flex; align-items:center; gap:6px;">
-                            <span style="font-size:var(--fs-sm);">⏱️</span>
-                            <strong style="font-size:var(--fs-xs); color:#38bdf8; text-transform:uppercase; letter-spacing:0.04em;">Cinemática Cosísmica</strong>
-                        </div>
-                        <span id="shakemap-timer-label" style="font-family: var(--font-mono); font-size:var(--fs-sm); color:#ffd60a; font-weight:700; background:rgba(0,0,0,0.5); padding:2px 8px; border-radius:6px; border:1px solid rgba(255,214,10,0.3);">t = 0.0 s</span>
+            <!-- Escenarios Sísmicos Deterministas (ShakeMap) [Divulgación progresiva] -->
+            <details class="control-group bento-accordion" id="sec-shakemap">
+                <summary class="accordion-summary">
+                    <div class="accordion-title-wrap">
+                        <h3>Escenario ShakeMap</h3>
+                        <button type="button" class="info-btn" data-info="shakemap_info" aria-label="Instrucciones: Simulador ShakeMap" title="Instrucciones de uso: Escenario Sísmico Determinista (ShakeMap)">?</button>
                     </div>
-
-                    <!-- Barra de Progreso Temporal -->
-                    <div style="width:100%; height:6px; background:rgba(255,255,255,0.1); border-radius:3px; overflow:hidden; margin-bottom:8px;">
-                        <div id="shakemap-timer-progress" style="width:0%; height:100%; background:linear-gradient(90deg, #38bdf8, #ff453a); transition:width 0.1s linear;"></div>
+                    <svg class="accordion-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg>
+                </summary>
+                <div class="accordion-body">
+                    <p style="font-size: var(--fs-xs); color: var(--text-secondary); margin: 0; line-height: 1.45;">
+                        Modelado sismotectónico de propagación de ondas y ruptura cosísmica finita mediante relaciones GMPE y atenuación regional.
+                    </p>
+                    <div>
+                        <label for="select-shakemap-escenario" class="field-label">Escenario determinista de ruptura:</label>
+                        <select id="select-shakemap-escenario" class="custom-select" style="font-size: var(--fs-xs); padding: 6px 10px; width: 100%;">
+                            <option value="palmar_74" selected>Sismo 10 de Agosto de 2026 (Mw 7.4 · Losa Benioff 108 km)</option>
+                            <option value="murindo_73">Falla Murindó - 1992 (Mw 7.3 · Superficial 15 km)</option>
+                            <option value="subduccion_82">Megaterremoto Subducción Nazca - 1906/1979 (Mw 8.2)</option>
+                            <option value="atrato_68">Falla Atrato - Quibdó - Modelo MCE (Mw 6.8 · 12 km)</option>
+                            <option value="bahia_solano_70">Falla Bahía Solano - 1970 (Mw 7.0 · Costa Pacífica)</option>
+                        </select>
                     </div>
-
-                    <!-- Botones de Control de Onda -->
-                    <div style="display:flex; gap:6px; margin-bottom:8px;">
-                        <button type="button" id="btn-wave-play" class="btn-secondary" style="flex:1; padding:6px 8px; font-size:var(--fs-xs); background:rgba(56,189,248,0.15); color:#38bdf8; border-color:rgba(56,189,248,0.35);">
-                            <span id="wave-play-icon">▶</span> <span id="wave-play-text">Propagar Ondas</span>
+                    <div style="display:flex; gap:8px;">
+                        <button type="button" class="btn-secondary btn-danger-outline" id="btn-toggle-shakemap" title="Simular atenuación ShakeMap de ruptura finita en el mapa 3D" style="flex: 1; font-size: var(--fs-sm); padding: 9px 12px;">
+                            <span id="btn-shakemap-text">Simular Ruptura Sísmica</span>
                         </button>
-                        <button type="button" id="btn-wave-reset" class="btn-secondary" style="padding:6px 10px; font-size:var(--fs-xs); background:rgba(255,255,255,0.06); color:#cbd5e1;">
-                            <span>↺ Reiniciar</span>
+                        <button type="button" class="btn-secondary" id="btn-clear-shakemap" title="Cerrar y limpiar simulación de ShakeMap" style="display: none; width: auto; padding: 9px 14px; font-size: var(--fs-xs);">
+                            <span>Limpiar</span>
                         </button>
                     </div>
-
-                    <!-- Frentes de Onda Activos & Leyenda Cinemática -->
-                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:var(--fs-2xs); margin-bottom:8px;">
-                        <div style="background:rgba(56,189,248,0.1); border-left:2.5px solid #38bdf8; padding:4px 6px; border-radius:4px;">
-                            <strong style="color:#38bdf8;">Onda P (Compresional):</strong><br>
-                            <span style="color:#cbd5e1;">Vp ≈ 6.0 km/s (Alerta previa)</span>
+                    <div id="shakemap-wave-controls" class="surface-inset" style="display:none; padding:10px 12px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                            <strong style="font-size:var(--fs-xs); color:var(--accent-ui); text-transform:uppercase; letter-spacing:0.04em;">Cinemática Cosísmica</strong>
+                            <span id="shakemap-timer-label" class="tabular-num" style="font-family: var(--font-mono); font-size:var(--fs-sm); color:var(--pill-warn-fg); font-weight:700; padding:2px 8px; border-radius:6px;">t = 0.0 s</span>
                         </div>
-                        <div style="background:rgba(255,69,58,0.1); border-left:2.5px solid #ff453a; padding:4px 6px; border-radius:4px;">
-                            <strong style="color:#ff453a;">Onda S (Cizallante):</strong><br>
-                            <span style="color:#cbd5e1;">Vs ≈ 3.5 km/s (Destructora)</span>
+
+                        <div style="width:100%; height:6px; background:var(--border-subtle); border-radius:3px; overflow:hidden; margin-bottom:8px;">
+                            <div id="shakemap-timer-progress" style="width:0%; height:100%; background:linear-gradient(90deg, #38bdf8, #ff453a); transition:width 0.1s linear;"></div>
+                        </div>
+
+                        <div style="display:flex; gap:6px; margin-bottom:8px;">
+                            <button type="button" id="btn-wave-play" class="btn-secondary" style="flex:1; padding:6px 8px; font-size:var(--fs-xs);">
+                                <span id="wave-play-icon">▶</span> <span id="wave-play-text">Propagar Ondas</span>
+                            </button>
+                            <button type="button" id="btn-wave-reset" class="btn-secondary" style="padding:6px 10px; font-size:var(--fs-xs);">
+                                <span>↺ Reiniciar</span>
+                            </button>
+                        </div>
+
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:var(--fs-2xs); margin-bottom:8px;">
+                            <div class="surface-card-soft" style="border-left:2.5px solid #38bdf8; padding:4px 6px; border-radius:4px;">
+                                <strong style="color:var(--accent-ui);">Onda P (Compresional):</strong><br>
+                                <span class="text-secondary">Vp ≈ 6.0 km/s (Alerta previa)</span>
+                            </div>
+                            <div class="surface-card-soft" style="border-left:2.5px solid #ff453a; padding:4px 6px; border-radius:4px;">
+                                <strong style="color:var(--danger);">Onda S (Cizallante):</strong><br>
+                                <span class="text-secondary">Vs ≈ 3.5 km/s (Destructora)</span>
+                            </div>
+                        </div>
+
+                        <div style="border-top:1px solid var(--border-subtle); padding-top:6px; font-size:var(--fs-2xs); color:var(--text-secondary);">
+                            <div style="display:flex; justify-content:space-between; margin-bottom:2px;">
+                                <span>Impacto en Quibdó:</span>
+                                <strong id="shakemap-eta-quibdo" class="tabular-num" style="color:var(--text-primary);">Calculando...</strong>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; margin-bottom:2px;">
+                                <span>Impacto en Istmina:</span>
+                                <strong id="shakemap-eta-istmina" class="tabular-num" style="color:var(--text-primary);">Calculando...</strong>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; margin-bottom:2px;">
+                                <span>Percepción en Medellín:</span>
+                                <strong id="shakemap-eta-medellin" class="tabular-num" style="color:var(--accent-ui);">Calculando...</strong>
+                            </div>
+                            <div style="display:flex; justify-content:space-between;">
+                                <span>Percepción en Sucre (Sincelejo):</span>
+                                <strong id="shakemap-eta-sucre" class="tabular-num" style="color:var(--accent-ui);">Calculando...</strong>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Arribo Estimado a Cabeceras y Departamentos -->
-                    <div style="border-top:1px solid rgba(255,255,255,0.08); padding-top:6px; font-size:var(--fs-2xs); color:#94a3b8;">
-                        <div style="display:flex; justify-content:space-between; margin-bottom:2px;">
-                            <span>Impacto en Quibdó:</span>
-                            <strong id="shakemap-eta-quibdo" style="color:#fff;">Calculando...</strong>
+                    <div id="shakemap-impact-box" class="surface-inset" style="display:none; border-color:rgba(255,69,58,0.4); padding:10px 12px; font-size:var(--fs-xs); color:var(--text-secondary); line-height:1.45;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                            <strong id="shakemap-epicentro-label" style="color:var(--danger); font-size:var(--fs-xs);">Epicentro: Murindó</strong>
+                            <span id="shakemap-mmi-max" class="status-pill critico" style="font-size:var(--fs-2xs); padding:2px 7px;">MMI VIII - IX</span>
                         </div>
-                        <div style="display:flex; justify-content:space-between; margin-bottom:2px;">
-                            <span>Impacto en Istmina:</span>
-                            <strong id="shakemap-eta-istmina" style="color:#fff;">Calculando...</strong>
-                        </div>
-                        <div style="display:flex; justify-content:space-between; margin-bottom:2px;">
-                            <span>Percepción en Medellín:</span>
-                            <strong id="shakemap-eta-medellin" style="color:#38bdf8;">Calculando...</strong>
-                        </div>
-                        <div style="display:flex; justify-content:space-between;">
-                            <span>Percepción en Sucre (Sincelejo):</span>
-                            <strong id="shakemap-eta-sucre" style="color:#60a5fa;">Calculando...</strong>
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:var(--fs-2xs);">
+                            <div>PGA Epicentral: <strong id="shakemap-pga-max" class="tabular-num" style="color:var(--text-primary);">0.65 g</strong></div>
+                            <div>Plano Ruptura: <strong id="shakemap-radio-destr" class="tabular-num" style="color:var(--pill-warn-fg);">~48 km</strong></div>
                         </div>
                     </div>
                 </div>
-
-                <div id="shakemap-impact-box" style="display:none; background:rgba(0,0,0,0.45); border:1px solid rgba(255,69,58,0.4); border-radius:10px; padding:10px 12px; font-size:var(--fs-xs); color:var(--text-secondary); line-height:1.45; box-shadow:0 4px 16px rgba(0,0,0,0.3);">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                        <strong id="shakemap-epicentro-label" style="color:#ff453a; font-size:var(--fs-xs);">Epicentro: Murindó</strong>
-                        <span id="shakemap-mmi-max" class="status-pill critico" style="font-size:var(--fs-2xs); padding:2px 7px;">MMI VIII - IX</span>
-                    </div>
-                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:var(--fs-2xs);">
-                        <div>PGA Epicentral: <strong id="shakemap-pga-max" style="color:#fff;">0.65 g</strong></div>
-                        <div>Plano Ruptura: <strong id="shakemap-radio-destr" style="color:#ffd60a;">~48 km</strong></div>
-                    </div>
-                </div>
-            </section>
+            </details>
             
-            <!-- Acciones y Exportación Abierta / Impresión -->
-            <section class="control-group">
-                <div class="toggle-group" style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
-                    <button type="button" class="toggle-btn" id="btn-export-csv" title="Exportar catálogo filtrado en CSV (UTF-8 Excel)">📥 CSV</button>
-                    <button type="button" class="toggle-btn" id="btn-export-geojson" title="Exportar subconjunto sísmico filtrado en GeoJSON">🌐 GeoJSON</button>
-                    <button type="button" class="toggle-btn" id="btn-export-png" title="Descargar imagen cartográfica PNG de alta resolución">🖼️ Mapa PNG</button>
-                    <button type="button" class="toggle-btn" id="btn-print" title="Imprimir o guardar reporte en PDF">🖨️ Reporte PDF</button>
+            <!-- Acciones y Exportación Abierta / Impresión [Divulgación progresiva] -->
+            <details class="control-group bento-accordion" id="sec-export">
+                <summary class="accordion-summary">
+                    <div class="accordion-title-wrap">
+                        <h3>Exportación y Reportes</h3>
+                    </div>
+                    <svg class="accordion-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg>
+                </summary>
+                <div class="accordion-body">
+                    <div class="toggle-group export-grid">
+                        <button type="button" class="toggle-btn export-action-btn" id="btn-export-csv" title="Exportar catálogo filtrado en CSV (UTF-8 Excel)">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" x2="12" y1="15" y2="3"></line></svg>
+                            <span>CSV</span>
+                        </button>
+                        <button type="button" class="toggle-btn export-action-btn" id="btn-export-geojson" title="Exportar subconjunto sísmico filtrado en GeoJSON">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path><path d="M2 12h20"></path></svg>
+                            <span>GeoJSON</span>
+                        </button>
+                        <button type="button" class="toggle-btn export-action-btn" id="btn-export-png" title="Descargar imagen cartográfica PNG de alta resolución">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path></svg>
+                            <span>Mapa PNG</span>
+                        </button>
+                        <button type="button" class="toggle-btn export-action-btn" id="btn-print" title="Imprimir o guardar reporte en PDF">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect width="12" height="8" x="6" y="14"></rect></svg>
+                            <span>Reporte PDF</span>
+                        </button>
+                    </div>
                 </div>
-            </section>
+            </details>
         </div>
 
         <!-- ==================================================================
@@ -716,16 +760,18 @@
                 </div>
                 <div style="display:flex; flex-direction:column; gap:10px;">
                     <div>
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-                            <label for="nsr-municipio-select" style="font-size:var(--fs-xs); color:var(--text-secondary); margin:0; font-weight:600; text-transform:uppercase;">Municipio (Chocó, Risaralda, Caldas, Valle):</label>
-                            <button type="button" id="btn-nsr-locate" style="background:rgba(56,189,248,0.15); border:1px solid rgba(56,189,248,0.35); color:#38bdf8; border-radius:6px; font-size:var(--fs-2xs); padding:2px 8px; cursor:pointer; font-weight:600; display:inline-flex; align-items:center; gap:4px; transition:all 0.2s ease;" title="Enfocar cabecera municipal seleccionada en el mapa 3D">
-                                <span>📍 Enfocar</span>
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                            <label for="nsr-municipio-select" class="field-label" style="margin:0;">Municipio (Chocó, Risaralda, Caldas, Valle):</label>
+                            <button type="button" id="btn-nsr-locate" class="compact-locate-btn compact-locate-btn--info" title="Enfocar cabecera municipal seleccionada en el mapa 3D">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                                <span>Enfocar</span>
                             </button>
                         </div>
+                        <input type="search" id="nsr-municipio-search" class="municipio-search-input" placeholder="Filtrar municipio por nombre..." aria-label="Buscar municipio para parámetros NSR-10" autocomplete="off">
                         <select id="nsr-municipio-select" class="custom-select"></select>
                     </div>
                     <div>
-                        <label for="nsr-suelo-select" style="font-size:var(--fs-xs); color:var(--text-secondary); display:block; margin-bottom:4px; font-weight:600; text-transform:uppercase;">Perfil de Suelo (NSR-10 Tit. A.2.4):</label>
+                        <label for="nsr-suelo-select" class="field-label">Perfil de suelo (NSR-10 Tit. A.2.4):</label>
                         <select id="nsr-suelo-select" class="custom-select">
                             <option value="A">Perfil A: Roca Competente (Vs &gt; 1500 m/s)</option>
                             <option value="B">Perfil B: Roca Media (760 &lt; Vs ≤ 1500 m/s)</option>
@@ -736,7 +782,7 @@
                         </select>
                     </div>
                     <div>
-                        <label for="nsr-grupo-uso-select" style="font-size:var(--fs-xs); color:var(--text-secondary); display:block; margin-bottom:4px; font-weight:600; text-transform:uppercase;">Grupo de Uso / Importancia (I) NSR-10:</label>
+                        <label for="nsr-grupo-uso-select" class="field-label">Grupo de uso / importancia (I) NSR-10:</label>
                         <select id="nsr-grupo-uso-select" class="custom-select">
                             <option value="1.00" selected>Grupo I: Normal (Residencial / Comercial común) — I = 1.00</option>
                             <option value="1.10">Grupo II: Ocupación Especial (Comercio masivo, graderías) — I = 1.10</option>
@@ -745,8 +791,8 @@
                         </select>
                     </div>
                     <!-- Feedback Geotécnico Dinámico en Tiempo Real -->
-                    <div id="nsr-geotecnia-feedback" style="padding: 10px 12px; background: rgba(56,189,248,0.08); border-left: 3px solid #38bdf8; border-radius: 8px; font-size: var(--fs-xs); line-height: 1.45; color: #E1E1E6; transition: all 0.25s ease;">
-                        <strong id="nsr-geo-titulo" style="color:#38bdf8; display:block; margin-bottom:2px;">Perfil E — Suelos Blandos / Aluviales (Vs &lt; 180 m/s)</strong>
+                    <div id="nsr-geotecnia-feedback" class="subpanel-box subpanel-box--info" style="border-left: 3px solid var(--accent-ui); border-radius: 8px; font-size: var(--fs-xs); line-height: 1.45; color: var(--text-secondary);">
+                        <strong id="nsr-geo-titulo" style="color:var(--accent-ui); display:block; margin-bottom:2px;">Perfil E — Suelos Blandos / Aluviales (Vs &lt; 180 m/s)</strong>
                         <span id="nsr-geo-cuerpo">Depósitos aluviales y litorales. Alta amplificación sísmica y riesgo de resonancia en periodos largos.</span>
                     </div>
                 </div>
@@ -755,32 +801,32 @@
                 <div class="nsr-metrics-grid">
                     <div class="metric-card">
                         <span class="metric-label">Aa (Acel. Roca)</span>
-                        <span class="metric-value" id="nsr-aa-val">0.35 g</span>
+                        <span class="metric-value tabular-num" id="nsr-aa-val">0.35 g</span>
                         <span class="metric-desc">Aceleración Pico NSR-10</span>
                     </div>
                     <div class="metric-card">
                         <span class="metric-label">Av (Veloc. Roca)</span>
-                        <span class="metric-value" id="nsr-av-val">0.35 g</span>
+                        <span class="metric-value tabular-num" id="nsr-av-val">0.35 g</span>
                         <span class="metric-desc">Velocidad Pico NSR-10</span>
                     </div>
                     <div class="metric-card">
                         <span class="metric-label">Fa (Amplif. Corta)</span>
-                        <span class="metric-value" id="nsr-fa-val">1.05</span>
+                        <span class="metric-value tabular-num" id="nsr-fa-val">1.05</span>
                         <span class="metric-desc">Factor de Sitio Corto</span>
                     </div>
                     <div class="metric-card">
                         <span class="metric-label">Fv (Amplif. Larga)</span>
-                        <span class="metric-value" id="nsr-fv-val">2.60</span>
+                        <span class="metric-value tabular-num" id="nsr-fv-val">2.60</span>
                         <span class="metric-desc">Factor de Sitio Largo</span>
                     </div>
                     <div class="metric-card">
                         <span class="metric-label">Coef. Importancia (I)</span>
-                        <span class="metric-value" id="nsr-i-val" style="color:#c084fc;">1.00</span>
+                        <span class="metric-value tabular-num" id="nsr-i-val" style="color:var(--accent-depth-ui, #c084fc);">1.00</span>
                         <span class="metric-desc" id="nsr-i-desc">Grupo I: Normal</span>
                     </div>
                     <div class="metric-card">
                         <span class="metric-label">PGA Terreno (Fa×Aa)</span>
-                        <span class="metric-value" id="nsr-pga-diseno" style="color:#38bdf8;">0.37 g</span>
+                        <span class="metric-value tabular-num" id="nsr-pga-diseno" style="color:var(--accent-ui);">0.37 g</span>
                         <span class="metric-desc">Aceleración máx suelo</span>
                     </div>
                     <div class="metric-card highlight" style="grid-column: span 2;">
@@ -788,41 +834,42 @@
                             <span class="metric-label" style="margin:0;">Sa Máx Meseta (2.5 × Aa × Fa × I)</span>
                             <span id="nsr-demanda-badge" class="status-pill alerta" style="font-size:var(--fs-2xs); padding:3px 8px;">Demanda Moderada</span>
                         </div>
-                        <span class="metric-value" id="nsr-samax-card" style="color:#38bdf8; font-size:var(--fs-lg); display:block;">0.92 g</span>
+                        <span class="metric-value tabular-num" id="nsr-samax-card" style="color:var(--accent-ui); font-size:var(--fs-lg); display:block;">0.92 g</span>
                         <span class="metric-desc">Aceleración de diseño estructural elástico para edificaciones de periodo intermedio-corto</span>
                     </div>
                 </div>
 
                 <!-- Espectro Elástico de Diseño NSR-10 (Sa vs T) -->
-                <div style="margin-top:14px; background:rgba(0,0,0,0.35); border:1px solid rgba(56,189,248,0.25); border-radius:12px; padding:12px;">
+                <div class="surface-inset" style="margin-top:6px; border-color:rgba(56,189,248,0.25); padding:12px;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                        <span style="font-size:var(--fs-sm); font-weight:700; color:#38bdf8; text-transform:uppercase; letter-spacing:0.04em;">Espectro Elástico NSR-10 (Sa vs T)</span>
+                        <span style="font-size:var(--fs-sm); font-weight:700; color:var(--accent-ui); text-transform:uppercase; letter-spacing:0.04em;">Espectro NSR-10 (Sa vs T)</span>
                         <div style="display:flex; gap:6px; align-items:center;">
-                            <span id="nsr-amplificacion-comparativa" style="font-size:var(--fs-2xs); padding:2px 8px; border-radius:12px; background:rgba(56,189,248,0.15); color:#38bdf8; font-weight:600; border:1px solid rgba(56,189,248,0.3);">+45% vs Roca</span>
+                            <span id="nsr-amplificacion-comparativa" class="tabular-num" style="font-size:var(--fs-2xs); padding:2px 8px; border-radius:12px; background:rgba(56,189,248,0.15); color:var(--accent-ui); font-weight:600; border:1px solid rgba(56,189,248,0.3);">+45% vs Roca</span>
                             <button type="button" class="info-btn" data-info="espectro_info" aria-label="Instrucciones: Espectro NSR-10" title="Instrucciones de uso: Espectro Elástico de Diseño NSR-10">?</button>
                         </div>
                     </div>
                     <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:6px; margin-bottom:10px; font-size:var(--fs-2xs); text-align:center;">
-                        <div style="background:rgba(255,255,255,0.05); padding:4px 2px; border-radius:6px;">
+                        <div class="surface-card-soft" style="padding:4px 2px; border-radius:6px;">
                             <span style="color:var(--text-secondary); display:block;">T₀</span>
-                            <strong id="nsr-t0-val" style="color:#fff;">0.23 s</strong>
+                            <strong id="nsr-t0-val" class="tabular-num" style="color:var(--text-primary);">0.23 s</strong>
                         </div>
-                        <div style="background:rgba(255,255,255,0.05); padding:4px 2px; border-radius:6px;">
+                        <div class="surface-card-soft" style="padding:4px 2px; border-radius:6px;">
                             <span style="color:var(--text-secondary); display:block;">Tc</span>
-                            <strong id="nsr-tc-val" style="color:#fff;">1.10 s</strong>
+                            <strong id="nsr-tc-val" class="tabular-num" style="color:var(--text-primary);">1.10 s</strong>
                         </div>
-                        <div style="background:rgba(255,255,255,0.05); padding:4px 2px; border-radius:6px;">
+                        <div class="surface-card-soft" style="padding:4px 2px; border-radius:6px;">
                             <span style="color:var(--text-secondary); display:block;">TL</span>
-                            <strong id="nsr-tl-val" style="color:#fff;">5.76 s</strong>
+                            <strong id="nsr-tl-val" class="tabular-num" style="color:var(--text-primary);">5.76 s</strong>
                         </div>
-                        <div style="background:rgba(255,255,255,0.05); padding:4px 2px; border-radius:6px;">
+                        <div class="surface-card-soft" style="padding:4px 2px; border-radius:6px;">
                             <span style="color:var(--text-secondary); display:block;">Sa Máx</span>
-                            <strong id="nsr-samax-val" style="color:#38bdf8;">1.05 g</strong>
+                            <strong id="nsr-samax-val" class="tabular-num" style="color:var(--accent-ui);">1.05 g</strong>
                         </div>
                     </div>
                     <canvas id="nsr-espectro-chart" style="max-height: 150px;"></canvas>
-                    <button type="button" class="btn-secondary" id="btn-export-espectro-csv" style="width:100%; margin-top:10px; font-size:var(--fs-xs); padding:7px 10px; background:rgba(56,189,248,0.12); color:#38bdf8; border-color:rgba(56,189,248,0.3);">
-                        <span>📥 Exportar Curva Espectral (.CSV para ETABS/SAP2000)</span>
+                    <button type="button" class="btn-secondary" id="btn-export-espectro-csv" style="width:100%; margin-top:10px; font-size:var(--fs-xs); padding:7px 10px;">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" x2="12" y1="15" y2="3"></line></svg>
+                        <span>Exportar Curva Espectral (.CSV)</span>
                     </button>
                 </div>
             </section>
@@ -835,9 +882,9 @@
                 </div>
                 <div style="font-size:var(--fs-sm); color:var(--text-secondary); line-height:1.4;">
                     <p style="margin:0 0 8px 0;"><strong style="color:var(--text-primary);">Geología Local:</strong> <span id="nsr-geologia-desc">Depósitos aluviales del Río Atrato (arenas, limos y turbas)</span></p>
-                    <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.3); padding:8px 12px; border-radius:10px; border:1px solid rgba(255,255,255,0.05);">
-                        <span>Susceptibilidad Cualitativa:</span>
-                        <span id="nsr-licuacion-badge" class="status-pill critico">🔴 Alta</span>
+                    <div class="surface-inset" style="display:flex; justify-content:space-between; align-items:center; padding:8px 12px; border-radius:10px;">
+                        <span>Susceptibilidad cualitativa:</span>
+                        <span id="nsr-licuacion-badge" class="status-pill critico">Alta</span>
                     </div>
                     <p style="font-size:var(--fs-xs); color:var(--text-tertiary); margin:8px 0 0 0;">
                         Nota técnica NSR-10 Título H: Indicador cualitativo preliminar por tipo de depósito. La evaluación cuantitativa de potencial de licuación (CSR/CRR) requiere sondeos SPT o ensayos CPTU en sitio.
@@ -856,46 +903,48 @@
                     <button type="button" class="info-btn" data-info="pot_info" aria-label="Instrucciones: Diagnóstico Territorial POT" title="Instrucciones de uso: Diagnóstico Territorial POT">?</button>
                 </div>
                 <div style="margin-bottom:8px;">
-                    <label for="pot-priority-filter" style="font-size:var(--fs-2xs); color:var(--text-secondary); display:block; margin-bottom:4px; font-weight:600; text-transform:uppercase;">Prioridad / Capacidad Institucional:</label>
+                    <label for="pot-priority-filter" class="field-label">Prioridad / capacidad institucional:</label>
                     <select id="pot-priority-filter" class="custom-select" style="font-size:var(--fs-xs); padding:5px 8px;">
-                        <option value="all">🌎 Todos los Municipios (67)</option>
-                        <option value="choco_cat6">🏛️ Chocó Categoría 6 — Prioridad Técnica (30)</option>
-                        <option value="choco_aislados">🚢 Chocó con Aislamiento Terrestre / Fluvial-Marítimo</option>
-                        <option value="choco_costero">🌊 Litoral Pacífico Expuesto a Tsunami / Bajamar</option>
+                        <option value="all" selected>Todos los Municipios (67)</option>
+                        <option value="choco_cat6">Chocó Categoría 6 — Prioridad Técnica (30)</option>
+                        <option value="choco_aislados">Chocó con Aislamiento Terrestre / Fluvial-Marítimo</option>
+                        <option value="choco_costero">Litoral Pacífico Expuesto a Tsunami / Bajamar</option>
                     </select>
                 </div>
                 <div>
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-                        <label for="pot-municipio-select" style="font-size:var(--fs-xs); color:var(--text-secondary); margin:0; font-weight:600; text-transform:uppercase;">Municipio Seleccionado:</label>
-                        <button type="button" id="btn-pot-locate" style="background:rgba(50,215,75,0.15); border:1px solid rgba(50,215,75,0.35); color:#32d74b; border-radius:6px; font-size:var(--fs-2xs); padding:2px 8px; cursor:pointer; font-weight:600; display:inline-flex; align-items:center; gap:4px; transition:all 0.2s ease;" title="Enfocar cabecera municipal y radio de 30 km en el mapa 3D">
-                            <span>📍 Enfocar</span>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                        <label for="pot-municipio-select" class="field-label" style="margin:0;">Municipio seleccionado:</label>
+                        <button type="button" id="btn-pot-locate" class="compact-locate-btn compact-locate-btn--ok" title="Enfocar cabecera municipal y radio de 30 km en el mapa 3D">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                            <span>Enfocar</span>
                         </button>
                     </div>
+                    <input type="search" id="pot-municipio-search" class="municipio-search-input" placeholder="Filtrar municipio del listado..." aria-label="Buscar municipio en Gestión Territorial" autocomplete="off">
                     <select id="pot-municipio-select" class="custom-select"></select>
                 </div>
 
                 <!-- Semáforo Territorial y Capacidad Institucional -->
-                <div style="background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:14px; display:flex; flex-direction:column; gap:10px;">
+                <div class="surface-inset" style="border-radius:14px; padding:14px; display:flex; flex-direction:column; gap:10px;">
                     <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <span style="font-size:var(--fs-sm); color:var(--text-secondary); font-weight:600;">PELIGRO SÍSMICO (NSR-10 / 30km):</span>
-                        <span id="pot-semaforo-badge" class="status-pill critico">🔴 CRÍTICO</span>
+                        <span style="font-size:var(--fs-sm); color:var(--text-secondary); font-weight:600;">Peligro sísmico (NSR-10 / 30 km):</span>
+                        <span id="pot-semaforo-badge" class="status-pill critico">CRÍTICO</span>
                     </div>
                     <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; font-size:var(--fs-sm);">
                         <div class="metric-card">
                             <span class="metric-label">Población (Cabecera/Mpio)</span>
-                            <span class="metric-value" id="pot-pob-val">132,000</span>
+                            <span class="metric-value tabular-num" id="pot-pob-val">132,000</span>
                             <span class="metric-desc" id="pot-cat-ley617">Categoría Ley 617</span>
                         </div>
                         <div class="metric-card">
                             <span class="metric-label">Sismos en 30 km</span>
-                            <span class="metric-value" id="pot-sismos-cercanos" style="color:#FFD60A;">--</span>
+                            <span class="metric-value tabular-num" id="pot-sismos-cercanos" style="color:var(--pill-warn-fg);">--</span>
                             <span class="metric-desc" id="pot-infra-prox">Exposición líneas vitales</span>
                         </div>
                     </div>
-                    <div id="pot-aislamiento-alert" style="display:none; padding:6px 10px; border-radius:8px; background:rgba(245,158,11,0.14); border:1px solid rgba(245,158,11,0.4); color:#fbbf24; font-size:var(--fs-xs); line-height:1.35;"></div>
-                    <div style="font-size:var(--fs-xs); color:var(--text-secondary); line-height:1.4; border-top:1px solid rgba(255,255,255,0.06); padding-top:8px;">
-                        <p style="margin:0 0 4px 0;"><strong style="color:var(--text-primary);">Conectividad Predominante:</strong> <span id="pot-acceso-val">--</span></p>
-                        <p style="margin:0;"><strong style="color:var(--text-primary);">Evento Histórico Referencia:</strong> <span id="pot-ultimo-destructor">1992 / 2024</span></p>
+                    <div id="pot-aislamiento-alert" class="pot-isolation-alert" style="display:none;"></div>
+                    <div style="font-size:var(--fs-xs); color:var(--text-secondary); line-height:1.4; border-top:1px solid var(--border-subtle); padding-top:8px;">
+                        <p style="margin:0 0 4px 0;"><strong style="color:var(--text-primary);">Conectividad predominante:</strong> <span id="pot-acceso-val">--</span></p>
+                        <p style="margin:0;"><strong style="color:var(--text-primary);">Evento histórico referencia:</strong> <span id="pot-ultimo-destructor">1992 / 2024</span></p>
                     </div>
                 </div>
             </section>
@@ -910,131 +959,123 @@
                     Superposición de redes viales, corredores fluviales, cabotaje marítimo, muelles, aeródromos y centros de salud sobre trazas de fallas.
                 </p>
                 <label class="switch-container" for="check-infra" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-                    <span style="font-size:var(--fs-xs); color:#e2e8f0; font-weight:600;">
+                    <span style="font-size:var(--fs-xs); color:var(--text-primary); font-weight:600;">
                         Visualizar Red de Infraestructura Crítica
                     </span>
                     <div class="switch"><input type="checkbox" id="check-infra"><span class="slider"></span></div>
                 </label>
 
-                <!-- Convenciones Cartográficas de Líneas Vitales (Se despliega dinámicamente al activar el switch) -->
-                <div id="infra-convenciones" style="display: none; margin-top: 10px; background: rgba(0, 0, 0, 0.45); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; padding: 12px; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid rgba(255, 255, 255, 0.08);">
-                        <span style="font-size: var(--fs-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #F5F5F7; display: flex; align-items: center; gap: 5px;">
-                            🧭 Convenciones Cartográficas
+                <!-- Convenciones Cartográficas de Líneas Vitales -->
+                <div id="infra-convenciones" class="surface-inset" style="display: none; margin-top: 10px; padding: 12px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border-subtle);">
+                        <span style="font-size: var(--fs-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
+                            Convenciones Cartográficas
                         </span>
-                        <span style="font-size: var(--fs-2xs); color: #32D74B; background: rgba(50, 215, 75, 0.12); border: 1px solid rgba(50, 215, 75, 0.3); border-radius: 4px; padding: 2px 6px; font-weight: 600;">
-                            ● Red Activa
+                        <span class="status-pill seguro" style="font-size: var(--fs-2xs); padding: 2px 7px;">
+                            Red Activa
                         </span>
                     </div>
 
-                    <div style="display: flex; flex-direction: column; gap: 9px; font-size: var(--fs-xs);">
-                        <!-- Red Vial Primaria -->
-                        <div style="display: flex; align-items: flex-start; gap: 10px; background: rgba(255, 255, 255, 0.02); padding: 7px 8px; border-radius: 6px; border-left: 3px solid #FFB703;">
-                            <div style="display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 28px; margin-top: 1px;">
-                                <span style="font-size: var(--fs-md); line-height: 1;">🛣️</span>
-                                <span style="display: block; width: 22px; height: 4px; background: #FFB703; border-radius: 2px; box-shadow: 0 0 6px rgba(255, 183, 3, 0.5);"></span>
+                    <div style="display: flex; flex-direction: column; gap: 8px; font-size: var(--fs-xs);">
+                        <div class="infra-legend-row" style="border-left-color: #FFB703;">
+                            <div class="infra-legend-swatch-col">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFB703" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19 8 5"></path><path d="m16 5 4 14"></path><path d="M12 6v2"></path><path d="M12 12v2"></path><path d="M12 18v1"></path></svg>
+                                <span style="display: block; width: 22px; height: 4px; background: #FFB703; border-radius: 2px;"></span>
                             </div>
                             <div style="flex: 1; line-height: 1.35;">
                                 <div style="display: flex; justify-content: space-between; align-items: baseline;">
-                                    <strong style="color: #FFB703; font-size: var(--fs-xs);">Red Vial Primaria</strong>
-                                    <span style="font-size: var(--fs-2xs); color: #A1A1A6;">Rutas 60 / 13</span>
+                                    <strong style="color: #D97706; font-size: var(--fs-xs);">Red Vial Primaria</strong>
+                                    <span class="infra-legend-meta">Rutas 60 / 13</span>
                                 </div>
-                                <div style="color: #C7C7CC; font-size: var(--fs-2xs); margin-top: 2px;">
+                                <div class="infra-legend-desc">
                                     Corredores interdepartamentales pavimentados. Alta susceptibilidad a deslizamientos cosísmicos en laderas y corte de suministros.
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Corredor Fluvial -->
-                        <div style="display: flex; align-items: flex-start; gap: 10px; background: rgba(255, 255, 255, 0.02); padding: 7px 8px; border-radius: 6px; border-left: 3px solid #38BDF8;">
-                            <div style="display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 28px; margin-top: 1px;">
-                                <span style="font-size: var(--fs-md); line-height: 1;">🚢</span>
-                                <span style="display: block; width: 22px; height: 5px; background: #38BDF8; border-radius: 2px; box-shadow: 0 0 6px rgba(56, 189, 248, 0.5);"></span>
+                        <div class="infra-legend-row" style="border-left-color: #38BDF8;">
+                            <div class="infra-legend-swatch-col">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 6c.6.5 1.2 1 2.5 1C7 7 7 5 9.5 5c2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"></path><path d="M2 12c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"></path><path d="M2 18c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"></path></svg>
+                                <span style="display: block; width: 22px; height: 5px; background: #38BDF8; border-radius: 2px;"></span>
                             </div>
                             <div style="flex: 1; line-height: 1.35;">
                                 <div style="display: flex; justify-content: space-between; align-items: baseline;">
-                                    <strong style="color: #38BDF8; font-size: var(--fs-xs);">Corredor Fluvial</strong>
-                                    <span style="font-size: var(--fs-2xs); color: #A1A1A6;">Atrato / San Juan / Baudó</span>
+                                    <strong style="color: var(--accent-ui); font-size: var(--fs-xs);">Corredor Fluvial</strong>
+                                    <span class="infra-legend-meta">Atrato / San Juan / Baudó</span>
                                 </div>
-                                <div style="color: #C7C7CC; font-size: var(--fs-2xs); margin-top: 2px;">
+                                <div class="infra-legend-desc">
                                     Ejes navegables esenciales para movilidad y socorro de comunidades ribereñas ante aislamiento terrestre; vulnerables a licuación de orillas.
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Ruta Marítima -->
-                        <div style="display: flex; align-items: flex-start; gap: 10px; background: rgba(255, 255, 255, 0.02); padding: 7px 8px; border-radius: 6px; border-left: 3px solid #14B8A6;">
-                            <div style="display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 28px; margin-top: 1px;">
-                                <span style="font-size: var(--fs-md); line-height: 1;">⛵</span>
-                                <span style="display: block; width: 22px; height: 3px; background: #14B8A6; border-radius: 2px; box-shadow: 0 0 6px rgba(20, 184, 166, 0.5);"></span>
+                        <div class="infra-legend-row" style="border-left-color: #14B8A6;">
+                            <div class="infra-legend-swatch-col">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#14B8A6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="5" r="3"></circle><line x1="12" x2="12" y1="22" y2="8"></line><path d="M5 12H2a10 10 0 0 0 20 0h-3"></path></svg>
+                                <span style="display: block; width: 22px; height: 3px; background: #14B8A6; border-radius: 2px;"></span>
                             </div>
                             <div style="flex: 1; line-height: 1.35;">
                                 <div style="display: flex; justify-content: space-between; align-items: baseline;">
-                                    <strong style="color: #2DD4BF; font-size: var(--fs-xs);">Ruta Marítima</strong>
-                                    <span style="font-size: var(--fs-2xs); color: #A1A1A6;">Cabotaje Pacífico</span>
+                                    <strong style="color: #0D9488; font-size: var(--fs-xs);">Ruta Marítima</strong>
+                                    <span class="infra-legend-meta">Cabotaje Pacífico</span>
                                 </div>
-                                <div style="color: #C7C7CC; font-size: var(--fs-2xs); margin-top: 2px;">
+                                <div class="infra-legend-desc">
                                     Corredor marítimo costero (Juradó–Bahía Solano–Nuquí–Docordó) para enlace logístico y asistencia en emergencias del litoral.
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Terminal Aéreo -->
-                        <div style="display: flex; align-items: flex-start; gap: 10px; background: rgba(255, 255, 255, 0.02); padding: 7px 8px; border-radius: 6px; border-left: 3px solid #3B82F6;">
-                            <div style="display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 28px; margin-top: 1px;">
-                                <span style="font-size: var(--fs-md); line-height: 1;">✈️</span>
-                                <span style="display: block; width: 12px; height: 12px; background: #3B82F6; border: 2px solid #FFFFFF; border-radius: 50%; box-shadow: 0 0 6px rgba(59, 130, 246, 0.6);"></span>
+                        <div class="infra-legend-row" style="border-left-color: #3B82F6;">
+                            <div class="infra-legend-swatch-col">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"></path></svg>
+                                <span style="display: block; width: 12px; height: 12px; background: #3B82F6; border: 2px solid #FFFFFF; border-radius: 50%;"></span>
                             </div>
                             <div style="flex: 1; line-height: 1.35;">
                                 <div style="display: flex; justify-content: space-between; align-items: baseline;">
-                                    <strong style="color: #60A5FA; font-size: var(--fs-xs);">Terminal Aéreo</strong>
-                                    <span style="font-size: var(--fs-2xs); color: #A1A1A6;">Quibdó / Condoto / Costa</span>
+                                    <strong style="color: #2563EB; font-size: var(--fs-xs);">Terminal Aéreo</strong>
+                                    <span class="infra-legend-meta">Quibdó / Condoto / Costa</span>
                                 </div>
-                                <div style="color: #C7C7CC; font-size: var(--fs-2xs); margin-top: 2px;">
+                                <div class="infra-legend-desc">
                                     Aeropuertos y pistas departamentales para soporte de puentes aéreos y despliegue rápido de auxilio humanitario de emergencia.
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Centro Asistencial -->
-                        <div style="display: flex; align-items: flex-start; gap: 10px; background: rgba(255, 255, 255, 0.02); padding: 7px 8px; border-radius: 6px; border-left: 3px solid #FF2D55;">
-                            <div style="display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 28px; margin-top: 1px;">
-                                <span style="font-size: var(--fs-md); line-height: 1;">🏥</span>
-                                <span style="display: block; width: 13px; height: 13px; background: #FF2D55; border: 2px solid #FFFFFF; border-radius: 50%; box-shadow: 0 0 6px rgba(255, 45, 85, 0.6);"></span>
+                        <div class="infra-legend-row" style="border-left-color: #FF2D55;">
+                            <div class="infra-legend-swatch-col">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FF2D55" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 2a2 2 0 0 0-2 2v5H4a2 2 0 0 0-2 2v2c0 1.1.9 2 2 2h5v5c0 1.1.9 2 2 2h2a2 2 0 0 0 2-2v-5h5a2 2 0 0 0 2-2v-2a2 2 0 0 0-2-2h-5V4a2 2 0 0 0-2-2h-2z"></path></svg>
+                                <span style="display: block; width: 13px; height: 13px; background: #FF2D55; border: 2px solid #FFFFFF; border-radius: 50%;"></span>
                             </div>
                             <div style="flex: 1; line-height: 1.35;">
                                 <div style="display: flex; justify-content: space-between; align-items: baseline;">
-                                    <strong style="color: #FF6482; font-size: var(--fs-xs);">Centro Asistencial</strong>
-                                    <span style="font-size: var(--fs-2xs); color: #FFD60A; font-weight: 600;">NSR-10 Grupo IV (I=1.5)</span>
+                                    <strong style="color: #E11D48; font-size: var(--fs-xs);">Centro Asistencial</strong>
+                                    <span class="infra-legend-meta tabular-num" style="color: var(--pill-warn-fg); font-weight: 600;">NSR-10 Grupo IV (I=1.5)</span>
                                 </div>
-                                <div style="color: #C7C7CC; font-size: var(--fs-2xs); margin-top: 2px;">
+                                <div class="infra-legend-desc">
                                     Hospitales de referencia y centros de salud (Red REPS). Requisito estricto de integridad estructural y operación post-sismo ininterrumpida.
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Muelle / Puerto -->
-                        <div style="display: flex; align-items: flex-start; gap: 10px; background: rgba(255, 255, 255, 0.02); padding: 7px 8px; border-radius: 6px; border-left: 3px solid #A855F7;">
-                            <div style="display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 28px; margin-top: 1px;">
-                                <span style="font-size: var(--fs-md); line-height: 1;">⚓</span>
-                                <span style="display: block; width: 12px; height: 12px; background: #A855F7; border: 2px solid #FFFFFF; border-radius: 50%; box-shadow: 0 0 6px rgba(168, 85, 247, 0.6);"></span>
+                        <div class="infra-legend-row" style="border-left-color: #A855F7;">
+                            <div class="infra-legend-swatch-col">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#A855F7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="5" r="3"></circle><line x1="12" x2="12" y1="22" y2="8"></line><path d="M5 12H2a10 10 0 0 0 20 0h-3"></path></svg>
+                                <span style="display: block; width: 12px; height: 12px; background: #A855F7; border: 2px solid #FFFFFF; border-radius: 50%;"></span>
                             </div>
                             <div style="flex: 1; line-height: 1.35;">
                                 <div style="display: flex; justify-content: space-between; align-items: baseline;">
-                                    <strong style="color: #C084FC; font-size: var(--fs-xs);">Muelle / Puerto</strong>
-                                    <span style="font-size: var(--fs-2xs); color: var(--text-tertiary);">Jurisdicción DIMAR</span>
+                                    <strong style="color: #9333EA; font-size: var(--fs-xs);">Muelle / Puerto</strong>
+                                    <span class="infra-legend-meta">Jurisdicción DIMAR</span>
                                 </div>
-                                <div style="color: var(--text-secondary); font-size: var(--fs-2xs); margin-top: 2px;">
+                                <div class="infra-legend-desc">
                                     Embarcaderos marítimos y fluviales estratégicos para abastecimiento y recepción de ayuda en cabeceras costeras y ribereñas.
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Pauta de Interacción -->
-                    <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(255, 255, 255, 0.06); font-size: var(--fs-2xs); color: var(--text-tertiary); display: flex; align-items: center; gap: 5px;">
-                        <span>💡</span>
-                        <span><em>Pasa el cursor sobre cualquier corredor, muelle o centro asistencial para consultar tipo, ubicación y vulnerabilidad.</em></span>
+                    <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--border-subtle); font-size: var(--fs-2xs); color: var(--text-tertiary);">
+                        <span><em>Pase el cursor o haga clic sobre cualquier corredor, muelle o centro asistencial para consultar tipo, ubicación y vulnerabilidad.</em></span>
                     </div>
                 </div>
             </section>
@@ -1048,33 +1089,33 @@
                     <li><strong>Geoservicios Oficiales:</strong> Contraste datos con <a href="https://amenazasismica.sgc.gov.co/" target="_blank" rel="noopener noreferrer" style="color:var(--accent-ui);">SGC Amenaza</a>, <a href="https://www.colombiaenmapas.gov.co/" target="_blank" rel="noopener noreferrer" style="color:var(--accent-ui);">Colombia en Mapas (IGAC/ANT)</a> y <a href="https://portal.gestiondelriesgo.gov.co/" target="_blank" rel="noopener noreferrer" style="color:var(--accent-ui);">SNGRD/UNGRD</a>.</li>
                 </ul>
                 <div style="display:flex; flex-direction:column; gap:10px;">
-                    <button type="button" class="btn-secondary" id="btn-pot-summary-toggle" style="background:rgba(56,189,248,0.14); color:#38bdf8; border-color:rgba(56,189,248,0.35); font-size:var(--fs-xs);">
-                        <span>📊 Ver Tablero Municipal Simplificado</span>
+                    <button type="button" class="btn-secondary" id="btn-pot-summary-toggle" style="font-size:var(--fs-xs);">
+                        <span>Ver Tablero Municipal Simplificado</span>
                     </button>
-                    <button type="button" class="btn-secondary" id="btn-pot-print" style="background:var(--accent); color:#fff; border-color:var(--accent);">
-                        <span>📄 Ficha Técnica Territorial (PDF / Imprimir)</span>
+                    <button type="button" class="btn-secondary btn-primary-solid" id="btn-pot-print">
+                        <span>Ficha Técnica Territorial (PDF / Imprimir)</span>
                     </button>
                 </div>
-                <div id="pot-tabular-summary" style="display:none; margin-top:10px; max-height:220px; overflow-y:auto; background:rgba(0,0,0,0.35); border:1px solid var(--border-subtle); border-radius:10px; padding:8px; font-size:var(--fs-2xs);"></div>
+                <div id="pot-tabular-summary" class="surface-inset" style="display:none; margin-top:10px; max-height:220px; overflow-y:auto; padding:8px; font-size:var(--fs-2xs);"></div>
             </section>
         </div>
 
         <!-- Información del Autor y Adscripción Institucional -->
-        <footer class="control-group" style="margin-top:auto; padding: 15px; text-align: center; border: 1px solid rgba(255,255,255,0.05); background: rgba(0,0,0,0.25); border-radius: 14px;">
-            <h4 style="margin: 0 0 6px 0; font-weight: 600; font-size: var(--fs-xs); color: #38bdf8; text-transform: uppercase; letter-spacing: 0.06em;">Investigación a través del Diseño (RtD)</h4>
-            <p style="margin: 0 0 4px 0; font-size: var(--fs-base); font-weight: 600; color: #F5F5F7;">Yonathan Andrés Gálvez Giraldo</p>
-            <p style="margin: 0 0 4px 0; font-size: var(--fs-xs); color: #A1A1A6;">Maestría en Diseño y Creación Interactiva — Universidad de Caldas</p>
-            <p style="margin: 0 0 6px 0; font-size: var(--fs-xs); color: #8E8E93;">Línea: <em>Gestión y Transmisión del Conocimiento</em><br>Temática: <em>Presentación de Información Compleja</em></p>
-            <p style="margin: 0 0 6px 0; font-size: var(--fs-xs);"><a href="https://www.linkedin.com/in/yonathanandresgalvezgiraldo/" target="_blank" rel="noopener noreferrer" style="color: #0A84FF; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; font-weight: 500; transition: 0.2s;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">🔗 Perfil de LinkedIn</a></p>
-            <p style="margin: 0 0 2px 0; font-size: var(--fs-xs); color: #8E8E93;">✉️ ogiraldo272@gmail.com | 📞 312 273 0311</p>
+        <footer class="control-group app-footer">
+            <h4 class="footer-kicker">Investigación a través del Diseño (RtD)</h4>
+            <p class="footer-author">Yonathan Andrés Gálvez Giraldo</p>
+            <p class="footer-affiliation">Maestría en Diseño y Creación Interactiva — Universidad de Caldas</p>
+            <p class="footer-line">Línea: <em>Gestión y Transmisión del Conocimiento</em><br>Temática: <em>Presentación de Información Compleja</em></p>
+            <p class="footer-links"><a href="https://www.linkedin.com/in/yonathanandresgalvezgiraldo/" target="_blank" rel="noopener noreferrer">Perfil de LinkedIn</a></p>
+            <p class="footer-contact">ogiraldo272@gmail.com | 312 273 0311</p>
         </footer>
     </nav>
 
     <!-- Leyenda Cartográfica Dinámica -->
-    <div id="map-legend" style="display: none; position: absolute; bottom: 30px; right: 30px; background: rgba(0,0,0,0.6); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 15px; color: white; font-family: var(--font-sans); font-size: var(--fs-sm); z-index: 100;">
-        <h4 style="margin: 0 0 10px 0; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #F5F5F7;" id="legend-title">Leyenda</h4>
+    <div id="map-legend" style="display: none; position: absolute; bottom: 30px; right: 30px; background: rgba(14,17,24,0.88); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 14px; color: #F8FAFC; font-family: var(--font-sans); font-size: var(--fs-sm); z-index: 100;">
+        <h4 style="margin: 0 0 10px 0; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;" id="legend-title">Leyenda</h4>
         <div id="legend-scale" style="display: flex; align-items: center; justify-content: space-between; height: 12px; border-radius: 6px; margin-bottom: 5px;"></div>
-        <div style="display: flex; justify-content: space-between; color: #A1A1A6; font-size: var(--fs-xs); font-weight: 500;">
+        <div style="display: flex; justify-content: space-between; font-size: var(--fs-xs); font-weight: 500;">
             <span id="legend-min">Bajo</span>
             <span id="legend-max">Alto</span>
         </div>
@@ -1206,7 +1247,7 @@
     <script src="js/core-oop.js?v=40"></script>
 
     <!-- Lógica principal con versionamiento para evitar caché persistente -->
-    <script src="js/main.js?v=67"></script>
+    <script src="js/main.js?v=69"></script>
 
     <!-- PWA & Limpieza Activa de CacheStorage -->
     <script>
@@ -1237,7 +1278,7 @@
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js?v=65')
+                navigator.serviceWorker.register('sw.js?v=67')
                     .then(reg => {
                         reg.update();
                     })

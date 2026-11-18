@@ -778,13 +778,13 @@ input[type="range"]::-webkit-slider-thumb:active { transform: scale(1.2); backgr
 input:checked + .slider { background-color: var(--accent); box-shadow: 0 0 12px var(--accent-glow); }
 input:checked + .slider:before { transform: translateX(18px); }
 
-/* Switches contextuales según el módulo o capa */
-#check-fallas:checked + .slider { background-color: #F59E0B; box-shadow: 0 0 12px rgba(245, 158, 11, 0.4); }
-#check-ml:checked + .slider { background-color: #9333EA; box-shadow: 0 0 12px rgba(147, 51, 234, 0.4); }
-#check-live-sgc:checked + .slider { background-color: #10B981; box-shadow: 0 0 12px rgba(16, 185, 129, 0.4); }
+/* Switches contextuales según el módulo o capa (Opción B WCAG AA) */
+#check-fallas:checked + .slider { background-color: #B45309; box-shadow: 0 0 12px rgba(180, 83, 9, 0.45); }
+#check-ml:checked + .slider { background-color: #9333EA; box-shadow: 0 0 12px rgba(147, 51, 234, 0.45); }
+#check-live-sgc:checked + .slider { background-color: #047857; box-shadow: 0 0 12px rgba(4, 120, 87, 0.45); }
 #check-sgc-wms:checked + .slider,
-#check-infra:checked + .slider { background-color: #0284C7; box-shadow: 0 0 12px rgba(2, 132, 199, 0.4); }
-#check-simulador:checked + .slider { background-color: var(--danger); box-shadow: 0 0 12px rgba(255,69,58,0.4); }
+#check-infra:checked + .slider { background-color: #0369A1; box-shadow: 0 0 12px rgba(3, 105, 161, 0.45); }
+#check-simulador:checked + .slider { background-color: #DC2626; box-shadow: 0 0 12px rgba(220, 38, 38, 0.45); }
 
 /* ==========================================================================
    TOOLTIP CONTEXTUAL EN MAPA
@@ -808,17 +808,17 @@ input:checked + .slider:before { transform: translateX(18px); }
 #tooltip strong { color: var(--text-primary); font-weight: 500; }
 
 /* Paletas contextuales de tooltip (oscuro + claro) */
-#tooltip.tooltip-ctx-sismo { --tooltip-accent: #0A84FF; --tooltip-title-dark: #60A5FA; --tooltip-title-light: #0052CC; }
-#tooltip.tooltip-ctx-benioff { --tooltip-accent: #38BDF8; --tooltip-title-dark: #38BDF8; --tooltip-title-light: #0284C7; }
-#tooltip.tooltip-ctx-calor { --tooltip-accent: #FF2D55; --tooltip-title-dark: #FF6482; --tooltip-title-light: #BE123C; }
-#tooltip.tooltip-ctx-hex { --tooltip-accent: #10B981; --tooltip-title-dark: #34D399; --tooltip-title-light: #047857; }
-#tooltip.tooltip-ctx-falla { --tooltip-accent: #F59E0B; --tooltip-title-dark: #FBBF24; --tooltip-title-light: #B45309; }
-#tooltip.tooltip-ctx-ml { --tooltip-accent: #A855F7; --tooltip-title-dark: #C084FC; --tooltip-title-light: #7E22CE; }
-#tooltip.tooltip-ctx-fdsn { --tooltip-accent: #10B981; --tooltip-title-dark: #34D399; --tooltip-title-light: #047857; }
-#tooltip.tooltip-ctx-shakemap { --tooltip-accent: #FF453A; --tooltip-title-dark: #FF6961; --tooltip-title-light: #B91C1C; }
-#tooltip.tooltip-ctx-nsr { --tooltip-accent: #10B981; --tooltip-title-dark: #34D399; --tooltip-title-light: #047857; }
-#tooltip.tooltip-ctx-pot { --tooltip-accent: #F59E0B; --tooltip-title-dark: #FBBF24; --tooltip-title-light: #B45309; }
-#tooltip.tooltip-ctx-sgc { --tooltip-accent: #0284C7; --tooltip-title-dark: #38BDF8; --tooltip-title-light: #0369A1; }
+#tooltip.tooltip-ctx-sismo { --tooltip-accent: #0052CC; --tooltip-title-dark: #60A5FA; --tooltip-title-light: #0052CC; }
+#tooltip.tooltip-ctx-benioff { --tooltip-accent: #0369A1; --tooltip-title-dark: #38BDF8; --tooltip-title-light: #0369A1; }
+#tooltip.tooltip-ctx-calor { --tooltip-accent: #E11D48; --tooltip-title-dark: #FF6482; --tooltip-title-light: #BE123C; }
+#tooltip.tooltip-ctx-hex { --tooltip-accent: #047857; --tooltip-title-dark: #34D399; --tooltip-title-light: #047857; }
+#tooltip.tooltip-ctx-falla { --tooltip-accent: #B45309; --tooltip-title-dark: #FBBF24; --tooltip-title-light: #B45309; }
+#tooltip.tooltip-ctx-ml { --tooltip-accent: #9333EA; --tooltip-title-dark: #C084FC; --tooltip-title-light: #7E22CE; }
+#tooltip.tooltip-ctx-fdsn { --tooltip-accent: #047857; --tooltip-title-dark: #34D399; --tooltip-title-light: #047857; }
+#tooltip.tooltip-ctx-shakemap { --tooltip-accent: #DC2626; --tooltip-title-dark: #FF6961; --tooltip-title-light: #B91C1C; }
+#tooltip.tooltip-ctx-nsr { --tooltip-accent: #047857; --tooltip-title-dark: #34D399; --tooltip-title-light: #047857; }
+#tooltip.tooltip-ctx-pot { --tooltip-accent: #B45309; --tooltip-title-dark: #FBBF24; --tooltip-title-light: #B45309; }
+#tooltip.tooltip-ctx-sgc { --tooltip-accent: #0369A1; --tooltip-title-dark: #38BDF8; --tooltip-title-light: #0369A1; }
 
 /* ==========================================================================
    SCROLLBAR & ACCESIBILIDAD
@@ -1212,12 +1212,12 @@ input:checked + .slider:before { transform: translateX(18px); }
     border-color: var(--accent);
 }
 
-/* Hover contextual por color de botón */
+/* Hover contextual por color de botón (Opción B WCAG AA) */
 #btn-benioff:hover,
 #btn-benioff.active {
-    background: #0284C7 !important;
+    background: #0369A1 !important;
     color: #FFFFFF !important;
-    border-color: #0284C7 !important;
+    border-color: #0369A1 !important;
 }
 
 #btn-toggle-shakemap:hover,
@@ -1230,29 +1230,29 @@ input:checked + .slider:before { transform: translateX(18px); }
 #btn-nsr-locate:hover,
 #btn-sgc-query-municipio:hover,
 #btn-pot-summary-toggle:hover {
-    background: #0284C7 !important;
+    background: #0369A1 !important;
     color: #FFFFFF !important;
-    border-color: #0284C7 !important;
+    border-color: #0369A1 !important;
 }
 
 #btn-pot-locate:hover {
-    background: #16A34A !important;
+    background: #047857 !important;
     color: #FFFFFF !important;
-    border-color: #16A34A !important;
+    border-color: #047857 !important;
 }
 
 /* Hover y tooltips contextuales para botones de restablecer */
 #btn-reset-vis:hover,
-#btn-reset-vis:focus-visible { background: #0284C7 !important; border-color: #0284C7 !important; color: #FFFFFF !important; }
-#btn-reset-vis-tt { border-left: 3px solid #0284C7 !important; }
+#btn-reset-vis:focus-visible { background: #0369A1 !important; border-color: #0369A1 !important; color: #FFFFFF !important; }
+#btn-reset-vis-tt { border-left: 3px solid #0369A1 !important; }
 
 #btn-reset:hover,
-#btn-reset:focus-visible { background: #0A84FF !important; border-color: #0A84FF !important; color: #FFFFFF !important; }
-#btn-reset-tt { border-left: 3px solid #0A84FF !important; }
+#btn-reset:focus-visible { background: #0052CC !important; border-color: #0052CC !important; color: #FFFFFF !important; }
+#btn-reset-tt { border-left: 3px solid #0052CC !important; }
 
 #btn-reset-capas:hover,
-#btn-reset-capas:focus-visible { background: #D97706 !important; border-color: #D97706 !important; color: #FFFFFF !important; }
-#btn-reset-capas-tt { border-left: 3px solid #F59E0B !important; }
+#btn-reset-capas:focus-visible { background: #B45309 !important; border-color: #B45309 !important; color: #FFFFFF !important; }
+#btn-reset-capas-tt { border-left: 3px solid #B45309 !important; }
 
 #btn-home-tooltip { border-left: 3px solid #0052CC !important; }
 
@@ -1579,11 +1579,11 @@ input:checked + .slider:before { transform: translateX(18px); }
 .info-btn[data-info="benioff"],
 .info-btn[data-info="sgc_wms"],
 .info-btn[data-info="infra_info"],
-.info-btn[data-info="geotecnia_info"] { background: #0284C7 !important; box-shadow: 0 2px 6px rgba(2, 132, 199, 0.35) !important; }
+.info-btn[data-info="geotecnia_info"] { background: #0369A1 !important; box-shadow: 0 2px 6px rgba(3, 105, 161, 0.35) !important; }
 .info-btn[data-info="benioff"]:hover,
 .info-btn[data-info="sgc_wms"]:hover,
 .info-btn[data-info="infra_info"]:hover,
-.info-btn[data-info="geotecnia_info"]:hover { background: #0369A1 !important; box-shadow: 0 3px 8px rgba(2, 132, 199, 0.5) !important; }
+.info-btn[data-info="geotecnia_info"]:hover { background: #075985 !important; box-shadow: 0 3px 8px rgba(3, 105, 161, 0.5) !important; }
 
 .info-btn[data-info="fallas"],
 .info-btn[data-info="pot_info"] { background: #B45309 !important; box-shadow: 0 2px 6px rgba(180, 83, 9, 0.35) !important; }

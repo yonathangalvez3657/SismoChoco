@@ -306,13 +306,28 @@ body.theme-light .btn-secondary {
     border-color: rgba(15, 23, 42, 0.18) !important;
 }
 
+body.theme-light #ui-panel .profile-tab[data-profile="sismologia"]:not(.active):hover {
+    color: #0052CC;
+    background: rgba(0, 82, 204, 0.12);
+}
+
+body.theme-light #ui-panel .profile-tab[data-profile="nsr10"]:not(.active):hover {
+    color: #047857;
+    background: rgba(4, 120, 87, 0.12);
+}
+
+body.theme-light #ui-panel .profile-tab[data-profile="alcaldia"]:not(.active):hover {
+    color: #B45309;
+    background: rgba(180, 83, 9, 0.12);
+}
+
 body.theme-light #ui-panel .profile-tab[data-profile="nsr10"].active {
-    background: #059669 !important;
+    background: #047857 !important;
     color: #FFFFFF !important;
 }
 
 body.theme-light #ui-panel .profile-tab[data-profile="alcaldia"].active {
-    background: #D97706 !important;
+    background: #B45309 !important;
     color: #FFFFFF !important;
 }
 
@@ -343,7 +358,7 @@ body.theme-light #btn-calor:hover {
 
 body.theme-light #btn-hex.active,
 body.theme-light #btn-hex:hover {
-    background: #059669 !important;
+    background: #047857 !important;
     color: #FFFFFF !important;
 }
 
@@ -702,7 +717,7 @@ h3 {
 #btn-calor.active { background: #E11D48; color: #FFFFFF; box-shadow: 0 4px 12px rgba(225, 29, 72, 0.4); }
 
 #btn-hex:hover { background: rgba(16, 185, 129, 0.22); color: #34D399; }
-#btn-hex.active { background: #059669; color: #FFFFFF; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4); }
+#btn-hex.active { background: #047857; color: #FFFFFF; box-shadow: 0 4px 12px rgba(4, 120, 87, 0.45); }
 
 /* ==========================================================================
    SLIDERS NATIVOS (PRECISIÓN)
@@ -991,13 +1006,13 @@ input:checked + .slider:before { transform: translateX(18px); }
 }
 
 .profile-tab[data-profile="nsr10"].active {
-    background: #059669;
-    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+    background: #047857;
+    box-shadow: 0 4px 12px rgba(4, 120, 87, 0.4);
 }
 
 .profile-tab[data-profile="alcaldia"].active {
-    background: #D97706;
-    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.35);
+    background: #B45309;
+    box-shadow: 0 4px 12px rgba(180, 83, 9, 0.4);
 }
 
 .profile-tab .tab-icon {
@@ -1556,10 +1571,10 @@ input:checked + .slider:before { transform: translateX(18px); }
 
 .info-btn[data-info="hex"],
 .info-btn[data-info="sgc"],
-.info-btn[data-info="nsr10_info"] { background: #059669 !important; box-shadow: 0 2px 6px rgba(5, 150, 105, 0.35) !important; }
+.info-btn[data-info="nsr10_info"] { background: #047857 !important; box-shadow: 0 2px 6px rgba(4, 120, 87, 0.35) !important; }
 .info-btn[data-info="hex"]:hover,
 .info-btn[data-info="sgc"]:hover,
-.info-btn[data-info="nsr10_info"]:hover { background: #047857 !important; box-shadow: 0 3px 8px rgba(5, 150, 105, 0.5) !important; }
+.info-btn[data-info="nsr10_info"]:hover { background: #065F46 !important; box-shadow: 0 3px 8px rgba(4, 120, 87, 0.5) !important; }
 
 .info-btn[data-info="benioff"],
 .info-btn[data-info="sgc_wms"],
@@ -1571,9 +1586,9 @@ input:checked + .slider:before { transform: translateX(18px); }
 .info-btn[data-info="geotecnia_info"]:hover { background: #0369A1 !important; box-shadow: 0 3px 8px rgba(2, 132, 199, 0.5) !important; }
 
 .info-btn[data-info="fallas"],
-.info-btn[data-info="pot_info"] { background: #D97706 !important; box-shadow: 0 2px 6px rgba(217, 119, 6, 0.35) !important; }
+.info-btn[data-info="pot_info"] { background: #B45309 !important; box-shadow: 0 2px 6px rgba(180, 83, 9, 0.35) !important; }
 .info-btn[data-info="fallas"]:hover,
-.info-btn[data-info="pot_info"]:hover { background: #B45309 !important; box-shadow: 0 3px 8px rgba(217, 119, 6, 0.5) !important; }
+.info-btn[data-info="pot_info"]:hover { background: #92400E !important; box-shadow: 0 3px 8px rgba(180, 83, 9, 0.5) !important; }
 
 .info-btn[data-info="profundidad"],
 .info-btn[data-info="ml"] { background: #9333EA !important; box-shadow: 0 2px 6px rgba(147, 51, 234, 0.35) !important; }

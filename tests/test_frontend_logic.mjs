@@ -269,11 +269,16 @@ test('Chips de filtros activos, encuadre Mercator, búsqueda acento-agnóstica e
     const simultaneousChips = context.buildActiveFilterChipsState({ viewMode: 'puntos', showLiveSGC: true });
     assert.ok(simultaneousChips.some(c => c.key === 'viewMode') && simultaneousChips.some(c => c.key === 'liveSgc'));
 
-    assert.match(mainJs, /let\s+viewMode\s*=\s*'calor'\s*;/);
-    assert.match(mainJs, /function\s+resetSpatialVisualization[\s\S]*?viewMode\s*=\s*'calor';[\s\S]*?b\.classList\.toggle\('active',\s*b\.id\s*===\s*'btn-calor'\)/);
+    assert.match(mainJs, /let\s+viewMode\s*=\s*'none'\s*;/);
+    assert.match(mainJs, /function\s+resetSpatialVisualization[\s\S]*?viewMode\s*=\s*'none';[\s\S]*?b\.classList\.remove\('active'\)/);
+    assert.match(mainJs, /id="btn-overview-explore"[^>]*>Activar Concentración Energía<\/button>/);
+    assert.match(mainJs, /getElementById\('btn-overview-explore'\)[\s\S]*?getElementById\('btn-calor'\)/);
 
     const html = fs.readFileSync(path.join(APP_DIR, 'index.html'), 'utf8');
-    assert.match(html, /class="toggle-btn vis-mode-btn active"[^>]*id="btn-calor"/);
+    const css = fs.readFileSync(path.join(APP_DIR, 'css', 'styles.css'), 'utf8');
+    assert.match(css, /\.profile-tab\[data-profile="nsr10"\]\.active\s*\{\s*background:\s*#047857;/);
+    assert.match(css, /\.profile-tab\[data-profile="alcaldia"\]\.active\s*\{\s*background:\s*#B45309;/);
+    assert.match(html, /class="toggle-btn vis-mode-btn"[^>]*id="btn-calor"/);
     assert.ok(html.includes('id="btn-panel-collapse"'));
     assert.ok(html.includes('id="active-filters-bar"'));
     assert.ok(html.includes('id="pinned-inspector"'));

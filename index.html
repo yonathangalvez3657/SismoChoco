@@ -55,7 +55,7 @@
     <script src="lib/chart.js"></script>
     
     <!-- Estilos Bento Box -->
-    <link rel="stylesheet" href="css/styles.css?v=43">
+    <link rel="stylesheet" href="css/styles.css?v=44">
 
     <!-- Datos Estructurados Schema.org JSON-LD para Google Search & Google Dataset Search -->
     <script type="application/ld+json">
@@ -225,7 +225,7 @@
                         <path d="M3 3v5h5"></path>
                     </svg>
                     <span id="btn-home-tooltip" class="reset-tooltip reset-tooltip--below">
-                        Restablecer Todo (Atajo: 0): Restablece vista 3D por defecto, filtros y capas
+                        Restablecer Todo (Atajo: 0): Restablece vista base, filtros y capas
                     </span>
                 </button>
             </div>
@@ -335,7 +335,7 @@
                         <button type="button" class="info-btn" data-info="puntos" aria-label="Instrucciones: Eventos Individuales" title="Instrucciones de uso: Eventos Individuales (Scatter 3D)">?</button>
                     </div>
                     <div class="vis-mode-cell">
-                        <button type="button" class="toggle-btn vis-mode-btn active" id="btn-calor" title="Concentración de Energía / Calor (Atajo: 5)">
+                        <button type="button" class="toggle-btn vis-mode-btn" id="btn-calor" title="Concentración de Energía / Calor (Atajo: 5)">
                             <span>Concentración</span>
                             <span>Energía</span>
                         </button>
@@ -1247,7 +1247,7 @@
     <script src="js/core-oop.js?v=40"></script>
 
     <!-- Lógica principal con versionamiento para evitar caché persistente -->
-    <script src="js/main.js?v=71"></script>
+    <script src="js/main.js?v=72"></script>
 
     <!-- PWA & Limpieza Activa de CacheStorage -->
     <script>
@@ -1278,7 +1278,7 @@
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js?v=69')
+                navigator.serviceWorker.register('sw.js?v=70')
                     .then(reg => {
                         reg.update();
                     })

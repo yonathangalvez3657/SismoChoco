@@ -429,7 +429,7 @@ async function fetchWithTimeout(url, timeoutMs = 6500, options = {}) {
     }
 }
 
-let viewMode = 'calor'; 
+let viewMode = 'none'; 
 let currentMag = 0.0;
 let currentTime = 1993;
 let currentMaxDepth = 250.0;
@@ -766,15 +766,15 @@ function renderActiveFiltersBar(filteredCount) {
         bar.innerHTML = `
             <div class="overview-prompt-pill">
                 <span>${readyText}</span>
-                <button type="button" id="btn-overview-explore" class="overview-cta-btn">Activar Eventos 3D</button>
+                <button type="button" id="btn-overview-explore" class="overview-cta-btn">Activar Concentración Energía</button>
                 <button type="button" id="btn-overview-layers" class="overview-cta-btn overview-cta-btn--ghost">Capas</button>
             </div>
         `;
         const exploreBtn = document.getElementById('btn-overview-explore');
         if (exploreBtn) {
             exploreBtn.addEventListener('click', () => {
-                const btnPuntos = document.getElementById('btn-puntos');
-                if (btnPuntos) btnPuntos.click();
+                const btnCalor = document.getElementById('btn-calor');
+                if (btnCalor) btnCalor.click();
             });
         }
         const layersBtn = document.getElementById('btn-overview-layers');
@@ -2664,13 +2664,13 @@ function resetParametricFilters(shouldRender = true) {
 }
 
 function resetSpatialVisualization({ skipCameraReset = false, skipRender = false } = {}) {
-    viewMode = 'calor';
+    viewMode = 'none';
     const viewBtns = [
         document.getElementById('btn-puntos'),
         document.getElementById('btn-calor'),
         document.getElementById('btn-hex')
     ];
-    viewBtns.forEach(b => { if (b) b.classList.toggle('active', b.id === 'btn-calor'); });
+    viewBtns.forEach(b => { if (b) b.classList.remove('active'); });
 
     benioffSector = 'all';
     const benioffSectorSel = document.getElementById('benioff-sector-select');
@@ -4442,15 +4442,15 @@ const modalData = {
 
 const INFO_MODAL_ACCENTS = {
     calor: '#E11D48',
-    hex: '#059669',
-    sgc: '#059669',
-    nsr10_info: '#059669',
+    hex: '#047857',
+    sgc: '#047857',
+    nsr10_info: '#047857',
     benioff: '#0284C7',
     sgc_wms: '#0284C7',
     infra_info: '#0284C7',
     geotecnia_info: '#0284C7',
-    fallas: '#D97706',
-    pot_info: '#D97706',
+    fallas: '#B45309',
+    pot_info: '#B45309',
     profundidad: '#9333EA',
     ml: '#9333EA',
     shakemap_info: '#DC2626'
@@ -5718,11 +5718,11 @@ function toggleBenioffMode(forceState, { skipCameraReset = false, skipRender = f
         if (btnText) btnText.innerHTML = '↺ Restaurar Vista 3D';
         if (controls) controls.style.display = 'flex';
 
-        // Si no había ningún modo activo, activar 'puntos' por defecto
+        // Si no había ningún modo activo, activar 'calor' (Concentración Energía) por defecto
         if (viewMode === 'none') {
-            viewMode = 'puntos';
-            const btnPuntos = document.getElementById('btn-puntos');
-            if (btnPuntos) btnPuntos.classList.add('active');
+            viewMode = 'calor';
+            const btnCalor = document.getElementById('btn-calor');
+            if (btnCalor) btnCalor.classList.add('active');
         }
 
         // Animar la cámara de forma funcional según el modo activo (puntos, calor o hex)

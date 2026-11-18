@@ -429,7 +429,7 @@ async function fetchWithTimeout(url, timeoutMs = 6500, options = {}) {
     }
 }
 
-let viewMode = 'none'; 
+let viewMode = 'calor'; 
 let currentMag = 0.0;
 let currentTime = 1993;
 let currentMaxDepth = 250.0;
@@ -1713,173 +1713,182 @@ function renderLayers(options = {}) {
     }
     window.currentFilteredData = filteredData;
 
-    if (!showLiveSGC) {
-        if (viewMode === 'puntos') {
+    if (viewMode === 'puntos') {
+        layers.push(new deck.ScatterplotLayer({
+            id: 'sismos-3d',
+            data: filteredData,
+            getPosition: d => {
+                const c = d.geometry.coordinates;
+                const z = isBenioffMode ? (-d.properties.profundidad * 1000 * benioffExaggeration) : 0;
+                return [c[0], c[1], z];
+            },
+            radiusUnits: 'meters',
+            radiusMinPixels: 3,
+            radiusMaxPixels: 28,
+            getRadius: d => Math.pow(1.6, d.properties.magnitud) * (isBenioffMode ? 1400 : 1000),
+            getFillColor: d => {
+                const prof = d.properties.profundidad;
+                if (prof < 30) return [230, 159, 0, 225];   // Ámbar Okabe-Ito (< 30 km)
+                if (prof < 70) return [204, 121, 167, 215]; // Magenta-rosa Okabe-Ito (30-70 km)
+                return [0, 114, 178, 220];                  // Azul profundo Okabe-Ito (> 70 km)
+            },
+            pickable: true, autoHighlight: true, highlightColor: [255, 255, 255, 200], onHover: handleHover,
+            updateTriggers: { 
+                getRadius: [currentMag, isBenioffMode], 
+                getPosition: [isBenioffMode, benioffExaggeration, benioffSector] 
+            }
+        }));
+    } else if (viewMode === 'calor') {
+        if (isBenioffMode) {
+            // Modo Benioff 3D: Nube térmica volumétrica de energía radiada (Gutenberg-Richter)
+            // 1. Halo difuso exterior con radio proporcional a energía sísmica liberada
             layers.push(new deck.ScatterplotLayer({
-                id: 'sismos-3d',
+                id: 'benioff-calor-halo',
                 data: filteredData,
                 getPosition: d => {
                     const c = d.geometry.coordinates;
-                    const z = isBenioffMode ? (-d.properties.profundidad * 1000 * benioffExaggeration) : 0;
+                    const z = -d.properties.profundidad * 1000 * benioffExaggeration;
                     return [c[0], c[1], z];
                 },
-                radiusUnits: 'meters',
-                radiusMinPixels: 3,
-                radiusMaxPixels: 28,
-                getRadius: d => Math.pow(1.6, d.properties.magnitud) * (isBenioffMode ? 1400 : 1000),
-                getFillColor: d => {
-                    const prof = d.properties.profundidad;
-                    if (prof < 30) return [230, 159, 0, 225];   // Ámbar Okabe-Ito (< 30 km)
-                    if (prof < 70) return [204, 121, 167, 215]; // Magenta-rosa Okabe-Ito (30-70 km)
-                    return [0, 114, 178, 220];                  // Azul profundo Okabe-Ito (> 70 km)
+                getRadius: d => {
+                    const mag = d.properties.magnitud || 3.0;
+                    const eRatio = Math.pow(10, 0.32 * (mag - 3.0));
+                    return Math.min(26000, Math.max(3500, 3000 * eRatio)) * (benioffExaggeration >= 1.5 ? 1.25 : 1.0);
                 },
-                pickable: true, autoHighlight: true, highlightColor: [255, 255, 255, 200], onHover: handleHover,
-                updateTriggers: { 
-                    getRadius: [currentMag, isBenioffMode], 
-                    getPosition: [isBenioffMode, benioffExaggeration, benioffSector] 
+                getFillColor: d => {
+                    const mag = d.properties.magnitud || 3.0;
+                    if (mag >= 6.5) return [255, 255, 220, 210]; // Blanco incandescente (ruptura severa)
+                    if (mag >= 5.5) return [250, 193, 39, 180];  // Amarillo solar (alta energía)
+                    if (mag >= 4.5) return [212, 72, 66, 150];   // Rojo fuego (energía moderada-alta)
+                    if (mag >= 3.8) return [159, 42, 99, 120];   // Magenta
+                    return [101, 21, 110, 90];                   // Púrpura térmico (fondo)
+                },
+                pickable: true,
+                autoHighlight: true,
+                highlightColor: [255, 255, 255, 200],
+                onHover: handleBenioffCalorHover,
+                updateTriggers: {
+                    getPosition: [isBenioffMode, benioffExaggeration, benioffSector],
+                    getRadius: [isBenioffMode, benioffExaggeration]
                 }
             }));
-        } else if (viewMode === 'calor') {
-            if (isBenioffMode) {
-                // Modo Benioff 3D: Nube térmica volumétrica de energía radiada (Gutenberg-Richter)
-                // 1. Halo difuso exterior con radio proporcional a energía sísmica liberada
-                layers.push(new deck.ScatterplotLayer({
-                    id: 'benioff-calor-halo',
-                    data: filteredData,
-                    getPosition: d => {
-                        const c = d.geometry.coordinates;
-                        const z = -d.properties.profundidad * 1000 * benioffExaggeration;
-                        return [c[0], c[1], z];
-                    },
-                    getRadius: d => {
-                        const mag = d.properties.magnitud || 3.0;
-                        const eRatio = Math.pow(10, 0.32 * (mag - 3.0));
-                        return Math.min(26000, Math.max(3500, 3000 * eRatio)) * (benioffExaggeration >= 1.5 ? 1.25 : 1.0);
-                    },
-                    getFillColor: d => {
-                        const mag = d.properties.magnitud || 3.0;
-                        if (mag >= 6.5) return [255, 255, 220, 210]; // Blanco incandescente (ruptura severa)
-                        if (mag >= 5.5) return [250, 193, 39, 180];  // Amarillo solar (alta energía)
-                        if (mag >= 4.5) return [212, 72, 66, 150];   // Rojo fuego (energía moderada-alta)
-                        if (mag >= 3.8) return [159, 42, 99, 120];   // Magenta
-                        return [101, 21, 110, 90];                   // Púrpura térmico (fondo)
-                    },
-                    pickable: true,
-                    autoHighlight: true,
-                    highlightColor: [255, 255, 255, 200],
-                    onHover: handleBenioffCalorHover,
-                    updateTriggers: {
-                        getPosition: [isBenioffMode, benioffExaggeration, benioffSector],
-                        getRadius: [isBenioffMode, benioffExaggeration]
-                    }
-                }));
 
-                // 2. Núcleo denso de asperidad sísmica
-                layers.push(new deck.ScatterplotLayer({
-                    id: 'benioff-calor-core',
-                    data: filteredData,
-                    getPosition: d => {
-                        const c = d.geometry.coordinates;
-                        const z = -d.properties.profundidad * 1000 * benioffExaggeration;
-                        return [c[0], c[1], z];
-                    },
-                    getRadius: d => {
-                        const mag = d.properties.magnitud || 3.0;
-                        const eRatio = Math.pow(10, 0.25 * (mag - 3.0));
-                        return Math.max(1200, 1600 * eRatio);
-                    },
-                    getFillColor: d => {
-                        const mag = d.properties.magnitud || 3.0;
-                        if (mag >= 5.5) return [255, 245, 180, 240];
-                        return [255, 140, 40, 220];
-                    },
-                    pickable: false,
-                    updateTriggers: {
-                        getPosition: [isBenioffMode, benioffExaggeration, benioffSector]
-                    }
-                }));
-            } else {
-                // Modo 2D estándar: Heatmap superficial + Hexagon hover interceptor
-                layers.push(new deck.HeatmapLayer({
-                    id: 'sismos-calor', data: filteredData,
-                    getPosition: d => [d.geometry.coordinates[0], d.geometry.coordinates[1]],
-                    getWeight: d => Math.pow(10, 1.5 * d.properties.magnitud), 
-                    radiusPixels: 55, intensity: 1.2, threshold: 0.05,
-                    colorRange: [ [0,0,4], [40,11,84], [101,21,110], [159,42,99], [212,72,66], [245,125,21], [250,193,39], [252,253,191] ]
-                }));
-                
-                layers.push(new deck.HexagonLayer({
-                    id: 'calor-hover', data: filteredData,
-                    getPosition: d => [d.geometry.coordinates[0], d.geometry.coordinates[1]],
-                    radius: 12000, elevationScale: 0, extruded: false, pickable: true,
-                    colorRange: [ [255,255,255,1], [255,255,255,1], [255,255,255,1], [255,255,255,1], [255,255,255,1], [255,255,255,1] ],
-                    onHover: handleStandardCalorHover
-                }));
-            }
-        } else if (viewMode === 'hex') {
-            if (isBenioffMode) {
-                // Modo Benioff 3D: Cúmulos Espaciales 3D prismáticos situados en la losa de subducción
-                const benioffClusters = buildBenioffSpatialClusters(filteredData, benioffExaggeration);
-                layers.push(new deck.ColumnLayer({
-                    id: 'benioff-spatial-clusters',
-                    data: benioffClusters,
-                    diskResolution: 6, // Prisma hexagonal
-                    radius: 6500,
-                    extruded: true,
-                    getPosition: d => [d.lng, d.lat, d.zBase],
-                    getElevation: d => d.height,
-                    getFillColor: d => {
-                        const cnt = d.count;
-                        if (cnt >= 20) return [253, 231, 37, 235];  // Amarillo (máxima densidad)
-                        if (cnt >= 10) return [94, 201, 98, 220];   // Verde claro
-                        if (cnt >= 5)  return [33, 145, 140, 210];  // Turquesa
-                        if (cnt >= 3)  return [59, 82, 139, 200];   // Azul
-                        return [68, 1, 84, 190];                    // Violeta oscuro (baja densidad)
-                    },
-                    pickable: true,
-                    autoHighlight: true,
-                    highlightColor: [255, 255, 255, 180],
-                    onHover: handleBenioffHexHover,
-                    updateTriggers: {
-                        getPosition: [isBenioffMode, benioffExaggeration, benioffSector],
-                        getElevation: [isBenioffMode, benioffExaggeration],
-                        getFillColor: [isBenioffMode]
-                    }
-                }));
-            } else {
-                // Modo 2D estándar: HexagonLayer extrusor vertical
-                layers.push(new deck.HexagonLayer({
-                    id: 'sismos-hex', data: filteredData,
-                    getPosition: d => [d.geometry.coordinates[0], d.geometry.coordinates[1]],
-                    radius: 8000, elevationScale: 100, extruded: true, pickable: true,
-                    colorRange: [ [68,1,84], [72,40,120], [62,74,137], [49,104,142], [38,130,142], [31,158,137], [53,183,121], [109,206,89], [181,222,43], [253,231,37] ],
-                    autoHighlight: true,
-                    onHover: handleStandardHexHover
-                }));
-            }
+            // 2. Núcleo denso de asperidad sísmica
+            layers.push(new deck.ScatterplotLayer({
+                id: 'benioff-calor-core',
+                data: filteredData,
+                getPosition: d => {
+                    const c = d.geometry.coordinates;
+                    const z = -d.properties.profundidad * 1000 * benioffExaggeration;
+                    return [c[0], c[1], z];
+                },
+                getRadius: d => {
+                    const mag = d.properties.magnitud || 3.0;
+                    const eRatio = Math.pow(10, 0.25 * (mag - 3.0));
+                    return Math.max(1200, 1600 * eRatio);
+                },
+                getFillColor: d => {
+                    const mag = d.properties.magnitud || 3.0;
+                    if (mag >= 5.5) return [255, 245, 180, 240];
+                    return [255, 140, 40, 220];
+                },
+                pickable: false,
+                updateTriggers: {
+                    getPosition: [isBenioffMode, benioffExaggeration, benioffSector]
+                }
+            }));
+        } else {
+            // Modo 2D estándar: Heatmap superficial + Hexagon hover interceptor
+            layers.push(new deck.HeatmapLayer({
+                id: 'sismos-calor', data: filteredData,
+                getPosition: d => [d.geometry.coordinates[0], d.geometry.coordinates[1]],
+                getWeight: d => Math.pow(10, 1.5 * d.properties.magnitud), 
+                radiusPixels: 55, intensity: 1.2, threshold: 0.05,
+                colorRange: [ [0,0,4], [40,11,84], [101,21,110], [159,42,99], [212,72,66], [245,125,21], [250,193,39], [252,253,191] ]
+            }));
+            
+            layers.push(new deck.HexagonLayer({
+                id: 'calor-hover', data: filteredData,
+                getPosition: d => [d.geometry.coordinates[0], d.geometry.coordinates[1]],
+                radius: 12000, elevationScale: 0, extruded: false, pickable: true,
+                colorRange: [ [255,255,255,1], [255,255,255,1], [255,255,255,1], [255,255,255,1], [255,255,255,1], [255,255,255,1] ],
+                onHover: handleStandardCalorHover
+            }));
+        }
+    } else if (viewMode === 'hex') {
+        if (isBenioffMode) {
+            // Modo Benioff 3D: Cúmulos Espaciales 3D prismáticos situados en la losa de subducción
+            const benioffClusters = buildBenioffSpatialClusters(filteredData, benioffExaggeration);
+            layers.push(new deck.ColumnLayer({
+                id: 'benioff-spatial-clusters',
+                data: benioffClusters,
+                diskResolution: 6, // Prisma hexagonal
+                radius: 6500,
+                extruded: true,
+                getPosition: d => [d.lng, d.lat, d.zBase],
+                getElevation: d => d.height,
+                getFillColor: d => {
+                    const cnt = d.count;
+                    if (cnt >= 20) return [253, 231, 37, 235];  // Amarillo (máxima densidad)
+                    if (cnt >= 10) return [94, 201, 98, 220];   // Verde claro
+                    if (cnt >= 5)  return [33, 145, 140, 210];  // Turquesa
+                    if (cnt >= 3)  return [59, 82, 139, 200];   // Azul
+                    return [68, 1, 84, 190];                    // Violeta oscuro (baja densidad)
+                },
+                pickable: true,
+                autoHighlight: true,
+                highlightColor: [255, 255, 255, 180],
+                onHover: handleBenioffHexHover,
+                updateTriggers: {
+                    getPosition: [isBenioffMode, benioffExaggeration, benioffSector],
+                    getElevation: [isBenioffMode, benioffExaggeration],
+                    getFillColor: [isBenioffMode]
+                }
+            }));
+        } else {
+            // Modo 2D estándar: HexagonLayer extrusor vertical
+            layers.push(new deck.HexagonLayer({
+                id: 'sismos-hex', data: filteredData,
+                getPosition: d => [d.geometry.coordinates[0], d.geometry.coordinates[1]],
+                radius: 8000, elevationScale: 100, extruded: true, pickable: true,
+                colorRange: [ [68,1,84], [72,40,120], [62,74,137], [49,104,142], [38,130,142], [31,158,137], [53,183,121], [109,206,89], [181,222,43], [253,231,37] ],
+                autoHighlight: true,
+                onHover: handleStandardHexHover
+            }));
         }
     }
 
     if (showLiveSGC && sgcData.features.length > 0) {
-        // Capa Exclusiva para SGC Live en Píxeles (Autoajustable al Zoom, Anillos Neón Telemétricos)
+        // Capa Exclusiva para SGC Live en Píxeles (superpuesta de forma simultánea con la Visualización Espacial)
         // Se diferencia cromáticamente entre sismos de hoy (<24h) y sismos recientes de días previos
         layers.push(new deck.ScatterplotLayer({
             id: 'sgc-live-layer-halo',
             data: sgcData.features,
-            getPosition: d => [d.geometry.coordinates[0], d.geometry.coordinates[1], 15000],
+            getPosition: d => [
+                d.geometry.coordinates[0],
+                d.geometry.coordinates[1],
+                isBenioffMode ? (-(d.properties.profundidad || 10) * 1000 * benioffExaggeration + 800) : 15000
+            ],
             radiusUnits: 'pixels',
             getRadius: d => Math.max((d.properties.mag || d.properties.magnitud || 3.0) * 6, 22),
             getFillColor: d => d.properties.esHoy ? [16, 185, 129, 90] : [13, 148, 136, 40], // Halo esmeralda vibrante si es hoy; cian translúcido si es anterior
             stroked: true,
             getLineColor: d => d.properties.esHoy ? [52, 211, 153, 230] : [20, 184, 166, 140],
             lineWidthMinPixels: 2,
-            pickable: false
+            pickable: false,
+            updateTriggers: {
+                getPosition: [isBenioffMode, benioffExaggeration]
+            }
         }));
 
         layers.push(new deck.ScatterplotLayer({
             id: 'sgc-live-layer-core',
             data: sgcData.features,
-            getPosition: d => [d.geometry.coordinates[0], d.geometry.coordinates[1], 16000],
+            getPosition: d => [
+                d.geometry.coordinates[0],
+                d.geometry.coordinates[1],
+                isBenioffMode ? (-(d.properties.profundidad || 10) * 1000 * benioffExaggeration + 1200) : 16000
+            ],
             radiusUnits: 'pixels',
             getRadius: d => Math.max((d.properties.mag || d.properties.magnitud || 3.0) * 3, 10),
             getFillColor: d => d.properties.esHoy ? [16, 185, 129, 240] : [15, 118, 110, 190], // Núcleo esmeralda puro vs teal
@@ -1887,7 +1896,10 @@ function renderLayers(options = {}) {
             getLineColor: d => d.properties.esHoy ? [255, 255, 255, 255] : [204, 251, 241, 180],
             lineWidthMinPixels: 2,
             pickable: true,
-            onHover: handleHover
+            onHover: handleHover,
+            updateTriggers: {
+                getPosition: [isBenioffMode, benioffExaggeration]
+            }
         }));
     }
 
@@ -2575,8 +2587,29 @@ function renderLayers(options = {}) {
                     </div>
                 </div>
             `;
+        } else if (showLiveSGC) {
+            legend.style.display = 'block';
+            legend.innerHTML = `
+                <h4 style="margin: 0 0 10px 0; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-primary);">Telemetría FDSN Live (14d)</h4>
+                <div style="display: flex; flex-direction: column; gap: 6px; color: var(--text-secondary); font-size: var(--fs-xs); font-weight: 500;">
+                    <div style="display:flex; align-items:center; gap: 8px;"><span style="display:inline-block; width:12px; height:12px; border-radius:50%; background:rgb(16,185,129); border:2px solid #ffffff;"></span> Sismos últimas 24h</div>
+                    <div style="display:flex; align-items:center; gap: 8px;"><span style="display:inline-block; width:12px; height:12px; border-radius:50%; background:rgb(15,118,110); border:1.5px solid #ccfbf1;"></span> Ventana reciente (2–14 días)</div>
+                </div>
+            `;
         } else {
             legend.style.display = 'none';
+        }
+
+        if (showLiveSGC && (viewMode !== 'none' || showSgcWms || showInfra || (isSimulatorActive && currentShakemapData))) {
+            legend.innerHTML += `
+                <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--border-subtle);">
+                    <div style="font-size: var(--fs-2xs); font-weight: 700; text-transform: uppercase; color: var(--pill-ok-fg); margin-bottom: 5px;">Telemetría FDSN Live (14d)</div>
+                    <div style="display: flex; flex-direction: column; gap: 4px; font-size: var(--fs-2xs); color: var(--text-secondary);">
+                        <div style="display:flex; align-items:center; gap:6px;"><span style="width:9px; height:9px; border-radius:50%; background:rgb(16,185,129); border:1.5px solid #fff; display:inline-block;"></span> Últimas 24h</div>
+                        <div style="display:flex; align-items:center; gap:6px;"><span style="width:9px; height:9px; border-radius:50%; background:rgb(15,118,110); border:1.5px solid #ccfbf1; display:inline-block;"></span> Recientes (2–14 días)</div>
+                    </div>
+                </div>
+            `;
         }
 
         // Si hay una capa sismica activa y ademas estan visibles las lineas vitales, concatenar sub-leyenda compacta
@@ -2631,13 +2664,13 @@ function resetParametricFilters(shouldRender = true) {
 }
 
 function resetSpatialVisualization({ skipCameraReset = false, skipRender = false } = {}) {
-    viewMode = 'none';
+    viewMode = 'calor';
     const viewBtns = [
         document.getElementById('btn-puntos'),
         document.getElementById('btn-calor'),
         document.getElementById('btn-hex')
     ];
-    viewBtns.forEach(b => { if (b) b.classList.remove('active'); });
+    viewBtns.forEach(b => { if (b) b.classList.toggle('active', b.id === 'btn-calor'); });
 
     benioffSector = 'all';
     const benioffSectorSel = document.getElementById('benioff-sector-select');
@@ -3384,6 +3417,7 @@ document.getElementById('check-live-sgc').addEventListener('change', e => {
     if (settingsBox) settingsBox.style.display = showLiveSGC ? 'flex' : 'none';
     
     if (showLiveSGC) {
+        queueRender();
         // Carga inmediata de los sismos reales por telemetría
         loadRealSgcHttp().then(() => {
             if (sgcData && sgcData.features) {

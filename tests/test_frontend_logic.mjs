@@ -265,7 +265,15 @@ test('Chips de filtros activos, encuadre Mercator, búsqueda acento-agnóstica e
     assert.equal(typeof faultInsp.lng, 'number');
     assert.equal(typeof faultInsp.lat, 'number');
 
+    assert.doesNotMatch(mainJs, /if\s*\(\s*!showLiveSGC\s*\)\s*\{\s*if\s*\(\s*viewMode\s*===\s*'puntos'/);
+    const simultaneousChips = context.buildActiveFilterChipsState({ viewMode: 'puntos', showLiveSGC: true });
+    assert.ok(simultaneousChips.some(c => c.key === 'viewMode') && simultaneousChips.some(c => c.key === 'liveSgc'));
+
+    assert.match(mainJs, /let\s+viewMode\s*=\s*'calor'\s*;/);
+    assert.match(mainJs, /function\s+resetSpatialVisualization[\s\S]*?viewMode\s*=\s*'calor';[\s\S]*?b\.classList\.toggle\('active',\s*b\.id\s*===\s*'btn-calor'\)/);
+
     const html = fs.readFileSync(path.join(APP_DIR, 'index.html'), 'utf8');
+    assert.match(html, /class="toggle-btn vis-mode-btn active"[^>]*id="btn-calor"/);
     assert.ok(html.includes('id="btn-panel-collapse"'));
     assert.ok(html.includes('id="active-filters-bar"'));
     assert.ok(html.includes('id="pinned-inspector"'));

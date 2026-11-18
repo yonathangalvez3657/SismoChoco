@@ -335,7 +335,7 @@
                         <button type="button" class="info-btn" data-info="puntos" aria-label="Instrucciones: Eventos Individuales" title="Instrucciones de uso: Eventos Individuales (Scatter 3D)">?</button>
                     </div>
                     <div class="vis-mode-cell">
-                        <button type="button" class="toggle-btn vis-mode-btn" id="btn-calor" title="Concentración de Energía / Calor (Atajo: 5)">
+                        <button type="button" class="toggle-btn vis-mode-btn active" id="btn-calor" title="Concentración de Energía / Calor (Atajo: 5)">
                             <span>Concentración</span>
                             <span>Energía</span>
                         </button>
@@ -1247,7 +1247,7 @@
     <script src="js/core-oop.js?v=40"></script>
 
     <!-- Lógica principal con versionamiento para evitar caché persistente -->
-    <script src="js/main.js?v=69"></script>
+    <script src="js/main.js?v=71"></script>
 
     <!-- PWA & Limpieza Activa de CacheStorage -->
     <script>
@@ -1278,7 +1278,7 @@
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js?v=67')
+                navigator.serviceWorker.register('sw.js?v=69')
                     .then(reg => {
                         reg.update();
                     })

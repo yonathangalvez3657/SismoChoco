@@ -271,8 +271,8 @@ test('Chips de filtros activos, encuadre Mercator, búsqueda acento-agnóstica e
 
     assert.match(mainJs, /let\s+viewMode\s*=\s*'none'\s*;/);
     assert.match(mainJs, /function\s+resetSpatialVisualization[\s\S]*?viewMode\s*=\s*'none';[\s\S]*?b\.classList\.remove\('active'\)/);
-    assert.match(mainJs, /id="btn-overview-explore"[^>]*>Activar Concentración Energía<\/button>/);
-    assert.match(mainJs, /getElementById\('btn-overview-explore'\)[\s\S]*?getElementById\('btn-calor'\)/);
+    assert.match(mainJs, /if\s*\(chips\.length\s*===\s*0\s*&&\s*!isEmptyResult\)\s*\{\s*bar\.innerHTML\s*=\s*'';\s*return;\s*\}/);
+    assert.doesNotMatch(mainJs, /overview-prompt-pill|Vista base lista/);
 
     const html = fs.readFileSync(path.join(APP_DIR, 'index.html'), 'utf8');
     const css = fs.readFileSync(path.join(APP_DIR, 'css', 'styles.css'), 'utf8');

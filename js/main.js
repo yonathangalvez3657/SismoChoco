@@ -759,34 +759,9 @@ function renderActiveFiltersBar(filteredCount) {
     });
 
     const totalLoaded = mapData && Array.isArray(mapData.features) ? mapData.features.length : 0;
-    if (chips.length === 0) {
-        const readyText = totalLoaded > 0
-            ? `Vista base lista · ${totalLoaded.toLocaleString()} eventos`
-            : 'Cargando catálogo sísmico...';
-        bar.innerHTML = `
-            <div class="overview-prompt-pill">
-                <span>${readyText}</span>
-                <button type="button" id="btn-overview-explore" class="overview-cta-btn">Activar Concentración Energía</button>
-                <button type="button" id="btn-overview-layers" class="overview-cta-btn overview-cta-btn--ghost">Capas</button>
-            </div>
-        `;
-        const exploreBtn = document.getElementById('btn-overview-explore');
-        if (exploreBtn) {
-            exploreBtn.addEventListener('click', () => {
-                const btnCalor = document.getElementById('btn-calor');
-                if (btnCalor) btnCalor.click();
-            });
-        }
-        const layersBtn = document.getElementById('btn-overview-layers');
-        if (layersBtn) {
-            layersBtn.addEventListener('click', () => {
-                const secCapas = document.getElementById('sec-capas-avanzadas');
-                if (secCapas) {
-                    secCapas.open = true;
-                    secCapas.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                }
-            });
-        }
+    const isEmptyResult = typeof filteredCount === 'number' && filteredCount === 0 && totalLoaded > 0;
+    if (chips.length === 0 && !isEmptyResult) {
+        bar.innerHTML = '';
         return;
     }
 
@@ -797,7 +772,7 @@ function renderActiveFiltersBar(filteredCount) {
         </span>
     `).join('');
 
-    if (typeof filteredCount === 'number' && filteredCount === 0 && totalLoaded > 0) {
+    if (isEmptyResult) {
         html += `
             <span class="empty-state-pill">
                 <span>0 sismos cumplen estos filtros</span>

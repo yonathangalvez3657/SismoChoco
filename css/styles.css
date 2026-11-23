@@ -96,30 +96,12 @@ body.theme-light {
 
 /* Preservación de legibilidad en modales y tablas inyectadas en modo claro */
 body.theme-light .ficha-pot-container,
-body.theme-light .ficha-pot-container h2,
-body.theme-light .ficha-pot-container h3,
-body.theme-light .ficha-pot-container h4,
-body.theme-light .ficha-pot-container strong,
-body.theme-light .ficha-pot-container p,
-body.theme-light .ficha-pot-container li,
-body.theme-light .ficha-pot-container span:not(.status-pill),
-body.theme-light .ficha-pot-container div,
 body.theme-light .ficha-pot-table td,
 body.theme-light #info-modal-content,
-body.theme-light #info-modal-content h2,
-body.theme-light #info-modal-content h3,
-body.theme-light #info-modal-content h4,
-body.theme-light #info-modal-content p,
-body.theme-light #info-modal-content li,
-body.theme-light #info-modal-content strong,
-body.theme-light #info-modal-content span:not(.status-pill),
-body.theme-light #info-modal-content div,
 body.theme-light #mobile-device-modal h3,
 body.theme-light #mobile-device-modal p,
-body.theme-light #mobile-device-modal div,
 body.theme-light #tablet-orientation-modal h3,
 body.theme-light #tablet-orientation-modal p,
-body.theme-light #tablet-orientation-modal div,
 body.theme-light #ux-telemetry-hud,
 body.theme-light #ux-telemetry-hud strong,
 body.theme-light #ux-telemetry-hud span,
@@ -402,8 +384,6 @@ body.theme-light #shakemap-impact-box,
 body.theme-light #panel-alcaldia section > div[style*="rgba(0,0,0"],
 body.theme-light #pot-tabular-summary,
 body.theme-light #ui-panel footer,
-body.theme-light #info-modal-content div[style*="background"],
-body.theme-light #ficha-pot-body div[style*="background"],
 body.theme-light #ux-telemetry-hud div[style*="background"],
 body.theme-light .friendly-card,
 body.theme-light .concept-card,
@@ -1086,13 +1066,68 @@ body.theme-light #panel-alcaldia {
     --focus-ring: #B45309;
 }
 
-/* Encabezados contextuales de #info-modal según los 3 perfiles */
-#info-modal.modal-ctx-sismo #info-modal-content h2 { color: #60A5FA !important; }
-#info-modal.modal-ctx-nsr #info-modal-content h2 { color: #34D399 !important; }
-#info-modal.modal-ctx-pot #info-modal-content h2 { color: #FBBF24 !important; }
-body.theme-light #info-modal.modal-ctx-sismo #info-modal-content h2 { color: #0052CC !important; }
-body.theme-light #info-modal.modal-ctx-nsr #info-modal-content h2 { color: #047857 !important; }
-body.theme-light #info-modal.modal-ctx-pot #info-modal-content h2 { color: #B45309 !important; }
+/* Encabezados contextuales de #info-modal según los 3 perfiles y contextos semánticos */
+#info-modal.modal-ctx-sismo {
+    --modal-accent: #38BDF8;
+    --modal-accent-strong: #0066CC;
+    --modal-accent-bg: rgba(56, 189, 248, 0.14);
+    --modal-accent-border: rgba(56, 189, 248, 0.34);
+}
+#info-modal.modal-ctx-nsr {
+    --modal-accent: #34D399;
+    --modal-accent-strong: #047857;
+    --modal-accent-bg: rgba(16, 185, 129, 0.14);
+    --modal-accent-border: rgba(16, 185, 129, 0.34);
+}
+#info-modal.modal-ctx-pot {
+    --modal-accent: #FBBF24;
+    --modal-accent-strong: #B45309;
+    --modal-accent-bg: rgba(245, 158, 11, 0.14);
+    --modal-accent-border: rgba(245, 158, 11, 0.36);
+}
+#info-modal.modal-ctx-danger {
+    --modal-accent: #FB7185;
+    --modal-accent-strong: #E11D48;
+    --modal-accent-bg: rgba(244, 63, 94, 0.14);
+    --modal-accent-border: rgba(244, 63, 94, 0.36);
+}
+#info-modal.modal-ctx-purple {
+    --modal-accent: #C084FC;
+    --modal-accent-strong: #9333EA;
+    --modal-accent-bg: rgba(168, 85, 247, 0.15);
+    --modal-accent-border: rgba(168, 85, 247, 0.36);
+}
+
+body.theme-light #info-modal.modal-ctx-sismo {
+    --modal-accent: #0052CC;
+    --modal-accent-strong: #0052CC;
+    --modal-accent-bg: rgba(0, 82, 204, 0.10);
+    --modal-accent-border: rgba(0, 82, 204, 0.28);
+}
+body.theme-light #info-modal.modal-ctx-nsr {
+    --modal-accent: #047857;
+    --modal-accent-strong: #047857;
+    --modal-accent-bg: rgba(4, 120, 87, 0.10);
+    --modal-accent-border: rgba(4, 120, 87, 0.28);
+}
+body.theme-light #info-modal.modal-ctx-pot {
+    --modal-accent: #B45309;
+    --modal-accent-strong: #B45309;
+    --modal-accent-bg: rgba(180, 83, 9, 0.10);
+    --modal-accent-border: rgba(180, 83, 9, 0.30);
+}
+body.theme-light #info-modal.modal-ctx-danger {
+    --modal-accent: #BE123C;
+    --modal-accent-strong: #BE123C;
+    --modal-accent-bg: rgba(190, 18, 60, 0.09);
+    --modal-accent-border: rgba(190, 18, 60, 0.28);
+}
+body.theme-light #info-modal.modal-ctx-purple {
+    --modal-accent: #7E22CE;
+    --modal-accent-strong: #7E22CE;
+    --modal-accent-bg: rgba(126, 34, 206, 0.09);
+    --modal-accent-border: rgba(126, 34, 206, 0.28);
+}
 
 /* Modal Ficha Técnica POT alineado a Gestión Territorial (#B45309) */
 #modal-ficha-pot .ficha-pot-container {
@@ -2034,6 +2069,11 @@ body.theme-light #modal-ficha-pot .ficha-pot-kicker {
     padding: 6px 3px;
 }
 
+.vis-mode-cell > .info-btn {
+    align-self: flex-end;
+    margin-right: 3px;
+}
+
 .vis-mode-btn {
     width: 100%;
     height: 100%;
@@ -2104,6 +2144,13 @@ details.bento-accordion > summary.accordion-summary::-webkit-details-marker {
     font-size: var(--fs-sm);
     letter-spacing: 0.06em;
     white-space: nowrap;
+}
+
+.accordion-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
 }
 
 .accordion-chevron {
@@ -2654,3 +2701,800 @@ body.panel-collapsed .pinned-inspector {
 }
 
 
+
+/* ==========================================================================
+   SISTEMA UNIFICADO DE MODALES (GUÍA RÁPIDA, AYUDAS CONTEXTUALES, FICHA POT, DISPOSITIVOS)
+   ========================================================================== */
+
+:root {
+    --modal-backdrop: rgba(6, 9, 16, 0.78);
+    --modal-surface: #111520;
+    --modal-surface-elevated: rgba(255, 255, 255, 0.038);
+    --modal-surface-subtle: rgba(255, 255, 255, 0.025);
+    --modal-border: rgba(255, 255, 255, 0.12);
+    --modal-border-soft: rgba(148, 163, 184, 0.18);
+    --modal-shadow: 0 28px 64px -12px rgba(0, 0, 0, 0.82), 0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+    --modal-accent: #38BDF8;
+    --modal-accent-strong: #0066CC;
+    --modal-accent-bg: rgba(56, 189, 248, 0.14);
+    --modal-accent-border: rgba(56, 189, 248, 0.34);
+    --modal-text: #F8FAFC;
+    --modal-text-muted: #CBD5E1;
+    --modal-text-dim: #94A3B8;
+    --modal-kbd-bg: rgba(15, 23, 42, 0.92);
+    --modal-kbd-border: rgba(148, 163, 184, 0.35);
+    --modal-kbd-text: #F1F5F9;
+}
+
+body.theme-light {
+    --modal-backdrop: rgba(15, 23, 42, 0.56);
+    --modal-surface: #FFFFFF;
+    --modal-surface-elevated: #F8FAFC;
+    --modal-surface-subtle: #F1F5F9;
+    --modal-border: rgba(15, 23, 42, 0.14);
+    --modal-border-soft: rgba(15, 23, 42, 0.12);
+    --modal-shadow: 0 24px 54px -12px rgba(15, 23, 42, 0.28), 0 0 0 1px rgba(15, 23, 42, 0.06);
+    --modal-text: #0F172A;
+    --modal-text-muted: #334155;
+    --modal-text-dim: #475569;
+    --modal-kbd-bg: #E2E8F0;
+    --modal-kbd-border: #94A3B8;
+    --modal-kbd-text: #0F172A;
+}
+
+/* Backdrop & Dialog Shells */
+.sc-modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    background: var(--modal-backdrop);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    z-index: 100005;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    padding: 16px;
+    box-sizing: border-box;
+}
+
+#modal-ficha-pot.sc-modal-overlay {
+    z-index: 99999;
+}
+
+#mobile-device-modal.sc-modal-overlay,
+#tablet-orientation-modal.sc-modal-overlay {
+    z-index: 100000;
+}
+
+.sc-modal-dialog {
+    background: var(--modal-surface);
+    border: 1px solid var(--modal-border);
+    border-top: 4px solid var(--modal-accent-strong);
+    border-radius: 20px;
+    padding: 26px 26px 24px 26px;
+    width: 100%;
+    max-width: 720px;
+    max-height: 88vh;
+    overflow-y: auto;
+    color: var(--modal-text);
+    box-shadow: var(--modal-shadow);
+    position: relative;
+    transform: translateY(8px) scale(0.985);
+    transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s ease;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(148, 163, 184, 0.35) transparent;
+}
+
+.sc-modal-overlay[style*="opacity: 1"] .sc-modal-dialog,
+.sc-modal-overlay[style*="opacity:1"] .sc-modal-dialog {
+    transform: translateY(0) scale(1);
+}
+
+.sc-modal-dialog::-webkit-scrollbar {
+    width: 6px;
+}
+.sc-modal-dialog::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.32);
+    border-radius: 999px;
+}
+.sc-modal-dialog::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.sc-modal-dialog--compact {
+    max-width: 440px;
+    text-align: center;
+    padding: 28px 24px 24px 24px;
+    border-radius: 22px;
+}
+
+.sc-modal-dialog--wide {
+    max-width: 840px;
+    max-height: 90vh;
+}
+
+/* Botón de cierre unificado */
+.sc-modal-close-btn {
+    position: absolute;
+    top: 18px;
+    right: 18px;
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    border: 1px solid var(--modal-border);
+    background: var(--modal-surface-elevated);
+    color: var(--modal-text-muted);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.18s ease, color 0.18s ease, border-color 0.18s ease, transform 0.15s ease;
+    z-index: 2;
+}
+
+.sc-modal-close-btn:hover,
+.sc-modal-close-btn:focus-visible {
+    background: var(--modal-accent-strong);
+    border-color: var(--modal-accent-strong);
+    color: #FFFFFF;
+    outline: none;
+}
+
+.sc-modal-close-btn--inline {
+    position: static;
+    flex-shrink: 0;
+}
+
+/* Encabezado unificado de modal */
+.sc-modal-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding-bottom: 16px;
+    padding-right: 42px;
+    margin-bottom: 18px;
+    border-bottom: 1px solid var(--modal-border-soft);
+}
+
+.sc-modal-header--split {
+    justify-content: space-between;
+    align-items: flex-start;
+    padding-right: 0;
+    flex-wrap: wrap;
+}
+
+.sc-modal-header-main {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-width: 0;
+    flex: 1;
+}
+
+.sc-modal-icon-badge {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--modal-accent-bg);
+    border: 1px solid var(--modal-accent-border);
+    color: var(--modal-accent);
+}
+
+.sc-modal-icon-badge--lg {
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
+    margin: 0 auto 16px auto;
+}
+
+.sc-modal-icon-badge--rotate svg {
+    animation: rotateDevice 2.4s ease-in-out infinite alternate;
+}
+
+.sc-modal-title-group {
+    min-width: 0;
+}
+
+.sc-modal-title {
+    margin: 0;
+    font-size: var(--fs-lg);
+    font-weight: 700;
+    line-height: 1.25;
+    color: var(--modal-text);
+    letter-spacing: -0.015em;
+}
+
+.sc-modal-subtitle {
+    display: block;
+    margin-top: 3px;
+    font-size: var(--fs-xs);
+    font-weight: 600;
+    color: var(--modal-accent);
+    line-height: 1.35;
+}
+
+.sc-modal-kicker {
+    display: block;
+    font-size: var(--fs-2xs);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: var(--modal-accent);
+    margin-bottom: 2px;
+}
+
+/* Cuerpo y Tipografía */
+.sc-modal-lead {
+    margin: 0 0 16px 0;
+    font-size: var(--fs-base);
+    line-height: 1.6;
+    color: var(--modal-text-muted);
+}
+
+.sc-modal-lead strong {
+    color: var(--modal-text);
+}
+
+.sc-modal-body-p {
+    margin: 0 0 14px 0;
+    font-size: var(--fs-sm);
+    line-height: 1.55;
+    color: var(--modal-text-muted);
+}
+
+.sc-modal-body-p strong {
+    color: var(--modal-text);
+}
+
+.sc-modal-note {
+    margin: 0 0 14px 0;
+    font-size: var(--fs-xs);
+    line-height: 1.5;
+    color: var(--modal-text-dim);
+}
+
+.sc-modal-section {
+    background: var(--modal-surface-elevated);
+    border: 1px solid var(--modal-border-soft);
+    border-radius: 14px;
+    padding: 15px 16px;
+    margin-bottom: 14px;
+}
+
+.sc-modal-section-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 11px 0;
+    padding-bottom: 0;
+    border-bottom: none;
+    font-size: var(--fs-sm);
+    font-weight: 700;
+    text-transform: none;
+    letter-spacing: -0.01em;
+    color: var(--modal-text);
+}
+
+.sc-modal-section-title svg {
+    color: var(--modal-accent);
+    flex-shrink: 0;
+}
+
+/* Tarjetas Callout (Información, Acción/Restablecer, Éxito, Alerta) */
+.sc-modal-callout {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    border-radius: 13px;
+    padding: 13px 15px;
+    margin-bottom: 14px;
+    border: 1px solid var(--modal-border-soft);
+    background: var(--modal-surface-elevated);
+}
+
+.sc-modal-callout-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 9px;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 1px;
+}
+
+.sc-modal-callout-body {
+    min-width: 0;
+    flex: 1;
+}
+
+.sc-modal-callout-title {
+    margin: 0 0 4px 0;
+    font-size: var(--fs-sm);
+    font-weight: 700;
+    color: var(--modal-text);
+}
+
+.sc-modal-callout-text {
+    margin: 0;
+    font-size: var(--fs-sm);
+    line-height: 1.5;
+    color: var(--modal-text-muted);
+}
+
+.sc-modal-callout-text strong {
+    color: var(--modal-text);
+}
+
+.sc-modal-callout--info {
+    background: rgba(56, 189, 248, 0.09);
+    border-color: rgba(56, 189, 248, 0.32);
+}
+.sc-modal-callout--info .sc-modal-callout-icon {
+    background: rgba(0, 102, 204, 0.22);
+    color: #38BDF8;
+}
+
+.sc-modal-callout--warn {
+    background: rgba(245, 158, 11, 0.09);
+    border-color: rgba(245, 158, 11, 0.34);
+}
+.sc-modal-callout--warn .sc-modal-callout-icon {
+    background: rgba(217, 119, 6, 0.22);
+    color: #FBBF24;
+}
+
+.sc-modal-callout--ok {
+    background: rgba(16, 185, 129, 0.09);
+    border-color: rgba(16, 185, 129, 0.32);
+}
+.sc-modal-callout--ok .sc-modal-callout-icon {
+    background: rgba(4, 120, 87, 0.22);
+    color: #34D399;
+}
+
+.sc-modal-callout--danger {
+    background: rgba(244, 63, 94, 0.09);
+    border-color: rgba(244, 63, 94, 0.32);
+}
+.sc-modal-callout--danger .sc-modal-callout-icon {
+    background: rgba(190, 18, 60, 0.22);
+    color: #FB7185;
+}
+
+body.theme-light .sc-modal-callout--info {
+    background: rgba(0, 82, 204, 0.06);
+    border-color: rgba(0, 82, 204, 0.24);
+}
+body.theme-light .sc-modal-callout--info .sc-modal-callout-icon {
+    background: rgba(0, 82, 204, 0.12);
+    color: #0052CC;
+}
+
+body.theme-light .sc-modal-callout--warn {
+    background: rgba(180, 83, 9, 0.06);
+    border-color: rgba(180, 83, 9, 0.26);
+}
+body.theme-light .sc-modal-callout--warn .sc-modal-callout-icon {
+    background: rgba(180, 83, 9, 0.12);
+    color: #B45309;
+}
+
+body.theme-light .sc-modal-callout--ok {
+    background: rgba(4, 120, 87, 0.06);
+    border-color: rgba(4, 120, 87, 0.24);
+}
+body.theme-light .sc-modal-callout--ok .sc-modal-callout-icon {
+    background: rgba(4, 120, 87, 0.12);
+    color: #047857;
+}
+
+body.theme-light .sc-modal-callout--danger {
+    background: rgba(190, 18, 60, 0.06);
+    border-color: rgba(190, 18, 60, 0.24);
+}
+body.theme-light .sc-modal-callout--danger .sc-modal-callout-icon {
+    background: rgba(190, 18, 60, 0.12);
+    color: #BE123C;
+}
+
+/* Listas limpias dentro de modales */
+.sc-modal-list {
+    margin: 0 0 14px 0;
+    padding-left: 18px;
+    font-size: var(--fs-sm);
+    line-height: 1.55;
+    color: var(--modal-text-muted);
+}
+
+.sc-modal-list li {
+    margin-bottom: 6px;
+}
+
+.sc-modal-list li:last-child {
+    margin-bottom: 0;
+}
+
+.sc-modal-list strong {
+    color: var(--modal-text);
+}
+
+.sc-modal-callout .sc-modal-list {
+    margin: 6px 0 0 0;
+}
+
+/* Tarjetas de perfiles y modos (con barra lateral de acento e ícono SVG) */
+.sc-modal-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 14px;
+}
+
+.sc-modal-section .sc-modal-stack {
+    margin-bottom: 0;
+}
+
+.sc-modal-feature-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 11px 13px;
+    border-radius: 10px;
+    background: var(--modal-surface-subtle);
+    border: 1px solid var(--modal-border-soft);
+    border-left: 3px solid var(--card-accent, var(--modal-accent));
+}
+
+.sc-modal-feature-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: color-mix(in srgb, var(--card-accent, var(--modal-accent)) 14%, transparent);
+    color: var(--card-accent, var(--modal-accent));
+}
+
+.sc-modal-feature-body strong {
+    display: block;
+    font-size: var(--fs-sm);
+    color: var(--modal-text);
+    margin-bottom: 2px;
+}
+
+.sc-modal-feature-body span {
+    display: block;
+    font-size: var(--fs-xs);
+    line-height: 1.48;
+    color: var(--modal-text-muted);
+}
+
+.sc-card-sismo { --card-accent: #38BDF8; }
+.sc-card-nsr { --card-accent: #34D399; }
+.sc-card-pot { --card-accent: #FBBF24; }
+.sc-card-danger { --card-accent: #FB7185; }
+.sc-card-purple { --card-accent: #C084FC; }
+
+body.theme-light .sc-card-sismo { --card-accent: #0052CC; }
+body.theme-light .sc-card-nsr { --card-accent: #047857; }
+body.theme-light .sc-card-pot { --card-accent: #B45309; }
+body.theme-light .sc-card-danger { --card-accent: #BE123C; }
+body.theme-light .sc-card-purple { --card-accent: #7E22CE; }
+
+/* Grilla 2 columnas (controles de mapa, atajos, ficha POT) */
+.sc-modal-grid-2 {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.sc-modal-tile {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: var(--modal-surface-subtle);
+    border: 1px solid var(--modal-border-soft);
+}
+
+.sc-modal-tile-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--modal-accent-bg);
+    color: var(--modal-accent);
+}
+
+.sc-modal-tile strong {
+    display: block;
+    font-size: var(--fs-xs);
+    color: var(--modal-text);
+    margin-bottom: 2px;
+}
+
+.sc-modal-tile span {
+    display: block;
+    font-size: var(--fs-xs);
+    line-height: 1.4;
+    color: var(--modal-text-muted);
+}
+
+/* Atajos de teclado <kbd> */
+.sc-modal-kbd-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding: 8px 10px;
+    border-radius: 9px;
+    background: var(--modal-surface-subtle);
+    border: 1px solid var(--modal-border-soft);
+    font-size: var(--fs-xs);
+    color: var(--modal-text-muted);
+}
+
+#info-modal-content kbd {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 22px;
+    height: 22px;
+    padding: 0 6px;
+    border-radius: 6px;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 600;
+    background: var(--modal-kbd-bg);
+    border: 1px solid var(--modal-kbd-border);
+    color: var(--modal-kbd-text);
+    box-shadow: 0 1px 0 rgba(0, 0, 0, 0.25);
+}
+
+/* Leyendas semánticas con muestras de color (swatches) */
+.sc-modal-legend-list {
+    list-style: none;
+    margin: 0 0 14px 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.sc-modal-legend-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 9px 12px;
+    border-radius: 10px;
+    background: var(--modal-surface-subtle);
+    border: 1px solid var(--modal-border-soft);
+    font-size: var(--fs-sm);
+    line-height: 1.45;
+    color: var(--modal-text-muted);
+}
+
+.sc-modal-legend-item strong {
+    color: var(--modal-text);
+}
+
+.sc-modal-swatch {
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 5px;
+    box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 20%, transparent);
+}
+
+.sc-modal-legend-svg {
+    width: 26px;
+    height: 26px;
+    border-radius: 7px;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: color-mix(in srgb, var(--swatch-color, var(--modal-accent)) 14%, transparent);
+    color: var(--swatch-color, var(--modal-accent));
+}
+
+/* Botones CTA en modales */
+.sc-modal-actions {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 18px;
+}
+
+.sc-modal-actions--col {
+    flex-direction: column;
+    margin-top: 0;
+}
+
+.sc-modal-btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: var(--modal-accent-strong);
+    color: #FFFFFF !important;
+    border: 1px solid transparent;
+    border-radius: 12px;
+    padding: 11px 24px;
+    font-size: var(--fs-sm);
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 8px 20px -6px color-mix(in srgb, var(--modal-accent-strong) 55%, transparent);
+    transition: transform 0.15s ease, filter 0.15s ease, box-shadow 0.15s ease;
+}
+
+.sc-modal-btn-primary:hover,
+.sc-modal-btn-primary:focus-visible {
+    filter: brightness(1.08);
+    transform: translateY(-1px);
+    outline: none;
+}
+
+.sc-modal-btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: var(--modal-surface-elevated);
+    color: var(--modal-accent);
+    border: 1px solid var(--modal-accent-border);
+    border-radius: 12px;
+    padding: 9px 14px;
+    font-size: var(--fs-xs);
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.sc-modal-btn-secondary:hover,
+.sc-modal-btn-secondary:focus-visible {
+    background: var(--modal-accent-bg);
+    outline: none;
+}
+
+.sc-modal-footer-meta {
+    margin-top: 14px;
+    font-size: var(--fs-xs);
+    color: var(--modal-text-dim);
+}
+
+/* Ficha Técnica POT — Tarjetas estructuradas */
+.sc-pot-card {
+    background: var(--modal-surface-elevated);
+    border: 1px solid var(--modal-border-soft);
+    border-radius: 12px;
+    padding: 13px 14px;
+    margin-bottom: 12px;
+}
+
+.sc-pot-grid .sc-pot-card {
+    margin-bottom: 0;
+}
+
+.sc-pot-card-title {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin: 0 0 8px 0;
+    font-size: var(--fs-xs);
+    font-weight: 700;
+    color: var(--modal-accent);
+    letter-spacing: 0.02em;
+}
+
+.sc-pot-card--danger .sc-pot-card-title {
+    color: #FB7185;
+}
+body.theme-light .sc-pot-card--danger .sc-pot-card-title {
+    color: #BE123C;
+}
+
+.sc-pot-card--info {
+    background: rgba(56, 189, 248, 0.07);
+    border-color: rgba(56, 189, 248, 0.26);
+}
+body.theme-light .sc-pot-card--info {
+    background: rgba(0, 82, 204, 0.05);
+    border-color: rgba(0, 82, 204, 0.22);
+}
+
+.sc-pot-card p {
+    margin: 0 0 5px 0;
+    font-size: var(--fs-xs);
+    line-height: 1.5;
+    color: var(--modal-text-muted);
+}
+
+.sc-pot-card p:last-child {
+    margin-bottom: 0;
+}
+
+.sc-pot-card strong {
+    color: var(--modal-text);
+}
+
+.sc-pot-metric-highlight {
+    color: var(--modal-accent) !important;
+    font-family: var(--font-mono);
+}
+
+.sc-pot-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 5px;
+    vertical-align: middle;
+}
+.sc-pot-dot--crit { background: #EF4444; }
+.sc-pot-dot--warn { background: #F59E0B; }
+.sc-pot-dot--ok { background: #10B981; }
+
+/* HUD de Telemetría UX */
+.sc-telemetry-hud {
+    display: none;
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    z-index: 99999;
+    width: 344px;
+    background: var(--modal-surface);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid var(--modal-accent-border);
+    border-top: 3px solid var(--modal-accent-strong);
+    border-radius: 16px;
+    padding: 16px;
+    color: var(--modal-text);
+    box-shadow: var(--modal-shadow);
+    animation: alertSlideDown 0.25s ease;
+}
+
+@media (max-width: 640px) {
+    .sc-modal-grid-2 {
+        grid-template-columns: 1fr;
+    }
+    .sc-modal-dialog {
+        padding: 20px 16px 18px 16px;
+        border-radius: 16px;
+    }
+    .sc-modal-header {
+        gap: 11px;
+        padding-bottom: 12px;
+        margin-bottom: 14px;
+    }
+    .sc-modal-icon-badge {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .sc-modal-overlay,
+    .sc-modal-dialog,
+    .sc-modal-icon-badge--rotate svg {
+        transition: none !important;
+        animation: none !important;
+    }
+}

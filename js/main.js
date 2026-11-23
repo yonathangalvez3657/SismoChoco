@@ -3919,529 +3919,887 @@ const closeInfoModal = document.getElementById('close-info-modal');
 const infoContent = document.getElementById('info-modal-content');
 const infoBtns = document.querySelectorAll('.info-btn');
 
+// Biblioteca de íconos vectoriales SVG (trazo limpio 2px, coherente con el panel lateral)
+const MODAL_ICONS = {
+    compass: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon></svg>',
+    help: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><path d="M12 17h.01"></path></svg>',
+    reset: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>',
+    sismo: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12h3l2-6 4 12 3-8 2 4h6"></path></svg>',
+    building: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18"></path><path d="M5 21V7l7-4 7 4v14"></path><path d="M9 21v-6h6v6"></path></svg>',
+    map: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"></polygon><line x1="9" x2="9" y1="3" y2="18"></line><line x1="15" x2="15" y1="6" y2="21"></line></svg>',
+    move: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="5 9 2 12 5 15"></polyline><polyline points="9 5 12 2 15 5"></polyline><polyline points="15 19 12 22 9 19"></polyline><polyline points="19 9 22 12 19 15"></polyline><line x1="2" x2="22" y1="12" y2="12"></line><line x1="12" x2="12" y1="2" y2="22"></line></svg>',
+    orbit: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"></path><path d="M21 3v5h-5"></path></svg>',
+    zoom: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path><path d="M11 8v6"></path><path d="M8 11h6"></path></svg>',
+    sun: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path></svg>',
+    keyboard: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="16" x="2" y="4" rx="2"></rect><path d="M6 8h.001M10 8h.001M14 8h.001M18 8h.001M8 12h.001M12 12h.001M16 12h.001M7 16h10"></path></svg>',
+    layers: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>',
+    sliders: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" x2="4" y1="21" y2="14"></line><line x1="4" x2="4" y1="10" y2="3"></line><line x1="12" x2="12" y1="21" y2="12"></line><line x1="12" x2="12" y1="8" y2="3"></line><line x1="20" x2="20" y1="21" y2="16"></line><line x1="20" x2="20" y1="12" y2="3"></line><line x1="2" x2="6" y1="14" y2="14"></line><line x1="10" x2="14" y1="8" y2="8"></line><line x1="18" x2="22" y1="16" y2="16"></line></svg>',
+    book: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>',
+    pulse: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>',
+    clock: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>',
+    scatter: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="7.5" cy="7.5" r="2.5"></circle><circle cx="17" cy="10" r="3"></circle><circle cx="10.5" cy="16.5" r="3.5"></circle></svg>',
+    flame: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"></path></svg>',
+    hexagon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" x2="12" y1="22.08" y2="12"></line></svg>',
+    chart: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"></path><path d="m19 9-5 5-4-4-3 3"></path></svg>',
+    crosshair: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="22" x2="18" y1="12" y2="12"></line><line x1="6" x2="2" y1="12" y2="12"></line><line x1="12" x2="12" y1="6" y2="2"></line><line x1="12" x2="12" y1="22" y2="18"></line></svg>',
+    fault: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 17 5-5 4 4 9-9"></path><path d="M14 7h7v7"></path></svg>',
+    clusters: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="6" r="2.5"></circle><circle cx="18" cy="7" r="2.5"></circle><circle cx="12" cy="17" r="3"></circle><path d="M8 7.5 10.5 14"></path><path d="M16 8.5 13.5 14"></path></svg>',
+    radio: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="2"></circle><path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14"></path></svg>',
+    shield: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>',
+    subduction: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 8h10l10 10"></path><path d="M2 14h6l8 8"></path><path d="M15 8h7"></path></svg>',
+    soil: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12h20"></path><path d="M2 16h20"></path><path d="M2 20h20"></path><path d="M6 8l6-5 6 5"></path></svg>',
+    zap: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>',
+    depth: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v18"></path><path d="m8 17 4 4 4-4"></path><path d="M4 7h16"></path></svg>',
+    road: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19 8 5"></path><path d="M20 19 16 5"></path><path d="M12 6v2M12 11v2M12 16v2"></path></svg>',
+    waves: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 6c.6.5 1.2 1 2.5 1C7 7 7 5 9.5 5c2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"></path><path d="M2 12c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"></path><path d="M2 18c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"></path></svg>',
+    ship: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 21c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1 .6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"></path><path d="M19.38 20A11.6 11.6 0 0 0 21 14l-9-4-9 4c0 2.9.94 5.34 2.81 7.76"></path><path d="M12 2v8"></path></svg>',
+    plane: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"></path></svg>',
+    hospital: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 6v4"></path><path d="M14 14h-4"></path><path d="M14 18h-4"></path><path d="M14 8h-4"></path><path d="M18 12h2a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2h2"></path><path d="M18 22V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v18"></path></svg>',
+    anchor: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="5" r="3"></circle><line x1="12" x2="12" y1="22" y2="8"></line><path d="M5 12H2a10 10 0 0 0 20 0h-3"></path></svg>',
+    arrowRight: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>'
+};
+
 const modalData = {
     'guia': `
-        <div style="display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:14px; margin-bottom:18px;">
-            <div style="display:flex; align-items:center; gap:12px;">
-                <div style="width:42px; height:42px; border-radius:12px; background:linear-gradient(135deg, #0A84FF, #0056B3); display:flex; align-items:center; justify-content:center; font-size:var(--fs-lg); color:#FFFFFF;">
-                    🗺️
-                </div>
-                <div>
-                    <h2 style="margin:0; font-size:var(--fs-lg); font-weight:700;">¿Cómo usar SismoChocó?</h2>
-                    <span style="font-size:var(--fs-xs); color:#0284C7; font-weight:600;">Guía rápida y sencilla para explorar la plataforma</span>
-                </div>
+        <div class="sc-modal-header">
+            <div class="sc-modal-icon-badge">${MODAL_ICONS.compass}</div>
+            <div class="sc-modal-title-group">
+                <h2 class="sc-modal-title">¿Cómo usar SismoChocó?</h2>
+                <span class="sc-modal-subtitle">Guía rápida y sencilla para explorar la plataforma</span>
             </div>
         </div>
 
-        <p style="font-size:var(--fs-base); line-height:1.6; margin-bottom:16px;">
-            <strong>SismoChocó</strong> es un mapa interactivo para entender dónde y por qué tiembla en el departamento del Chocó, qué municipios tienen mayor nivel de amenaza y qué precauciones deben tenerse en cuenta al construir o planificar el territorio.
+        <p class="sc-modal-lead">
+            <strong>SismoChocó</strong> es una plataforma cartográfica interactiva para analizar dónde y por qué tiembla en el departamento del Chocó, qué municipios concentran mayor nivel de amenaza y qué criterios normativos aplican al diseñar o planificar el territorio.
         </p>
 
-        <div style="background: rgba(10,132,255,0.12); border: 1.5px solid #0A84FF; border-radius: 14px; padding: 14px 16px; margin-bottom: 14px; display: flex; align-items: flex-start; gap: 14px;">
-            <div style="flex-shrink:0; width: 32px; height: 32px; line-height: 32px; text-align: center; background: #0A84FF; color: #FFFFFF; border-radius: 50%; font-size: var(--fs-md); font-weight: bold;">
-                ?
-            </div>
-            <div>
-                <h4 style="margin: 0 0 4px 0; font-size: var(--fs-base); font-weight: 700;">Botones azules de ayuda (?) en cada sección</h4>
-                <p style="margin: 0; font-size: var(--fs-sm); line-height: 1.5;">
-                    Si en algún momento no entiendes qué hace un filtro, un color o una gráfica, toca el botón azul <strong>(?)</strong> que está a su lado. Se abrirá una explicación corta, en palabras cotidianas, con pasos claros sobre qué tocar y cómo leer el resultado.
+        <div class="sc-modal-callout sc-modal-callout--info">
+            <div class="sc-modal-callout-icon">${MODAL_ICONS.help}</div>
+            <div class="sc-modal-callout-body">
+                <h4 class="sc-modal-callout-title">Botones de ayuda contextual (?) en cada sección</h4>
+                <p class="sc-modal-callout-text">
+                    Cada filtro, capa o gráfica incorpora un botón <strong>(?)</strong> a su lado. Al pulsarlo se despliega una explicación concisa sobre cómo interpretar la variable y cómo operar el control.
                 </p>
             </div>
         </div>
 
-        <div style="background: rgba(245,158,11,0.12); border: 1.5px solid #F59E0B; border-radius: 14px; padding: 14px 16px; margin-bottom: 16px; display: flex; align-items: flex-start; gap: 14px;">
-            <div style="flex-shrink:0; width: 32px; height: 32px; line-height: 32px; text-align: center; background: #F59E0B; color: #FFFFFF; border-radius: 50%; font-size: var(--fs-md); font-weight: bold;">
-                ↺
-            </div>
-            <div>
-                <h4 style="margin: 0 0 4px 0; font-size: var(--fs-base); font-weight: 700;">¿Cómo deshacer cambios o limpiar el mapa?</h4>
-                <p style="margin: 0 0 8px 0; font-size: var(--fs-sm); line-height: 1.5;">
-                    Puedes volver atrás en cualquier momento usando los botones circulares de flecha (<strong>↺ Restablecer</strong>) que aparecen junto a cada título o en la esquina derecha de la barra superior:
+        <div class="sc-modal-callout sc-modal-callout--warn">
+            <div class="sc-modal-callout-icon">${MODAL_ICONS.reset}</div>
+            <div class="sc-modal-callout-body">
+                <h4 class="sc-modal-callout-title">Deshacer cambios y limpiar el mapa</h4>
+                <p class="sc-modal-callout-text">
+                    Los botones circulares de flecha (<strong>Restablecer</strong>) junto a cada bloque o en la barra superior permiten volver al estado inicial en cualquier momento:
                 </p>
-                <ul style="margin: 0; padding-left: 18px; font-size: var(--fs-sm); line-height: 1.5;">
-                    <li style="margin-bottom: 4px;"><strong>En Visualización Espacial:</strong> apaga los puntos, manchas de calor o torres 3D y deja el mapa limpio.</li>
-                    <li style="margin-bottom: 4px;"><strong>En Filtros:</strong> vuelve a mostrar todos los sismos desde 1993 hasta hoy, de cualquier tamaño y profundidad.</li>
-                    <li style="margin-bottom: 4px;"><strong>En Capas Avanzadas:</strong> apaga todas las capas adicionales (fallas, sismos en vivo, mapas de amenaza, vías y hospitales).</li>
-                    <li><strong>Botón ⌂ en la barra superior:</strong> reinicia toda la plataforma y devuelve la cámara al mapa completo del Chocó.</li>
+                <ul class="sc-modal-list">
+                    <li><strong>Visualización Espacial:</strong> apaga puntos, manchas de calor o torres 3D y deja el mapa despejado.</li>
+                    <li><strong>Filtros Paramétricos:</strong> restablece el catálogo completo desde 1993 hasta 2026 sin restricciones de magnitud ni profundidad.</li>
+                    <li><strong>Capas Avanzadas:</strong> desactiva fallas, sismos en vivo, mapas de amenaza y capas complementarias.</li>
+                    <li><strong>Restablecer Todo (barra superior o tecla 0):</strong> reinicia la plataforma y devuelve la cámara al encuadre general del Chocó.</li>
                 </ul>
             </div>
         </div>
 
-        <div style="background:rgba(148,163,184,0.08); border:1px solid rgba(148,163,184,0.22); border-radius:14px; padding:16px; margin-bottom:16px;">
-            <h3 style="color:#0284C7; font-size:var(--fs-md); margin:0 0 10px 0;">1. Elige lo que quieres consultar (3 pestañas arriba)</h3>
-            <div style="display:grid; grid-template-columns:1fr; gap:10px;">
-                <div style="background:rgba(10,132,255,0.08); border-left:3px solid #0A84FF; padding:10px 12px; border-radius:6px;">
-                    <strong>🌋 Sismo Geología:</strong>
-                    <div style="font-size:var(--fs-sm); line-height:1.45; margin-top:3px;">
-                        Para ver dónde han ocurrido los temblores históricos, qué tan profundos son, por dónde pasan las fallas geológicas, simular terremotos fuertes o consultar sismos recientes.
+        <div class="sc-modal-section">
+            <h3 class="sc-modal-section-title">${MODAL_ICONS.layers}<span>1. Selección de perfil disciplinar (3 pestañas superiores)</span></h3>
+            <div class="sc-modal-stack">
+                <div class="sc-modal-feature-card sc-card-sismo">
+                    <div class="sc-modal-feature-icon">${MODAL_ICONS.sismo}</div>
+                    <div class="sc-modal-feature-body">
+                        <strong>Sismo Geología</strong>
+                        <span>Exploración del catálogo histórico (1993–2026), profundidad focal, perfil 3D de subducción, fallas geológicas, simulación ShakeMap y telemetría reciente.</span>
                     </div>
                 </div>
-                <div style="background:rgba(16,185,129,0.08); border-left:3px solid #10B981; padding:10px 12px; border-radius:6px;">
-                    <strong>🏗️ Diseño Estructural:</strong>
-                    <div style="font-size:var(--fs-sm); line-height:1.45; margin-top:3px;">
-                        Para seleccionar un municipio y saber qué tanta fuerza sísmica exige la norma colombiana (NSR-10) al construir viviendas, colegios u hospitales según el tipo de terreno.
+                <div class="sc-modal-feature-card sc-card-nsr">
+                    <div class="sc-modal-feature-icon">${MODAL_ICONS.building}</div>
+                    <div class="sc-modal-feature-body">
+                        <strong>Diseño Estructural</strong>
+                        <span>Consulta municipal de aceleraciones sísmicas, espectro elástico de diseño bajo norma NSR-10 y amplificación geotécnica según tipo de suelo y grupo de uso.</span>
                     </div>
                 </div>
-                <div style="background:rgba(245,158,11,0.08); border-left:3px solid #F59E0B; padding:10px 12px; border-radius:6px;">
-                    <strong>🏛️ Gestión Territorial:</strong>
-                    <div style="font-size:var(--fs-sm); line-height:1.45; margin-top:3px;">
-                        Para revisar el diagnóstico municipal orientado al Plan de Ordenamiento Territorial (POT), ver carreteras, ríos, hospitales y puertos, y descargar un resumen en PDF.
+                <div class="sc-modal-feature-card sc-card-pot">
+                    <div class="sc-modal-feature-icon">${MODAL_ICONS.map}</div>
+                    <div class="sc-modal-feature-body">
+                        <strong>Gestión Territorial</strong>
+                        <span>Diagnóstico municipal orientado a POT / PBOT / EOT, infraestructura crítica (vías, ríos, hospitales y puertos) y generación de ficha técnica imprimible en PDF.</span>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div style="background:rgba(148,163,184,0.08); border:1px solid rgba(148,163,184,0.22); border-radius:14px; padding:16px; margin-bottom:16px;">
-            <h3 style="color:#0284C7; font-size:var(--fs-md); margin:0 0 10px 0;">2. Cómo moverte por el mapa</h3>
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size:var(--fs-sm);">
-                <div style="background:rgba(148,163,184,0.06); padding:8px 10px; border-radius:8px;">
-                    <strong>🖱️ Clic izquierdo y arrastrar:</strong><br>Mover el mapa hacia cualquier lado.
+        <div class="sc-modal-section">
+            <h3 class="sc-modal-section-title">${MODAL_ICONS.move}<span>2. Navegación sobre el mapa interactivo</span></h3>
+            <div class="sc-modal-grid-2">
+                <div class="sc-modal-tile">
+                    <div class="sc-modal-tile-icon">${MODAL_ICONS.move}</div>
+                    <div>
+                        <strong>Clic izquierdo y arrastrar</strong>
+                        <span>Desplazar el lienzo en cualquier dirección.</span>
+                    </div>
                 </div>
-                <div style="background:rgba(148,163,184,0.06); padding:8px 10px; border-radius:8px;">
-                    <strong>🔄 Clic derecho y arrastrar:</strong><br>Inclinar y girar el mapa para verlo en 3D.
+                <div class="sc-modal-tile">
+                    <div class="sc-modal-tile-icon">${MODAL_ICONS.orbit}</div>
+                    <div>
+                        <strong>Clic derecho y arrastrar</strong>
+                        <span>Inclinar y rotar la cámara para inspección 3D.</span>
+                    </div>
                 </div>
-                <div style="background:rgba(148,163,184,0.06); padding:8px 10px; border-radius:8px;">
-                    <strong>🔍 Rueda del ratón:</strong><br>Acercar o alejar la vista.
+                <div class="sc-modal-tile">
+                    <div class="sc-modal-tile-icon">${MODAL_ICONS.zoom}</div>
+                    <div>
+                        <strong>Rueda del ratón</strong>
+                        <span>Acercar o alejar la escala cartográfica.</span>
+                    </div>
                 </div>
-                <div style="background:rgba(148,163,184,0.06); padding:8px 10px; border-radius:8px;">
-                    <strong>☀️ Botón Claro:</strong><br>Cambia entre fondo oscuro y fondo claro para leer con mayor comodidad.
+                <div class="sc-modal-tile">
+                    <div class="sc-modal-tile-icon">${MODAL_ICONS.sun}</div>
+                    <div>
+                        <strong>Botón Claro / Oscuro</strong>
+                        <span>Alternar contraste del panel para lectura en campo u oficina.</span>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div style="background:rgba(16,185,129,0.10); border:1px solid #10B981; border-radius:14px; padding:14px 16px; margin-bottom:18px;">
-            <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; margin-bottom:8px;">
-                <h3 style="color:#059669; font-size:var(--fs-md); margin:0;">3. Atajos rápidos (si usas computador)</h3>
+        <div class="sc-modal-callout sc-modal-callout--ok" style="display:block;">
+            <h3 class="sc-modal-section-title" style="margin-bottom:8px;">${MODAL_ICONS.keyboard}<span>3. Atajos de teclado (escritorio)</span></h3>
+            <div class="sc-modal-grid-2" style="gap:8px; margin-bottom:10px;">
+                <div class="sc-modal-kbd-item"><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><span>Cambiar entre los 3 perfiles</span></div>
+                <div class="sc-modal-kbd-item"><kbd>4</kbd><kbd>5</kbd><kbd>6</kbd><span>Puntos, Calor y Torres 3D</span></div>
+                <div class="sc-modal-kbd-item"><kbd>7</kbd><span>Benioff</span> · <kbd>8</kbd><span>Live</span> · <kbd>9</kbd><span>Fallas</span></div>
+                <div class="sc-modal-kbd-item"><kbd>0</kbd><span>Restablecer</span> · <kbd>C</kbd><span>Panel</span> · <kbd>+</kbd><kbd>-</kbd><span>Zoom</span></div>
             </div>
-            <p style="font-size:var(--fs-sm); line-height:1.5; margin:0 0 10px 0;">
-                Con las teclas numéricas y las flechas puedes cambiar de vista sin buscar botones:
+            <p class="sc-modal-note" style="margin:0;">
+                Al mantener <kbd>Shift</kbd> + <kbd>↑ ↓ ← →</kbd> se ajusta la inclinación y rotación tridimensional de la cámara.
             </p>
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:var(--fs-xs); margin-bottom:10px;">
-                <div style="background:rgba(148,163,184,0.08); padding:6px 8px; border-radius:6px;"><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> : Cambiar entre las 3 pestañas principales</div>
-                <div style="background:rgba(148,163,184,0.08); padding:6px 8px; border-radius:6px;"><kbd>4</kbd> <kbd>5</kbd> <kbd>6</kbd> : Cambiar entre Puntos, Calor y Torres 3D</div>
-                <div style="background:rgba(148,163,184,0.08); padding:6px 8px; border-radius:6px;"><kbd>7</kbd> Corte lateral · <kbd>8</kbd> Sismos recientes · <kbd>9</kbd> Fallas</div>
-                <div style="background:rgba(148,163,184,0.08); padding:6px 8px; border-radius:6px;"><kbd>0</kbd> Restablecer todo · <kbd>↑ ↓ ← →</kbd> Mover · <kbd>+ / -</kbd> Zoom</div>
-            </div>
-            <p style="font-size:var(--fs-xs); margin:0; color:var(--text-tertiary);">
-                Si inclinas el mapa manteniendo <kbd>Shift</kbd> + <kbd>↑ ↓ ← →</kbd>, puedes ver mejor las vistas en 3D.
-            </p>
         </div>
 
-        <div style="display:flex; justify-content:center;">
-            <button id="btn-entendido-guia" style="background:linear-gradient(135deg, #0052CC, #003E99); color:#FFFFFF; border:none; border-radius:12px; padding:12px 28px; font-size:var(--fs-base); font-weight:600; cursor:pointer; box-shadow:0 6px 18px rgba(0,82,204,0.35);">
-                ¡Entendido, explorar el mapa!
+        <div class="sc-modal-actions">
+            <button id="btn-entendido-guia" type="button" class="sc-modal-btn-primary">
+                <span>Entendido, explorar el mapa</span>
+                ${MODAL_ICONS.arrowRight}
             </button>
         </div>
     `,
     'vis_espacial': `
-        <h2 style="margin-top:0; color:#0A84FF; font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Formas de ver los sismos en el mapa</h2>
-        <p style="font-size:var(--fs-base); line-height:1.6; margin-bottom:14px;">
-            Esta sección te deja elegir cómo dibujar los temblores en el mapa. Todos los modos usan los mismos sismos, solo cambia la forma de mostrarlos para que sea más fácil entenderlos:
-        </p>
-        <div style="display:flex; flex-direction:column; gap:10px; font-size:var(--fs-sm); margin-bottom:14px;">
-            <div style="background:rgba(10,132,255,0.08); border-left:3px solid #0A84FF; padding:10px 12px; border-radius:6px;">
-                <strong>⚪ Puntos (uno por uno):</strong> Muestra cada temblor como un círculo separado. Sirve para revisar dónde ocurrió exactamente cada sismo y pasar el ratón encima para ver su fecha y tamaño.
-            </div>
-            <div style="background:rgba(244,63,94,0.08); border-left:3px solid #F43F5E; padding:10px 12px; border-radius:6px;">
-                <strong>🔥 Calor (manchas de color):</strong> Junta los puntos en manchas suaves para ver rápido en qué partes del Chocó se concentra más actividad sísmica.
-            </div>
-            <div style="background:rgba(16,185,129,0.08); border-left:3px solid #10B981; padding:10px 12px; border-radius:6px;">
-                <strong>🔷 Hexbins (torres 3D):</strong> Divide el mapa en celdas como un panal y levanta torres más altas donde ha temblado más veces.
+        <div class="sc-modal-header">
+            <div class="sc-modal-icon-badge">${MODAL_ICONS.layers}</div>
+            <div class="sc-modal-title-group">
+                <h2 class="sc-modal-title">Visualización Espacial</h2>
+                <span class="sc-modal-subtitle">Modos de representación cartográfica del catálogo sísmico</span>
             </div>
         </div>
-        <div style="background:rgba(245,158,11,0.12); border:1.5px solid #F59E0B; border-radius:12px; padding:12px 14px;">
-            <strong style="font-size:var(--fs-sm);">¿Cómo usar y cómo limpiar?</strong>
-            <ul style="margin:6px 0 0 0; padding-left:18px; font-size:var(--fs-sm); line-height:1.45;">
-                <li><strong>Uso:</strong> Toca uno de los tres botones (Puntos, Calor o Hexbins) para activar esa vista. Si quieres encender más de uno al tiempo no es necesario: cambia libremente entre ellos.</li>
-                <li><strong>Limpiar:</strong> Presiona el botón circular de flecha (<strong>↺</strong>) junto al título <em>Visualización Espacial</em> para apagar los puntos, el calor y las torres y dejar el mapa despejado.</li>
-            </ul>
+        <p class="sc-modal-lead">
+            Esta sección permite elegir cómo representar los eventos filtrados sobre el mapa. Los tres modos operan sobre la misma muestra sísmica, cambiando su codificación visual para facilitar distintos tipos de lectura:
+        </p>
+        <div class="sc-modal-stack">
+            <div class="sc-modal-feature-card sc-card-sismo">
+                <div class="sc-modal-feature-icon">${MODAL_ICONS.scatter}</div>
+                <div class="sc-modal-feature-body">
+                    <strong>Eventos Individuales (Scatter 3D)</strong>
+                    <span>Dibuja cada temblor como un círculo independiente. Permite inspeccionar fecha, magnitud, profundidad y municipio más cercano al pasar el cursor.</span>
+                </div>
+            </div>
+            <div class="sc-modal-feature-card sc-card-danger">
+                <div class="sc-modal-feature-icon">${MODAL_ICONS.flame}</div>
+                <div class="sc-modal-feature-body">
+                    <strong>Concentración de Energía (Heatmap)</strong>
+                    <span>Agrupa los eventos en superficies continuas de densidad para identificar rápidamente los sectores con mayor liberación histórica de energía.</span>
+                </div>
+            </div>
+            <div class="sc-modal-feature-card sc-card-nsr">
+                <div class="sc-modal-feature-icon">${MODAL_ICONS.hexagon}</div>
+                <div class="sc-modal-feature-body">
+                    <strong>Agrupación Espacial (Hexbins 3D)</strong>
+                    <span>Divide el departamento en celdas hexagonales y eleva columnas tridimensionales proporcionales a la frecuencia de sismos en cada sector.</span>
+                </div>
+            </div>
+        </div>
+        <div class="sc-modal-callout sc-modal-callout--warn">
+            <div class="sc-modal-callout-icon">${MODAL_ICONS.reset}</div>
+            <div class="sc-modal-callout-body">
+                <h4 class="sc-modal-callout-title">Uso y limpieza de la vista</h4>
+                <ul class="sc-modal-list">
+                    <li><strong>Uso:</strong> seleccione cualquiera de los tres modos para alternar la visualización de manera inmediata.</li>
+                    <li><strong>Limpiar:</strong> pulse el botón circular de restablecer junto al título <em>Visualización Espacial</em> para despejar el lienzo.</li>
+                </ul>
+            </div>
         </div>
     `,
     'filtros_parametricos': `
-        <h2 style="margin-top:0; color:#0A84FF; font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Filtros para elegir qué sismos ver</h2>
-        <p style="font-size:var(--fs-base); line-height:1.6; margin-bottom:14px;">
-            Como hay miles de temblores registrados, estas tres barras te permiten mostrar solo los que te interesa analizar:
+        <div class="sc-modal-header">
+            <div class="sc-modal-icon-badge">${MODAL_ICONS.sliders}</div>
+            <div class="sc-modal-title-group">
+                <h2 class="sc-modal-title">Filtros Paramétricos</h2>
+                <span class="sc-modal-subtitle">Segmentación en tiempo real por magnitud, profundidad y año</span>
+            </div>
+        </div>
+        <p class="sc-modal-lead">
+            Dada la densidad del catálogo sísmico histórico, estos tres controles permiten aislar subconjuntos específicos de eventos y recalcular dinámicamente los indicadores:
         </p>
-        <ul style="margin:0 0 14px 0; padding-left:18px; font-size:var(--fs-sm); line-height:1.55;">
-            <li style="margin-bottom:8px;"><strong>Magnitud (M):</strong> Oculta los temblores muy pequeños para quedarte solo con los que se sintieron fuerte (por ejemplo, de 5.0 en adelante).</li>
-            <li style="margin-bottom:8px;"><strong>Profundidad Máxima:</strong> Separa los temblores que ocurren cerca de la superficie (los más cercanos a pueblos y viviendas) de los que ocurren muy profundo bajo tierra.</li>
-            <li><strong>Año y botón ▶ Reproducir:</strong> Elige desde qué año quieres ver los registros (desde 1993 hasta 2026) o pulsa <em>▶ Reproducir</em> para ver una película año por año de cómo han ocurrido los sismos.</li>
+        <ul class="sc-modal-list">
+            <li><strong>Magnitud (M):</strong> excluye los temblores menores al umbral definido para enfocar el análisis en eventos moderados o fuertes (por ejemplo, M ≥ 5.0).</li>
+            <li><strong>Profundidad máxima:</strong> distingue los sismos corticales superficiales (más cercanos a centros poblados) de los eventos intermedios y profundos de la losa de subducción.</li>
+            <li><strong>Año inicial y Reproducir:</strong> delimita el periodo de consulta (1993–2026) o activa una animación cronológica año por año de la evolución sísmica.</li>
         </ul>
-        <div style="background:rgba(245,158,11,0.12); border:1.5px solid #F59E0B; border-radius:12px; padding:12px 14px;">
-            <strong style="font-size:var(--fs-sm);">¿Cómo usar y volver a ver todos los sismos?</strong>
-            <ul style="margin:6px 0 0 0; padding-left:18px; font-size:var(--fs-sm); line-height:1.45;">
-                <li><strong>Uso:</strong> Mueve cualquiera de las tres barras hacia la derecha o la izquierda; el mapa y los conteos cambian al instante.</li>
-                <li><strong>Restablecer:</strong> Presiona el botón <strong>↺</strong> junto al título <em>Filtros Paramétricos</em> para volver a mostrar el 100 % de los sismos (Magnitud 0.0, Profundidad 250 km y Año 1993).</li>
-            </ul>
+        <div class="sc-modal-callout sc-modal-callout--warn">
+            <div class="sc-modal-callout-icon">${MODAL_ICONS.reset}</div>
+            <div class="sc-modal-callout-body">
+                <h4 class="sc-modal-callout-title">Uso y restablecimiento</h4>
+                <ul class="sc-modal-list">
+                    <li><strong>Uso:</strong> desplace cualquiera de los deslizadores; el mapa, la gráfica Gutenberg-Richter y el contador se actualizan al instante.</li>
+                    <li><strong>Restablecer:</strong> pulse el botón circular junto a <em>Filtros Paramétricos</em> para retornar al 100 % del catálogo (M 0.0, 250 km y año 1993).</li>
+                </ul>
+            </div>
         </div>
     `,
     'capas_avanzadas': `
-        <h2 style="margin-top:0; color:#0A84FF; font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Capas de información extra sobre el mapa</h2>
-        <p style="font-size:var(--fs-base); line-height:1.6; margin-bottom:14px;">
-            Cada interruptor de esta lista enciende o apaga una capa adicional encima del mapa del Chocó. Puedes activar solo la que necesites para no llenar demasiado la pantalla:
+        <div class="sc-modal-header">
+            <div class="sc-modal-icon-badge">${MODAL_ICONS.layers}</div>
+            <div class="sc-modal-title-group">
+                <h2 class="sc-modal-title">Capas Avanzadas</h2>
+                <span class="sc-modal-subtitle">Capas temáticas superpuestas sobre el lienzo cartográfico</span>
+            </div>
+        </div>
+        <p class="sc-modal-lead">
+            Cada interruptor activa o desactiva una capa temática adicional sobre el Chocó. Se recomienda habilitar únicamente las capas necesarias para mantener la legibilidad del mapa:
         </p>
-        <ul style="margin:0 0 14px 0; padding-left:18px; font-size:var(--fs-sm); line-height:1.5;">
-            <li style="margin-bottom:6px;"><strong>Sismos de Alta Precisión:</strong> Oculta registros cuya ubicación fue estimada con poca exactitud y deja solo los mejor medidos.</li>
-            <li style="margin-bottom:6px;"><strong>Fallas Geológicas:</strong> Dibuja las principales fracturas del terreno donde nacen muchos terremotos y te deja consultar una por una.</li>
-            <li style="margin-bottom:6px;"><strong>Zonas donde se agrupan sismos (IA):</strong> Resalta con colores grupos de muchos temblores ocurridos cerca entre sí.</li>
-            <li style="margin-bottom:6px;"><strong>Telemetría FDSN Live:</strong> Consulta temblores recientes reportados en los últimos días por redes internacionales.</li>
-            <li><strong>Modelo SGC Oficial (OGC):</strong> Pinta el mapa oficial de amenaza sísmica de Colombia y te explica qué significa cada color al pasar el ratón.</li>
+        <ul class="sc-modal-list">
+            <li><strong>Sismos de Alta Precisión:</strong> excluye eventos con alta incertidumbre instrumental (GAP &gt; 180° y RMS &gt; 1.0 s) y conserva los registros mejor localizados.</li>
+            <li><strong>Fallas Geológicas:</strong> traza las 11 principales estructuras tectónicas con su potencial sismogénico (Mmax) y franja de retiro referencial.</li>
+            <li><strong>Zonas Anómalas (IA DBSCAN):</strong> identifica agrupamientos densos de eventos cercanos (enjambres o secuencias de réplicas).</li>
+            <li><strong>Telemetría FDSN Live:</strong> consulta sismos recientes (M ≥ 3.5 en los últimos 14 días) reportados por redes internacionales.</li>
+            <li><strong>Modelo SGC Oficial (OGC):</strong> superpone el mapa oficial de amenaza sísmica del Servicio Geológico Colombiano con lectura interactiva por color y consulta puntual.</li>
         </ul>
-        <div style="background:rgba(245,158,11,0.12); border:1.5px solid #F59E0B; border-radius:12px; padding:12px 14px;">
-            <strong style="font-size:var(--fs-sm);">¿Cómo usar y apagar todo rápido?</strong>
-            <ul style="margin:6px 0 0 0; padding-left:18px; font-size:var(--fs-sm); line-height:1.45;">
-                <li><strong>Uso:</strong> Activa cualquier interruptor para ver su información; cada uno tiene al lado un botón <strong>(?)</strong> por si necesitas más detalle.</li>
-                <li><strong>Apagar todo:</strong> Presiona el botón <strong>↺</strong> junto a <em>Capas Avanzadas</em> para apagar todas estas capas de una sola vez.</li>
-            </ul>
+        <div class="sc-modal-callout sc-modal-callout--warn">
+            <div class="sc-modal-callout-icon">${MODAL_ICONS.reset}</div>
+            <div class="sc-modal-callout-body">
+                <h4 class="sc-modal-callout-title">Activación y limpieza rápida</h4>
+                <ul class="sc-modal-list">
+                    <li><strong>Uso:</strong> active cualquier interruptor; cada capa dispone de su propio botón <strong>(?)</strong> con detalles metodológicos.</li>
+                    <li><strong>Apagar todo:</strong> utilice el botón circular de restablecer en la cabecera de <em>Capas Avanzadas</em> para desactivar todas las capas simultáneamente.</li>
+                </ul>
+            </div>
         </div>
     `,
     'rtd': `
-        <h2 style="margin-top:0; color:#0A84FF; font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">¿Qué significa "RtD"? (Sobre este proyecto)</h2>
-        <p style="font-size:var(--fs-base); line-height:1.6; margin-bottom:12px;">
-            Las siglas <strong>RtD</strong> significan <em>Investigación a través del Diseño</em> (en inglés, <em>Research through Design</em>). Es la forma en que se creó esta herramienta: en lugar de dejar los datos sísmicos en tablas difíciles de entender, se diseñó un mapa visual interactivo para probar cómo las personas comprenden mejor el riesgo en su territorio.
-        </p>
-        <div style="background: rgba(10,132,255,0.10); border-left: 3px solid #0A84FF; padding: 12px 14px; border-radius: 6px; margin-bottom: 14px; font-size: var(--fs-sm); line-height: 1.5;">
-            <strong>Proyecto académico:</strong> Maestría en Diseño y Creación Interactiva — Universidad de Caldas.<br>
-            <strong>Propósito práctico:</strong> Que ciudadanía, planificadores municipales e ingenieros puedan explorar en pocos clics dónde tiembla, qué tan fuerte puede sacudirse cada municipio y qué cuidados exige la ley.
+        <div class="sc-modal-header">
+            <div class="sc-modal-icon-badge">${MODAL_ICONS.book}</div>
+            <div class="sc-modal-title-group">
+                <h2 class="sc-modal-title">Marco Epistemológico: Research through Design (RtD)</h2>
+                <span class="sc-modal-subtitle">Investigación a través del Diseño aplicada a la sismicidad del Chocó</span>
+            </div>
         </div>
-        <div style="background:rgba(245,158,11,0.12); border:1.5px solid #F59E0B; border-radius:12px; padding:12px 14px;">
-            <strong style="font-size:var(--fs-sm);">¿Cómo navegar este proyecto?</strong>
-            <p style="margin:6px 0 0 0; font-size:var(--fs-sm); line-height:1.45;">
-                Cierra esta ventana con la <strong>✕</strong> (o tocando fuera del cuadro) para volver al mapa. Si deseas una explicación paso a paso de los controles, pulsa el botón azul <strong>(?)</strong> que está justo al lado de este botón <strong>RtD</strong>.
-            </p>
+        <p class="sc-modal-lead">
+            Las siglas <strong>RtD</strong> corresponden a <em>Research through Design</em> (Investigación a través del Diseño). Bajo este enfoque, el artefacto interactivo no es un simple contenedor de datos, sino el medio principal para investigar cómo el diseño de información transforma registros sismológicos complejos en conocimiento comprensible y accionable.
+        </p>
+        <div class="sc-modal-callout sc-modal-callout--info">
+            <div class="sc-modal-callout-icon">${MODAL_ICONS.book}</div>
+            <div class="sc-modal-callout-body">
+                <h4 class="sc-modal-callout-title">Contexto académico e impacto territorial</h4>
+                <p class="sc-modal-callout-text">
+                    <strong>Programa:</strong> Maestría en Diseño y Creación Interactiva — Universidad de Caldas.<br>
+                    <strong>Propósito:</strong> articular en una sola interfaz los requerimientos de geocientíficos, ingenieros estructurales (NSR-10) y planificadores territoriales (POT).
+                </p>
+            </div>
+        </div>
+        <div class="sc-modal-callout sc-modal-callout--warn">
+            <div class="sc-modal-callout-icon">${MODAL_ICONS.help}</div>
+            <div class="sc-modal-callout-body">
+                <h4 class="sc-modal-callout-title">Cómo continuar la exploración</h4>
+                <p class="sc-modal-callout-text">
+                    Cierre esta ventana con el botón superior derecho o haciendo clic fuera del recuadro. Para consultar el recorrido completo de controles y atajos, abra el botón <strong>(?)</strong> ubicado junto a <strong>RtD</strong>.
+                </p>
+            </div>
         </div>
     `,
     'magnitud': `
-        <h2 style="margin-top:0; color:#0A84FF; font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Magnitud: ¿qué tan fuerte fue el temblor?</h2>
-        <p style="font-size:var(--fs-base); line-height:1.55; margin-bottom:10px;">
-            Esta barra oculta los temblores más pequeños para que en el mapa solo queden los que alcanzan o superan el tamaño que tú elijas (desde <strong>0.0</strong> hasta <strong>8.0</strong>).
+        <div class="sc-modal-header">
+            <div class="sc-modal-icon-badge">${MODAL_ICONS.pulse}</div>
+            <div class="sc-modal-title-group">
+                <h2 class="sc-modal-title">Magnitud Sísmica (M)</h2>
+                <span class="sc-modal-subtitle">Umbral mínimo de energía liberada en el catálogo</span>
+            </div>
+        </div>
+        <p class="sc-modal-lead">
+            Este deslizador oculta los temblores inferiores al valor seleccionado (entre <strong>0.0</strong> y <strong>8.0</strong>), permitiendo aislar los eventos de mayor relevancia energética:
         </p>
-        <ul style="font-size:var(--fs-sm); line-height:1.55; margin:0 0 14px 0; padding-left:18px;">
-            <li style="margin-bottom:6px;"><strong>Menor a 4.0:</strong> Temblores leves, muchas veces solo los detectan los equipos o se sienten suave en pisos altos.</li>
-            <li style="margin-bottom:6px;"><strong>Entre 4.0 y 5.9:</strong> Se sienten claro en casas y edificios; pueden mover objetos y causar grietas leves si el suelo es blando.</li>
-            <li><strong>6.0 o más:</strong> Terremotos fuertes con capacidad de causar daños graves. Cada punto que sube en esta escala libera muchísima más energía que el anterior.</li>
+        <ul class="sc-modal-legend-list">
+            <li class="sc-modal-legend-item">
+                <span class="sc-modal-swatch" style="color:#38BDF8; background:#38BDF8;"></span>
+                <div><strong>Menor a 4.0:</strong> sismos leves; en muchos casos solo detectados por instrumentación o percibidos suavemente en pisos altos.</div>
+            </li>
+            <li class="sc-modal-legend-item">
+                <span class="sc-modal-swatch" style="color:#F59E0B; background:#F59E0B;"></span>
+                <div><strong>Entre 4.0 y 5.9:</strong> sismos percibidos claramente en edificaciones; pueden generar daños leves o moderados en suelos blandos.</div>
+            </li>
+            <li class="sc-modal-legend-item">
+                <span class="sc-modal-swatch" style="color:#EF4444; background:#EF4444;"></span>
+                <div><strong>6.0 o superior:</strong> terremotos fuertes con potencial destructivo. Cada incremento unitario en la escala representa un aumento logarítmico sustancial de energía liberada.</div>
+            </li>
         </ul>
-        <div style="background:rgba(245,158,11,0.12); border:1.5px solid #F59E0B; border-radius:12px; padding:12px 14px;">
-            <strong style="font-size:var(--fs-sm);">¿Cómo usarlo y volver atrás?</strong>
-            <ul style="margin:6px 0 0 0; padding-left:18px; font-size:var(--fs-sm); line-height:1.45;">
-                <li><strong>Uso:</strong> Arrastra el punto azul hacia la derecha (por ejemplo hasta 5.0) para dejar visibles únicamente los sismos fuertes.</li>
-                <li><strong>Restablecer:</strong> Mueve la barra de nuevo hacia la izquierda hasta 0.0 o toca <strong>↺</strong> junto a <em>Filtros Paramétricos</em>.</li>
-            </ul>
+        <div class="sc-modal-callout sc-modal-callout--warn">
+            <div class="sc-modal-callout-icon">${MODAL_ICONS.reset}</div>
+            <div class="sc-modal-callout-body">
+                <h4 class="sc-modal-callout-title">Uso y restablecimiento</h4>
+                <ul class="sc-modal-list">
+                    <li><strong>Uso:</strong> desplace el control hacia la derecha (por ejemplo a 5.0) para conservar solo los eventos de mayor magnitud.</li>
+                    <li><strong>Restablecer:</strong> regrese la barra a 0.0 o pulse el botón de restablecer en <em>Filtros Paramétricos</em>.</li>
+                </ul>
+            </div>
         </div>
     `,
     'anio': `
-        <h2 style="margin-top:0; color:#0A84FF; font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Año de inicio y reproducción en el tiempo</h2>
-        <p style="font-size:var(--fs-base); line-height:1.55; margin-bottom:10px;">
-            Te permite elegir desde qué año quieres consultar el historial de temblores en el Chocó (entre <strong>1993</strong> y <strong>2026</strong>).
+        <div class="sc-modal-header">
+            <div class="sc-modal-icon-badge">${MODAL_ICONS.clock}</div>
+            <div class="sc-modal-title-group">
+                <h2 class="sc-modal-title">Ventana Temporal y Reproducción Cronológica</h2>
+                <span class="sc-modal-subtitle">Evolución histórica de la sismicidad (1993–2026)</span>
+            </div>
+        </div>
+        <p class="sc-modal-lead">
+            Permite definir desde qué año inicial se despliegan los registros sísmicos del Chocó dentro de la serie <strong>1993–2026</strong>.
         </p>
-        <p style="font-size:var(--fs-sm); line-height:1.55; margin-bottom:14px;">
-            También puedes pulsar el botón azul <strong>▶ Reproducir</strong> para que los años avancen solos automáticamente, mostrando cómo se ha movido la actividad sísmica a lo largo del tiempo.
+        <p class="sc-modal-body-p">
+            El control <strong>Reproducir</strong> activa un recorrido cronológico automático que avanza año por año para observar la migración espacial de la actividad sísmica y las secuencias de réplicas.
         </p>
-        <div style="background:rgba(245,158,11,0.12); border:1.5px solid #F59E0B; border-radius:12px; padding:12px 14px;">
-            <strong style="font-size:var(--fs-sm);">¿Cómo usarlo y volver al historial completo?</strong>
-            <ul style="margin:6px 0 0 0; padding-left:18px; font-size:var(--fs-sm); line-height:1.45;">
-                <li><strong>Uso:</strong> Mueve la barra al año deseado o presiona <em>▶ Reproducir</em> (y vuelve a presionarlo para pausar).</li>
-                <li><strong>Restablecer:</strong> Regresa la barra al año 1993 o toca <strong>↺</strong> en la cabecera de <em>Filtros Paramétricos</em>.</li>
-            </ul>
+        <div class="sc-modal-callout sc-modal-callout--warn">
+            <div class="sc-modal-callout-icon">${MODAL_ICONS.reset}</div>
+            <div class="sc-modal-callout-body">
+                <h4 class="sc-modal-callout-title">Uso y restablecimiento</h4>
+                <ul class="sc-modal-list">
+                    <li><strong>Uso:</strong> ubique el deslizador en el año deseado o pulse <em>Reproducir</em> (vuelva a pulsarlo para pausar).</li>
+                    <li><strong>Restablecer:</strong> devuelva el control a 1993 o pulse el botón de restablecer en <em>Filtros Paramétricos</em>.</li>
+                </ul>
+            </div>
         </div>
     `,
     'puntos': `
-        <h2 style="margin-top:0; color:#0A84FF; font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Eventos Individuales (Ver cada sismo como un punto)</h2>
-        <p style="font-size:var(--fs-base); line-height:1.55; margin-bottom:12px;">
-            Dibuja cada temblor registrado como un círculo en el lugar exacto donde ocurrió. Pasa el ratón por encima de cualquier punto para ver su fecha, tamaño y municipio más cercano.
+        <div class="sc-modal-header">
+            <div class="sc-modal-icon-badge">${MODAL_ICONS.scatter}</div>
+            <div class="sc-modal-title-group">
+                <h2 class="sc-modal-title">Eventos Individuales (Scatter 3D)</h2>
+                <span class="sc-modal-subtitle">Lectura puntual de epicentros, magnitud y profundidad focal</span>
+            </div>
+        </div>
+        <p class="sc-modal-lead">
+            Representa cada registro sísmico como un marcador independiente en su ubicación epicentral. Al situar el cursor sobre un punto se muestran su fecha, magnitud, profundidad y municipio cercano; al hacer clic se fija en el inspector lateral.
         </p>
-        <ul style="font-size:var(--fs-sm); line-height:1.55; margin:0 0 14px 0; padding-left:18px;">
-            <li style="margin-bottom:6px;"><strong>Tamaño del círculo:</strong> Cuanto más grande es el círculo, más fuerte fue el sismo.</li>
-            <li><strong>Color del círculo (profundidad):</strong> Naranja significa sismo poco profundo (menos de 30 km bajo el suelo), rosado es profundidad media (30 a 70 km) y morado es muy profundo (más de 70 km).</li>
+        <ul class="sc-modal-legend-list">
+            <li class="sc-modal-legend-item">
+                <span class="sc-modal-swatch" style="color:#EA580C; background:#EA580C;"></span>
+                <div><strong>Superficial (&lt; 30 km):</strong> tono naranja. Sismos corticales próximos a la superficie.</div>
+            </li>
+            <li class="sc-modal-legend-item">
+                <span class="sc-modal-swatch" style="color:#E11D48; background:#E11D48;"></span>
+                <div><strong>Intermedio (30 a 70 km):</strong> tono magenta/rosado. Zona de acoplamiento interplaca.</div>
+            </li>
+            <li class="sc-modal-legend-item">
+                <span class="sc-modal-swatch" style="color:#9333EA; background:#9333EA;"></span>
+                <div><strong>Profundo (&gt; 70 km):</strong> tono púrpura. Eventos en la losa subducida de Nazca. El diámetro del círculo escala con la magnitud.</div>
+            </li>
         </ul>
-        <div style="background:rgba(245,158,11,0.12); border:1.5px solid #F59E0B; border-radius:12px; padding:12px 14px;">
-            <strong style="font-size:var(--fs-sm);">¿Cómo activar o quitar los puntos?</strong>
-            <p style="margin:6px 0 0 0; font-size:var(--fs-sm); line-height:1.45;">
-                Toca <strong>⚪ Puntos</strong> para verlos, cambia a Calor o Hexbins cuando quieras otra vista, o pulsa <strong>↺</strong> en <em>Visualización Espacial</em> para limpiar el mapa.
-            </p>
+        <div class="sc-modal-callout sc-modal-callout--warn">
+            <div class="sc-modal-callout-icon">${MODAL_ICONS.reset}</div>
+            <div class="sc-modal-callout-body">
+                <h4 class="sc-modal-callout-title">Activación y limpieza</h4>
+                <p class="sc-modal-callout-text">
+                    Pulse <strong>Eventos Individuales</strong> (o tecla <kbd>4</kbd>) para activar esta capa, o use el botón de restablecer en <em>Visualización Espacial</em> para despejar el mapa.
+                </p>
+            </div>
         </div>
     `,
     'calor': `
-        <h2 style="margin-top:0; color:#FF2D55; font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Mapa de Calor (¿Dónde tiembla más seguido?)</h2>
-        <p style="font-size:var(--fs-base); line-height:1.55; margin-bottom:12px;">
-            En lugar de dibujar miles de puntos encima uno del otro, esta vista pinta manchas de color sobre las zonas donde se han juntado más sismos fuertes o frecuentes.
+        <div class="sc-modal-header">
+            <div class="sc-modal-icon-badge">${MODAL_ICONS.flame}</div>
+            <div class="sc-modal-title-group">
+                <h2 class="sc-modal-title">Concentración de Energía (Mapa de Calor)</h2>
+                <span class="sc-modal-subtitle">Densidad espacial ponderada por actividad sísmica</span>
+            </div>
+        </div>
+        <p class="sc-modal-lead">
+            Sintetiza la superposición de miles de epicentros mediante una superficie continua de densidad cromática, destacando los focos donde se concentra la mayor recurrencia y energía sísmica.
         </p>
-        <p style="font-size:var(--fs-sm); line-height:1.55; margin-bottom:14px;">
-            Los tonos suaves indican actividad baja; los tonos rojos o amarillos intensos señalan los sectores donde la tierra ha liberado más energía a lo largo de los años.
+        <p class="sc-modal-body-p">
+            Las tonalidades frías o suaves señalan baja densidad acumulada, mientras que los tonos cálidos intensos (naranja y rojo) identifican núcleos de alta concentración sismotectónica.
         </p>
-        <div style="background:rgba(245,158,11,0.12); border:1.5px solid #F59E0B; border-radius:12px; padding:12px 14px;">
-            <strong style="font-size:var(--fs-sm);">¿Cómo usar y quitar el mapa de calor?</strong>
-            <p style="margin:6px 0 0 0; font-size:var(--fs-sm); line-height:1.45;">
-                Presiona <strong>🔥 Calor</strong> para encenderlo. Si quieres volver a ver los puntos uno por uno, toca <strong>⚪ Puntos</strong>, o presiona <strong>↺</strong> en <em>Visualización Espacial</em> para apagar la capa.
-            </p>
+        <div class="sc-modal-callout sc-modal-callout--warn">
+            <div class="sc-modal-callout-icon">${MODAL_ICONS.reset}</div>
+            <div class="sc-modal-callout-body">
+                <h4 class="sc-modal-callout-title">Activación y limpieza</h4>
+                <p class="sc-modal-callout-text">
+                    Seleccione <strong>Concentración Energía</strong> (o tecla <kbd>5</kbd>). Para retornar a los marcadores puntuales elija <em>Eventos Individuales</em>, o pulse el botón de restablecer para apagar la capa.
+                </p>
+            </div>
         </div>
     `,
     'hex': `
-        <h2 style="margin-top:0; color:#10B981; font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Hexbins 3D (Torres de cantidad de sismos)</h2>
-        <p style="font-size:var(--fs-base); line-height:1.55; margin-bottom:12px;">
-            Divide el departamento en zonas hexagonales (como un panal de abejas) y levanta columnas en 3D para comparar rápidamente dónde ha temblado más:
+        <div class="sc-modal-header">
+            <div class="sc-modal-icon-badge">${MODAL_ICONS.hexagon}</div>
+            <div class="sc-modal-title-group">
+                <h2 class="sc-modal-title">Agrupación Espacial (Hexbins 3D)</h2>
+                <span class="sc-modal-subtitle">Agregación volumétrica por celdas hexagonales</span>
+            </div>
+        </div>
+        <p class="sc-modal-lead">
+            Tesela el territorio en celdas hexagonales regulares y extruye columnas tridimensionales que permiten comparar visualmente la recurrencia sísmica entre subregiones:
         </p>
-        <ul style="font-size:var(--fs-sm); line-height:1.55; margin:0 0 14px 0; padding-left:18px;">
-            <li style="margin-bottom:6px;"><strong>Altura de la torre:</strong> Entre más alta es la columna, más sismos han ocurrido en esa zona.</li>
-            <li><strong>Color de la torre:</strong> Muestra qué tan intensos han sido los temblores dentro de ese sector.</li>
+        <ul class="sc-modal-list">
+            <li><strong>Altura de la columna:</strong> proporcional al número de sismos contabilizados dentro de la celda.</li>
+            <li><strong>Color de la columna:</strong> refleja la intensidad agregada de los eventos contenidos en ese sector.</li>
         </ul>
-        <p style="font-size:var(--fs-xs); color:var(--text-tertiary); margin-bottom:14px;">
-            Consejo: inclina el mapa arrastrando con el clic derecho del ratón para notar mejor la altura de las torres.
+        <p class="sc-modal-note">
+            Sugerencia: incline la vista con clic derecho y arrastre para apreciar con mayor claridad el relieve tridimensional de las columnas.
         </p>
-        <div style="background:rgba(245,158,11,0.12); border:1.5px solid #F59E0B; border-radius:12px; padding:12px 14px;">
-            <strong style="font-size:var(--fs-sm);">¿Cómo activar o quitar las torres?</strong>
-            <p style="margin:6px 0 0 0; font-size:var(--fs-sm); line-height:1.45;">
-                Presiona <strong>🔷 Hexbins</strong> para mostrarlas y toca <strong>↺</strong> junto a <em>Visualización Espacial</em> si deseas retirarlas del mapa.
-            </p>
+        <div class="sc-modal-callout sc-modal-callout--warn">
+            <div class="sc-modal-callout-icon">${MODAL_ICONS.reset}</div>
+            <div class="sc-modal-callout-body">
+                <h4 class="sc-modal-callout-title">Activación y limpieza</h4>
+                <p class="sc-modal-callout-text">
+                    Pulse <strong>Agrupación Espacial</strong> (o tecla <kbd>6</kbd>) para activar las torres 3D y utilice el botón de restablecer junto a <em>Visualización Espacial</em> para retirarlas.
+                </p>
+            </div>
         </div>
     `,
     'grafico': `
-        <h2 style="margin-top:0; color:#0A84FF; font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Gráfica: ¿Cuántos sismos grandes vs. pequeños ocurren?</h2>
-        <p style="font-size:var(--fs-base); line-height:1.55; margin-bottom:12px;">
-            En la naturaleza casi siempre ocurren <strong>muchos temblores pequeños y muy pocos terremotos grandes</strong>. Esta gráfica resume esa relación con los sismos visibles en pantalla:
-        </p>
-        <div style="background: rgba(10,132,255,0.10); border-left: 3px solid #0A84FF; padding: 10px 14px; border-radius: 6px; margin-bottom: 12px; font-size: var(--fs-sm); line-height: 1.5;">
-            <strong>¿Qué indica el número "b ="?</strong><br>
-            Compara la proporción entre sismos pequeños y grandes. Un valor cercano a 1.0 suele considerarse equilibrado; valores más bajos indican una mayor proporción relativa de sismos medianos o grandes en la muestra seleccionada.
+        <div class="sc-modal-header">
+            <div class="sc-modal-icon-badge">${MODAL_ICONS.chart}</div>
+            <div class="sc-modal-title-group">
+                <h2 class="sc-modal-title">Ley de Gutenberg-Richter y Recurrencia</h2>
+                <span class="sc-modal-subtitle">Relación frecuencia-magnitud y estimación Aki-Utsu MLE</span>
+            </div>
         </div>
-        <ul style="font-size:var(--fs-sm); line-height:1.55; margin:0 0 14px 0; padding-left:18px;">
-            <li style="margin-bottom:6px;"><strong>Hacia la derecha:</strong> Tamaño del sismo (magnitud).</li>
-            <li style="margin-bottom:6px;"><strong>Hacia arriba:</strong> Cuántos temblores de ese tamaño o mayores se han registrado.</li>
-            <li><strong>Debajo de la gráfica:</strong> Muestra un estimado orientativo de cada cuántos años suele repetirse un sismo de magnitud 5, 6 o 7 según el catálogo filtrado.</li>
+        <p class="sc-modal-lead">
+            En un régimen sísmico natural se registran numerosos eventos pequeños y pocos terremotos de gran magnitud. Esta gráfica expresa dicha distribución logarítmica sobre la muestra actualmente filtrada:
+        </p>
+        <div class="sc-modal-callout sc-modal-callout--info">
+            <div class="sc-modal-callout-icon">${MODAL_ICONS.chart}</div>
+            <div class="sc-modal-callout-body">
+                <h4 class="sc-modal-callout-title">Interpretación del parámetro b (b-value)</h4>
+                <p class="sc-modal-callout-text">
+                    Cuantifica la pendiente entre sismos pequeños y grandes. Un valor cercano a <strong>1.0</strong> indica una proporción tectónica típica; valores menores sugieren una proporción relativa más alta de eventos moderados o fuertes dentro del subconjunto observado.
+                </p>
+            </div>
+        </div>
+        <ul class="sc-modal-list">
+            <li><strong>Eje horizontal:</strong> magnitud del sismo (M).</li>
+            <li><strong>Eje vertical:</strong> número acumulado de eventos con magnitud igual o superior.</li>
+            <li><strong>Indicadores inferiores:</strong> periodos de retorno exploratorios (M ≥ 5, 6 y 7) y probabilidad de excedencia a 50 años bajo modelo Poisson.</li>
         </ul>
-        <div style="background:rgba(245,158,11,0.12); border:1.5px solid #F59E0B; border-radius:12px; padding:12px 14px;">
-            <strong style="font-size:var(--fs-sm);">Atajo útil y cómo restablecer:</strong>
-            <p style="margin:6px 0 0 0; font-size:var(--fs-sm); line-height:1.45;">
-                Puedes hacer clic sobre cualquier punto de la línea para filtrar el mapa desde esa magnitud. Para volver al rango completo, toca <strong>↺</strong> en <em>Filtros Paramétricos</em>.
-            </p>
+        <div class="sc-modal-callout sc-modal-callout--warn">
+            <div class="sc-modal-callout-icon">${MODAL_ICONS.reset}</div>
+            <div class="sc-modal-callout-body">
+                <h4 class="sc-modal-callout-title">Filtrado interactivo (Brushing &amp; Linking)</h4>
+                <p class="sc-modal-callout-text">
+                    Al hacer clic sobre cualquier punto de la curva, el mapa se filtra automáticamente a partir de esa magnitud. Para volver al rango completo, pulse el botón de restablecer en <em>Filtros Paramétricos</em>.
+                </p>
+            </div>
         </div>
     `,
     'calidad': `
-        <h2 style="margin-top:0; color:#0A84FF; font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Sismos de Alta Precisión (Filtrar solo los mejor medidos)</h2>
-        <p style="font-size:var(--fs-base); line-height:1.55; margin-bottom:10px;">
-            Cuando un temblor ocurre muy lejos de los sensores o solo lo captan pocas estaciones, su posición exacta en el mapa puede tener algo de margen de error.
+        <div class="sc-modal-header">
+            <div class="sc-modal-icon-badge">${MODAL_ICONS.crosshair}</div>
+            <div class="sc-modal-title-group">
+                <h2 class="sc-modal-title">Sismos de Alta Precisión</h2>
+                <span class="sc-modal-subtitle">Control de incertidumbre instrumental (GAP y RMS)</span>
+            </div>
+        </div>
+        <p class="sc-modal-lead">
+            Cuando un evento sísmico es captado por pocas estaciones o con cobertura azimutal limitada, su localización epicentral e hipocentral presenta mayor incertidumbre.
         </p>
-        <p style="font-size:var(--fs-sm); line-height:1.55; margin-bottom:14px;">
-            Al encender este interruptor, la plataforma <strong>oculta los sismos con ubicación aproximada</strong> y deja únicamente aquellos verificados por varias estaciones alrededor del epicentro con bajo margen de error.
+        <p class="sc-modal-body-p">
+            Al activar este filtro se <strong>excluyen los eventos con GAP &gt; 180° o RMS &gt; 1.0 s</strong>, conservando únicamente los sismos con mejor geometría de registro instrumental.
         </p>
-        <div style="background:rgba(245,158,11,0.12); border:1.5px solid #F59E0B; border-radius:12px; padding:12px 14px;">
-            <strong style="font-size:var(--fs-sm);">¿Cómo usarlo y volver a ver todos?</strong>
-            <p style="margin:6px 0 0 0; font-size:var(--fs-sm); line-height:1.45;">
-                Enciende el interruptor cuando necesites ubicar sismos con mayor certeza. Para volver a ver todo el historial completo, apaga el interruptor o presiona <strong>↺</strong> en <em>Capas Avanzadas</em>.
-            </p>
+        <div class="sc-modal-callout sc-modal-callout--warn">
+            <div class="sc-modal-callout-icon">${MODAL_ICONS.reset}</div>
+            <div class="sc-modal-callout-body">
+                <h4 class="sc-modal-callout-title">Uso y restablecimiento</h4>
+                <p class="sc-modal-callout-text">
+                    Habilite este interruptor cuando requiera correlación espacial fina con trazas de fallas. Desactívelo o use el botón de restablecer en <em>Capas Avanzadas</em> para recuperar el catálogo completo.
+                </p>
+            </div>
         </div>
     `,
     'fallas': `
-        <h2 style="margin-top:0; color:#F59E0B; font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Fallas Geológicas (Fracturas del terreno)</h2>
-        <p style="font-size:var(--fs-base); line-height:1.55; margin-bottom:12px;">
-            Las fallas geológicas son grandes grietas profundas en la corteza terrestre donde los bloques de roca se empujan o se deslizan entre sí. Cuando una falla se destraba de golpe, produce un sismo.
+        <div class="sc-modal-header">
+            <div class="sc-modal-icon-badge">${MODAL_ICONS.fault}</div>
+            <div class="sc-modal-title-group">
+                <h2 class="sc-modal-title">Fallas Geológicas Activas</h2>
+                <span class="sc-modal-subtitle">Trazas tectónicas referenciales y potencial sismogénico (Mmax)</span>
+            </div>
+        </div>
+        <p class="sc-modal-lead">
+            Las fallas geológicas son discontinuidades corticales donde bloques rocosos acumulan y liberan esfuerzo tectónico. La codificación cromática distingue su cinemática principal:
         </p>
-        <h3 style="font-size:var(--fs-md); margin:0 0 8px 0;">¿Qué significan los colores de las líneas?</h3>
-        <ul style="font-size:var(--fs-sm); line-height:1.55; margin:0 0 14px 0; padding-left:18px;">
-            <li style="margin-bottom:6px;"><strong style="color:#0284C7;">Azul claro:</strong> Zona del océano donde la placa del Pacífico se hunde debajo del continente colombiano.</li>
-            <li style="margin-bottom:6px;"><strong style="color:#D97706;">Amarillo / Ámbar:</strong> Fracturas donde un bloque de terreno se desliza de lado frente al otro (como la Falla de Murindó).</li>
-            <li><strong style="color:#DC2626;">Rojo:</strong> Fracturas donde un bloque empuja y monta sobre el otro, levantando montañas y serranías.</li>
+        <ul class="sc-modal-legend-list">
+            <li class="sc-modal-legend-item">
+                <span class="sc-modal-swatch" style="color:#0284C7; background:#0284C7;"></span>
+                <div><strong>Subducción (azul):</strong> trinchera oceánica donde la placa de Nazca se sumerge bajo el bloque norandino.</div>
+            </li>
+            <li class="sc-modal-legend-item">
+                <span class="sc-modal-swatch" style="color:#F59E0B; background:#F59E0B;"></span>
+                <div><strong>Rumbo / Transcurrente (ámbar):</strong> fracturas con desplazamiento lateral predominante entre bloques (como la Falla de Murindó).</div>
+            </li>
+            <li class="sc-modal-legend-item">
+                <span class="sc-modal-swatch" style="color:#EF4444; background:#EF4444;"></span>
+                <div><strong>Inversa / Cabalgamiento (rojo):</strong> estructuras compresivas donde un bloque asciende sobre otro formando serranías.</div>
+            </li>
         </ul>
-        <div style="background:rgba(245,158,11,0.12); border:1.5px solid #F59E0B; border-radius:12px; padding:12px 14px;">
-            <strong style="font-size:var(--fs-sm);">¿Cómo consultarlas?</strong>
-            <p style="margin:6px 0 0 0; font-size:var(--fs-sm); line-height:1.45;">
-                Al encender el interruptor aparece un menú para elegir cualquiera de las 11 fallas, acercar la cámara hacia ella, ver una ficha explicativa y activar una franja de 5 km a cada lado. Apágalo cuando quieras limpiar el mapa.
-            </p>
+        <div class="sc-modal-callout sc-modal-callout--warn">
+            <div class="sc-modal-callout-icon">${MODAL_ICONS.reset}</div>
+            <div class="sc-modal-callout-body">
+                <h4 class="sc-modal-callout-title">Exploración por estructura</h4>
+                <p class="sc-modal-callout-text">
+                    Al encender la capa se habilita un selector con 11 sistemas de fallas, filtros por cinemática, ficha técnica y franja de influencia de 5 km a cada lado.
+                </p>
+            </div>
         </div>
     `,
     'ml': `
-        <h2 style="margin-top:0; color:#C084FC; font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Zonas donde se agrupan muchos sismos (Enjambres)</h2>
-        <p style="font-size:var(--fs-base); line-height:1.55; margin-bottom:10px;">
-            A veces ocurren decenas de temblores casi en el mismo sitio (lo que se conoce como un <em>enjambre sísmico</em> o serie de réplicas tras un sismo principal).
+        <div class="sc-modal-header">
+            <div class="sc-modal-icon-badge">${MODAL_ICONS.clusters}</div>
+            <div class="sc-modal-title-group">
+                <h2 class="sc-modal-title">Zonas Anómalas (Agrupamiento DBSCAN)</h2>
+                <span class="sc-modal-subtitle">Detección no supervisada de enjambres y secuencias sísmicas</span>
+            </div>
+        </div>
+        <p class="sc-modal-lead">
+            Las concentraciones reiteradas de eventos en un mismo volumen cortical suelen corresponder a enjambres sísmicos o secuencias de réplicas asociadas a una ruptura principal.
         </p>
-        <p style="font-size:var(--fs-sm); line-height:1.55; margin-bottom:14px;">
-            Al activar esta opción, un análisis automático agrupa esos focos cercanos y los pinta con distintos colores para distinguir fácilmente qué sectores acumulan más eventos juntos.
+        <p class="sc-modal-body-p">
+            El algoritmo <strong>DBSCAN</strong> agrupa automáticamente los epicentros de alta densidad espacial y los diferencia mediante paletas cromáticas para distinguir núcleos activos frente a la sismicidad de fondo.
         </p>
-        <div style="background:rgba(245,158,11,0.12); border:1.5px solid #F59E0B; border-radius:12px; padding:12px 14px;">
-            <strong style="font-size:var(--fs-sm);">¿Cómo activarlo y desactivarlo?</strong>
-            <p style="margin:6px 0 0 0; font-size:var(--fs-sm); line-height:1.45;">
-                Activa el interruptor <em>Zonas Anómalas (IA DBSCAN)</em> y pasa el ratón sobre los grupos coloreados para ver a qué sector pertenecen. Apágalo o presiona <strong>↺</strong> para quitarlos.
-            </p>
+        <div class="sc-modal-callout sc-modal-callout--warn">
+            <div class="sc-modal-callout-icon">${MODAL_ICONS.reset}</div>
+            <div class="sc-modal-callout-body">
+                <h4 class="sc-modal-callout-title">Activación y consulta</h4>
+                <p class="sc-modal-callout-text">
+                    Encienda el interruptor <em>Zonas Anómalas (IA DBSCAN)</em> y sitúe el cursor sobre los agrupamientos coloreados para inspeccionar su identificador y sector.
+                </p>
+            </div>
         </div>
     `,
     'sgc': `
-        <h2 style="margin-top:0; color:#10B981; font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Sismos recientes en tiempo real (Telemetría FDSN Live)</h2>
-        <p style="font-size:var(--fs-base); line-height:1.55; margin-bottom:10px;">
-            Conecta el mapa por internet con reportes sísmicos internacionales (<strong>EMSC</strong> y <strong>USGS</strong>) para mostrar los temblores de magnitud ≥ 3.5 ocurridos durante los <strong>últimos 14 días</strong> en la región.
+        <div class="sc-modal-header">
+            <div class="sc-modal-icon-badge">${MODAL_ICONS.radio}</div>
+            <div class="sc-modal-title-group">
+                <h2 class="sc-modal-title">Telemetría FDSN Live</h2>
+                <span class="sc-modal-subtitle">Sismos recientes (M ≥ 3.5 · últimos 14 días)</span>
+            </div>
+        </div>
+        <p class="sc-modal-lead">
+            Consulta en línea los reportes sísmicos internacionales (<strong>EMSC</strong> y <strong>USGS</strong>) para desplegar los eventos de magnitud ≥ 3.5 ocurridos durante los últimos 14 días en la región del Chocó.
         </p>
-        <p style="font-size:var(--fs-sm); line-height:1.55; margin-bottom:14px;">
-            Aparecen como anillos verdes brillantes sobre el mapa. Al lado del interruptor verás una etiqueta que te indica claramente si los datos llegaron en vivo desde internet o si se están mostrando desde la copia guardada en el equipo por falta de conexión.
+        <p class="sc-modal-body-p">
+            Los registros se representan como anillos verdes pulsantes sobre el mapa. La etiqueta contigua al interruptor indica si los datos provienen de la red en tiempo real o del respaldo local en modo desconectado.
         </p>
-        <div style="background:rgba(245,158,11,0.12); border:1.5px solid #F59E0B; border-radius:12px; padding:12px 14px;">
-            <strong style="font-size:var(--fs-sm);">¿Cómo consultar un evento reciente?</strong>
-            <p style="margin:6px 0 0 0; font-size:var(--fs-sm); line-height:1.45;">
-                Activa el interruptor y pasa el ratón sobre cualquiera de los anillos verdes para ver cuándo ocurrió (por ejemplo, si fue hoy o hace pocos días), su tamaño y municipio cercano. Para contraste oficial en Colombia, visita <a href="https://sismo.sgc.gov.co/" target="_blank" rel="noopener noreferrer" style="color:#0284C7;">sismo.sgc.gov.co</a>.
-            </p>
+        <div class="sc-modal-callout sc-modal-callout--warn">
+            <div class="sc-modal-callout-icon">${MODAL_ICONS.radio}</div>
+            <div class="sc-modal-callout-body">
+                <h4 class="sc-modal-callout-title">Contraste oficial en Colombia</h4>
+                <p class="sc-modal-callout-text">
+                    Sitúe el cursor sobre los anillos verdes para revisar hora, magnitud y municipio cercano. Para verificación oficial del Servicio Geológico Colombiano consulte <a href="https://sismo.sgc.gov.co/" target="_blank" rel="noopener noreferrer">sismo.sgc.gov.co</a>.
+                </p>
+            </div>
         </div>
     `,
     'sgc_wms': `
-        <h2 style="margin-top:0; color:#0284C7; font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Mapa Oficial de Amenaza Sísmica de Colombia (SGC)</h2>
-        <p style="font-size:var(--fs-base); line-height:1.55; margin-bottom:12px;">
-            Esta capa trae directamente las imágenes oficiales del <strong>Servicio Geológico Colombiano (SGC)</strong> para mostrar con qué fuerza máxima se espera que tiemble la roca firme en cada lugar del país (referencia a 475 años usada en las normas de construcción).
+        <div class="sc-modal-header">
+            <div class="sc-modal-icon-badge">${MODAL_ICONS.shield}</div>
+            <div class="sc-modal-title-group">
+                <h2 class="sc-modal-title">Modelo Oficial de Amenaza Sísmica (SGC)</h2>
+                <span class="sc-modal-subtitle">Aceleración máxima esperada en roca (Tr = 475 años · OGC WMS)</span>
+            </div>
+        </div>
+        <p class="sc-modal-lead">
+            Superpone directamente la cartografía oficial del <strong>Servicio Geológico Colombiano (SGC)</strong> correspondiente a la aceleración pico efectiva en roca firme para un periodo de retorno de 475 años:
         </p>
-        <h3 style="font-size:var(--fs-md); margin:0 0 8px 0;">¿Qué significan los colores sobre el mapa?</h3>
-        <ul style="font-size:var(--fs-sm); line-height:1.55; margin:0 0 14px 0; padding-left:18px;">
-            <li style="margin-bottom:5px;"><strong>Verde oscuro a verde claro:</strong> Amenaza baja (sacudida esperada leve en roca firme).</li>
-            <li style="margin-bottom:5px;"><strong>Amarillo pálido:</strong> Amenaza intermedia (sacudida moderada; en suelos blandos puede sentirse más fuerte).</li>
-            <li style="margin-bottom:5px;"><strong>Durazno a naranja claro:</strong> Amenaza alta (exige construcción sismorresistente estricta).</li>
-            <li><strong>Naranja intenso a rojo:</strong> Amenaza muy alta (típica de la costa Pacífica y sectores críticos del Chocó).</li>
+        <ul class="sc-modal-legend-list">
+            <li class="sc-modal-legend-item">
+                <span class="sc-modal-swatch" style="color:#22C55E; background:#22C55E;"></span>
+                <div><strong>Verde oscuro a verde claro:</strong> amenaza baja (sacudida esperada leve en roca firme).</div>
+            </li>
+            <li class="sc-modal-legend-item">
+                <span class="sc-modal-swatch" style="color:#FACC15; background:#FACC15;"></span>
+                <div><strong>Amarillo pálido:</strong> amenaza intermedia (sacudida moderada; amplificable en suelos blandos).</div>
+            </li>
+            <li class="sc-modal-legend-item">
+                <span class="sc-modal-swatch" style="color:#FB923C; background:#FB923C;"></span>
+                <div><strong>Durazno a naranja claro:</strong> amenaza alta (exige diseño sismorresistente estricto).</div>
+            </li>
+            <li class="sc-modal-legend-item">
+                <span class="sc-modal-swatch" style="color:#DC2626; background:#DC2626;"></span>
+                <div><strong>Naranja intenso a rojo:</strong> amenaza muy alta (predominante en el litoral Pacífico y sectores críticos del Chocó).</div>
+            </li>
         </ul>
-        <div style="background:rgba(16,185,129,0.10); border:1px solid #10B981; border-radius:12px; padding:12px 14px; margin-bottom:12px;">
-            <strong style="font-size:var(--fs-sm);">Dos formas fáciles de leer un lugar:</strong>
-            <ul style="margin:6px 0 0 0; padding-left:18px; font-size:var(--fs-sm); line-height:1.45;">
-                <li><strong>Pasa el ratón por encima de cualquier color:</strong> Verás de inmediato un cuadro con el nivel de amenaza y qué implica en palabras sencillas.</li>
-                <li><strong>Haz clic sobre el mapa (o en "Consultar cabecera"):</strong> Obtendrás los números exactos oficiales del SGC para ese punto.</li>
-            </ul>
+        <div class="sc-modal-callout sc-modal-callout--ok">
+            <div class="sc-modal-callout-icon">${MODAL_ICONS.crosshair}</div>
+            <div class="sc-modal-callout-body">
+                <h4 class="sc-modal-callout-title">Lectura interactiva del servicio WMS</h4>
+                <ul class="sc-modal-list">
+                    <li><strong>Paso del cursor:</strong> estima la banda de amenaza correspondiente al color del píxel consultado.</li>
+                    <li><strong>Clic en el mapa o "Consultar cabecera":</strong> recupera el valor puntual oficial emitido por el servidor del SGC.</li>
+                </ul>
+            </div>
         </div>
     `,
     'benioff': `
-        <h2 style="margin-top:0; color:#0284C7; font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Corte 3D del Subsuelo (¿Por qué hay sismos a distintas profundidades?)</h2>
-        <p style="font-size:var(--fs-base); line-height:1.55; margin-bottom:12px;">
-            Bajo el océano Pacífico hay una gran placa de roca marina (la <strong>Placa de Nazca</strong>) que se está deslizando lentamente por debajo de Colombia. Esta vista inclina el mapa de lado para que puedas mirar debajo del suelo como si cortaras una tajada de la Tierra:
+        <div class="sc-modal-header">
+            <div class="sc-modal-icon-badge">${MODAL_ICONS.subduction}</div>
+            <div class="sc-modal-title-group">
+                <h2 class="sc-modal-title">Perfil 3D de Subducción (Zona de Benioff)</h2>
+                <span class="sc-modal-subtitle">Sección transversal Oeste → Este de la Placa de Nazca</span>
+            </div>
+        </div>
+        <p class="sc-modal-lead">
+            Reorienta la cámara en perspectiva oblicua y proyecta la profundidad hipocentral de los eventos para visualizar la inclinación (~32°) de la <strong>Placa de Nazca</strong> hundiéndose bajo el bloque continental:
         </p>
-        <ul style="font-size:var(--fs-sm); line-height:1.55; margin:0 0 14px 0; padding-left:18px;">
-            <li style="margin-bottom:6px;"><strong>En la costa (Bahía Solano, Nuquí):</strong> Los sismos nacen más cerca de la superficie (0 a 30 km).</li>
-            <li style="margin-bottom:6px;"><strong>Hacia el centro (Quibdó y Valle del Atrato):</strong> La placa ya va bajando, así que los temblores ocurren más hondo (40 a 80 km).</li>
-            <li><strong>Hacia la cordillera:</strong> La placa llega a más de 100 km de profundidad.</li>
+        <ul class="sc-modal-list">
+            <li><strong>Frente costero (Bahía Solano, Nuquí):</strong> sismicidad somera de 0 a 30 km próxima a la fosa oceánica.</li>
+            <li><strong>Valle del Atrato (Quibdó):</strong> transición intermedia con focos entre 40 y 80 km de profundidad.</li>
+            <li><strong>Flanco cordillerano:</strong> sismicidad intraplaca profunda superior a 100 km.</li>
         </ul>
-        <div style="background:rgba(245,158,11,0.12); border:1.5px solid #F59E0B; border-radius:12px; padding:12px 14px;">
-            <strong style="font-size:var(--fs-sm);">¿Cómo usarlo y volver a la vista normal?</strong>
-            <ul style="margin:6px 0 0 0; padding-left:18px; font-size:var(--fs-sm); line-height:1.45;">
-                <li><strong>Uso:</strong> Pulsa <em>📐 Activar Perfil Benioff</em>; luego puedes elegir el sector (Murindó, Quibdó o San Juan) y ajustar qué tanto se estira la profundidad (0.5x a 3.0x).</li>
-                <li><strong>Volver a la vista normal:</strong> Presiona de nuevo el mismo botón o toca <strong>↺</strong> en <em>Visualización Espacial</em>.</li>
-            </ul>
+        <div class="sc-modal-callout sc-modal-callout--warn">
+            <div class="sc-modal-callout-icon">${MODAL_ICONS.reset}</div>
+            <div class="sc-modal-callout-body">
+                <h4 class="sc-modal-callout-title">Controles del corte transversal</h4>
+                <ul class="sc-modal-list">
+                    <li><strong>Uso:</strong> active <em>Activar Perfil Benioff</em> (o tecla <kbd>7</kbd>), elija el sector latitudinal y ajuste la exageración vertical (0.5x a 3.0x).</li>
+                    <li><strong>Salir del perfil:</strong> pulse nuevamente el mismo botón o restablezca la vista en <em>Visualización Espacial</em>.</li>
+                </ul>
+            </div>
         </div>
     `,
     'nsr10_info': `
-        <h2 style="margin-top:0; color:#10B981; font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Norma Colombiana de Construcción Segura (NSR-10)</h2>
-        <p style="font-size:var(--fs-base); line-height:1.55; margin-bottom:12px;">
-            La <strong>NSR-10</strong> es el reglamento obligatorio en Colombia que dice qué tan fuertes deben construirse las casas, colegios, puentes y hospitales para que no colapsen durante un terremoto.
+        <div class="sc-modal-header">
+            <div class="sc-modal-icon-badge">${MODAL_ICONS.building}</div>
+            <div class="sc-modal-title-group">
+                <h2 class="sc-modal-title">Norma Sismorresistente Colombiana (NSR-10)</h2>
+                <span class="sc-modal-subtitle">Parámetros oficiales de amenaza y diseño estructural (Título A)</span>
+            </div>
+        </div>
+        <p class="sc-modal-lead">
+            El Reglamento <strong>NSR-10</strong> establece los requisitos mínimos obligatorios de diseño y construcción sismorresistente en Colombia para proteger vidas y garantizar el desempeño de edificaciones esenciales:
         </p>
-        <h3 style="font-size:var(--fs-md); margin:0 0 8px 0;">¿Qué ves en estos campos en términos sencillos?</h3>
-        <ul style="font-size:var(--fs-sm); line-height:1.55; margin:0 0 14px 0; padding-left:18px;">
-            <li style="margin-bottom:6px;"><strong>Municipio:</strong> Cada municipio tiene asignada una fuerza base de sacudida según qué tan cerca esté de fallas y zonas sísmicas (en casi todo el Chocó es <em>Alta</em>).</li>
-            <li style="margin-bottom:6px;"><strong>Tipo de suelo (A hasta F):</strong> No es igual construir sobre roca dura (A) que sobre barro o rellenos junto a un río (E o F), donde la sacudida se amplifica como si fuera gelatina.</li>
-            <li><strong>Grupo de uso:</strong> Exige mayor resistencia a edificaciones indispensables después de una emergencia, como hospitales (Grupo IV) o escuelas y sedes de gobierno (Grupo III).</li>
+        <ul class="sc-modal-list">
+            <li><strong>Municipio (Aa y Av):</strong> define los coeficientes de aceleración y velocidad horizontal pico efectiva asignados a cada cabecera municipal.</li>
+            <li><strong>Perfil de suelo (A hasta F):</strong> cuantifica la amplificación de la onda sísmica desde roca competente (A) hasta depósitos blandos o especiales (E y F) mediante los factores Fa y Fv.</li>
+            <li><strong>Grupo de uso (I a IV):</strong> aplica el coeficiente de importancia (I), exigiendo mayor margen de seguridad en escuelas (Grupo III) y hospitales o centros de atención de emergencias (Grupo IV).</li>
         </ul>
-        <div style="background:rgba(245,158,11,0.12); border:1.5px solid #F59E0B; border-radius:12px; padding:12px 14px;">
-            <strong style="font-size:var(--fs-sm);">¿Cómo consultarlo?</strong>
-            <p style="margin:6px 0 0 0; font-size:var(--fs-sm); line-height:1.45;">
-                Elige tu municipio, el tipo de terreno y el uso de la construcción. El mapa ubicará el municipio y los números se actualizarán solos. Si quieres reiniciar todo, pulsa <strong>⌂</strong> arriba a la derecha.
-            </p>
+        <div class="sc-modal-callout sc-modal-callout--warn">
+            <div class="sc-modal-callout-icon">${MODAL_ICONS.reset}</div>
+            <div class="sc-modal-callout-body">
+                <h4 class="sc-modal-callout-title">Consulta municipal</h4>
+                <p class="sc-modal-callout-text">
+                    Seleccione el municipio, el tipo de suelo y el grupo de uso; la plataforma centra el mapa y recalcula automáticamente el espectro y los coeficientes.
+                </p>
+            </div>
         </div>
     `,
     'geotecnia_info': `
-        <h2 style="margin-top:0; color:#0284C7; font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">El suelo del lugar y el peligro de licuación</h2>
-        <p style="font-size:var(--fs-base); line-height:1.55; margin-bottom:12px;">
-            La seguridad de una casa no depende solo de sus columnas y ladrillos, sino también de la tierra sobre la que se apoya. En muchas cabeceras del Chocó cerca de ríos (Atrato, San Juan, Baudó) o del mar hay suelos húmedos y blandos.
-        </p>
-        <div style="background:rgba(10,132,255,0.08); border-left:3px solid #0A84FF; padding:10px 14px; border-radius:6px; margin-bottom:12px; font-size:var(--fs-sm); line-height:1.5;">
-            <strong>¿Qué es la "licuación" del suelo?</strong><br>
-            Cuando un terreno arenoso y empapado de agua recibe un terremoto fuerte, el suelo puede perder firmeza por unos segundos y comportarse parecido a una arena movediza, haciendo que viviendas o postes se inclinen o se hundan.
+        <div class="sc-modal-header">
+            <div class="sc-modal-icon-badge">${MODAL_ICONS.soil}</div>
+            <div class="sc-modal-title-group">
+                <h2 class="sc-modal-title">Respuesta Geotécnica y Peligro de Licuación</h2>
+                <span class="sc-modal-subtitle">Amplificación de sitio y estabilidad de depósitos aluviales</span>
+            </div>
         </div>
-        <div style="background:rgba(245,158,11,0.12); border:1.5px solid #F59E0B; border-radius:12px; padding:12px 14px;">
-            <strong style="font-size:var(--fs-sm);">¿Cómo usar esta tarjeta?</strong>
-            <p style="margin:6px 0 0 0; font-size:var(--fs-sm); line-height:1.45;">
-                Al cambiar el <em>Tipo de Suelo</em> arriba (entre A roca firme, el estándar E suelo blando, o F suelos especiales), esta tarjeta te advierte cuánto se amplifica el temblor y qué estudios de terreno previos son recomendables antes de construir.
-            </p>
+        <p class="sc-modal-lead">
+            El comportamiento de una estructura depende tanto de su sistema resistente como del perfil geotécnico que la soporta. Numerosas cabeceras del Chocó se asientan sobre depósitos aluviales saturados de los ríos Atrato, San Juan y Baudó o terrazas costeras.
+        </p>
+        <div class="sc-modal-callout sc-modal-callout--info">
+            <div class="sc-modal-callout-icon">${MODAL_ICONS.soil}</div>
+            <div class="sc-modal-callout-body">
+                <h4 class="sc-modal-callout-title">¿En qué consiste la licuación de suelos?</h4>
+                <p class="sc-modal-callout-text">
+                    Ante una sacudida sísmica intensa, los suelos arenosos sueltos y saturados de agua incrementan súbitamente su presión de poros y pierden resistencia al corte, provocando asentamientos diferenciales, inclinación de estructuras o pérdida de soporte.
+                </p>
+            </div>
+        </div>
+        <div class="sc-modal-callout sc-modal-callout--warn">
+            <div class="sc-modal-callout-icon">${MODAL_ICONS.sliders}</div>
+            <div class="sc-modal-callout-body">
+                <h4 class="sc-modal-callout-title">Evaluación comparativa</h4>
+                <p class="sc-modal-callout-text">
+                    Cambie el <em>Perfil de Suelo</em> entre A (roca) y E/F (suelos blandos o especiales) para observar la variación en la amplificación sísmica y las recomendaciones geotécnicas preliminares bajo NSR-10 Título H.
+                </p>
+            </div>
         </div>
     `,
     'pot_info': `
-        <h2 style="margin-top:0; color:#F59E0B; font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Diagnóstico Municipal para Ordenamiento Territorial (POT)</h2>
-        <p style="font-size:var(--fs-base); line-height:1.55; margin-bottom:12px;">
-            Un <strong>POT (Plan de Ordenamiento Territorial)</strong> es la regla del municipio que define en qué zonas es seguro construir barrios, escuelas u hospitales y dónde conviene evitar urbanizaciones por peligro sísmico o inundación.
+        <div class="sc-modal-header">
+            <div class="sc-modal-icon-badge">${MODAL_ICONS.map}</div>
+            <div class="sc-modal-title-group">
+                <h2 class="sc-modal-title">Diagnóstico Municipal para Ordenamiento Territorial (POT)</h2>
+                <span class="sc-modal-subtitle">Insumo orientador para POT / PBOT / EOT (Decreto 1077 de 2015)</span>
+            </div>
+        </div>
+        <p class="sc-modal-lead">
+            El <strong>Plan de Ordenamiento Territorial (POT)</strong> orienta la ocupación segura del suelo municipal, delimitando áreas con condición de amenaza o riesgo sísmico y priorizando la resiliencia de las líneas vitales:
         </p>
-        <ul style="font-size:var(--fs-sm); line-height:1.55; margin:0 0 14px 0; padding-left:18px;">
-            <li style="margin-bottom:6px;"><strong>Filtro de prioridad territorial:</strong> Te ayuda a listar primero los municipios según su nivel de alerta sísmica o su acceso (fluvial, costero o por carretera), útil para priorizar apoyos y logística de emergencia.</li>
-            <li style="margin-bottom:6px;"><strong>Conteo de eventos cercanos:</strong> Resume cuántos temblores históricos han ocurrido en los alrededores del municipio seleccionado.</li>
-            <li><strong>Ficha Técnica en PDF:</strong> Crea un resumen organizado listo para imprimir o guardar como apoyo orientador en reuniones de planeación municipal.</li>
+        <ul class="sc-modal-list">
+            <li><strong>Filtro de prioridad territorial:</strong> organiza los municipios por categoría institucional, exposición costera al Pacífico o aislamiento modal fluvial/selvático.</li>
+            <li><strong>Exposición histórica y tectónica:</strong> cuantifica sismos instrumentales cercanos, fallas cartografiadas e infraestructura crítica en el entorno del municipio.</li>
+            <li><strong>Ficha Técnica en PDF:</strong> genera un documento estructurado imprimible como insumo referencial para mesas técnicas de gestión del riesgo.</li>
         </ul>
-        <div style="background:rgba(245,158,11,0.12); border:1.5px solid #F59E0B; border-radius:12px; padding:12px 14px;">
-            <strong style="font-size:var(--fs-sm);">¿Cómo usarlo?</strong>
-            <p style="margin:6px 0 0 0; font-size:var(--fs-sm); line-height:1.45;">
-                Selecciona un municipio en la lista, revisa su nivel de prioridad en la parte inferior y presiona <em>📄 Ficha Técnica Territorial (PDF / Imprimir)</em> si necesitas el documento descargable.
-            </p>
+        <div class="sc-modal-callout sc-modal-callout--warn">
+            <div class="sc-modal-callout-icon">${MODAL_ICONS.map}</div>
+            <div class="sc-modal-callout-body">
+                <h4 class="sc-modal-callout-title">Generación de ficha</h4>
+                <p class="sc-modal-callout-text">
+                    Seleccione un municipio en el listado, revise sus indicadores territoriales y pulse <em>Ficha Técnica Territorial (PDF / Imprimir)</em> para abrir el reporte imprimible.
+                </p>
+            </div>
         </div>
     `,
     'espectro_info': `
-        <h2 style="margin-top:0; color:#0A84FF; font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Gráfica de Fuerza para Construir Edificios (Espectro NSR-10)</h2>
-        <p style="font-size:var(--fs-base); line-height:1.55; margin-bottom:12px;">
-            Durante un terremoto no todas las construcciones vibran igual: una casa de 1 o 2 pisos se mueve muy rápido (hacia la izquierda de la gráfica), mientras que un edificio alto se balancea más lento (hacia la derecha).
+        <div class="sc-modal-header">
+            <div class="sc-modal-icon-badge">${MODAL_ICONS.chart}</div>
+            <div class="sc-modal-title-group">
+                <h2 class="sc-modal-title">Espectro Elástico de Aceleraciones (NSR-10)</h2>
+                <span class="sc-modal-subtitle">Demanda sísmica Sa(T) según periodo fundamental de la edificación</span>
+            </div>
+        </div>
+        <p class="sc-modal-lead">
+            La respuesta sísmica depende del periodo natural de vibración de cada edificación: estructuras bajas y rígidas responden en periodos cortos (izquierda de la curva), mientras que edificaciones altas y flexibles vibran en periodos más largos (derecha):
         </p>
-        <ul style="font-size:var(--fs-sm); line-height:1.55; margin:0 0 14px 0; padding-left:18px;">
-            <li style="margin-bottom:6px;"><strong>Línea gris punteada:</strong> Muestra cuánta fuerza llegaría si la construcción estuviera directamente sobre roca sólida.</li>
-            <li style="margin-bottom:6px;"><strong>Curva azul rellena:</strong> Muestra cuánta fuerza real recibe la edificación con el tipo de suelo y grupo de uso que seleccionaste (si el suelo es blando, la curva sube bastante).</li>
-            <li><strong>Botón Exportar CSV:</strong> Descarga los números de esta curva en un archivo de tabla para que ingenieros calculistas los carguen en sus programas de diseño estructural.</li>
+        <ul class="sc-modal-legend-list">
+            <li class="sc-modal-legend-item">
+                <span class="sc-modal-swatch" style="color:#94A3B8; background:#94A3B8;"></span>
+                <div><strong>Curva punteada (Roca Base — Perfil B):</strong> aceleración de referencia sin amplificación por suelo blando.</div>
+            </li>
+            <li class="sc-modal-legend-item">
+                <span class="sc-modal-swatch" style="color:#10B981; background:#10B981;"></span>
+                <div><strong>Curva continua rellena (Diseño):</strong> aceleración espectral resultante al combinar Aa, Av, factores de sitio (Fa, Fv) y coeficiente de importancia (I).</div>
+            </li>
         </ul>
-        <div style="background:rgba(245,158,11,0.12); border:1.5px solid #F59E0B; border-radius:12px; padding:12px 14px;">
-            <strong style="font-size:var(--fs-sm);">¿Cómo probar cambios?</strong>
-            <p style="margin:6px 0 0 0; font-size:var(--fs-sm); line-height:1.45;">
-                Cambia entre <em>Perfil A (Roca)</em> y <em>Perfil E (Suelo blando)</em> arriba y observa cómo crece la curva azul para entender por qué un suelo blando exige estructuras más reforzadas.
-            </p>
+        <div class="sc-modal-callout sc-modal-callout--warn">
+            <div class="sc-modal-callout-icon">${MODAL_ICONS.sliders}</div>
+            <div class="sc-modal-callout-body">
+                <h4 class="sc-modal-callout-title">Exportación y sensibilidad</h4>
+                <p class="sc-modal-callout-text">
+                    Compare los perfiles A y E para observar el desplazamiento de la meseta espectral. El botón <em>Exportar CSV</em> descarga los pares (T, Sa) para importación en software de análisis estructural.
+                </p>
+            </div>
         </div>
     `,
     'shakemap_info': `
-        <h2 style="margin-top:0; color:#ff453a; font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Simulador de Terremotos (ShakeMap)</h2>
-        <p style="font-size:var(--fs-base); line-height:1.55; margin-bottom:12px;">
-            Te permite simular cómo viajaría el temblor por el Chocó si ocurriera hoy alguno de cinco escenarios históricos o posibles:
-        </p>
-        <ul style="font-size:var(--fs-sm); line-height:1.5; margin:0 0 12px 0; padding-left:18px;">
-            <li style="margin-bottom:5px;"><strong>Zonas de color en el mapa:</strong> Muestran dónde la sacudida sería más violenta (rojo cerca de la fractura) y dónde iría perdiendo fuerza al alejarse (amarillo o verde).</li>
-            <li style="margin-bottom:5px;"><strong>Anillo azul (primera onda):</strong> Es la sacudida inicial rápida que avisa que empezó el temblor.</li>
-            <li><strong>Anillo rojo (onda fuerte):</strong> Llega segundos después y es la que genera el movimiento más intenso en viviendas y edificios.</li>
-        </ul>
-        <div style="background:rgba(148,163,184,0.08); border:1px solid rgba(148,163,184,0.22); border-radius:10px; padding:10px 12px; margin-bottom:12px; font-size:var(--fs-xs); line-height:1.45;">
-            <strong>Escenarios incluidos:</strong> Sismo de referencia de 2026 (Mw 7.4), Falla Murindó 1992 (Mw 7.3), Megaterremoto en la costa del Pacífico (Mw 8.2), Falla Atrato – Quibdó (Mw 6.8) y Falla Bahía Solano 1970 (Mw 7.0).
+        <div class="sc-modal-header">
+            <div class="sc-modal-icon-badge">${MODAL_ICONS.zap}</div>
+            <div class="sc-modal-title-group">
+                <h2 class="sc-modal-title">Simulador de Escenarios Sísmicos (ShakeMap)</h2>
+                <span class="sc-modal-subtitle">Propagación de ondas P y S e intensidad instrumental estimada</span>
+            </div>
         </div>
-        <div style="background:rgba(245,158,11,0.12); border:1.5px solid #F59E0B; border-radius:12px; padding:12px 14px;">
-            <strong style="font-size:var(--fs-sm);">¿Cómo simular y cómo limpiar?</strong>
-            <ul style="margin:6px 0 0 0; padding-left:18px; font-size:var(--fs-sm); line-height:1.45;">
-                <li><strong>Simular:</strong> Elige un escenario de la lista y toca <em>⚡ Simular Ruptura Sísmica</em>. Verás avanzar las ondas y el tiempo estimado de llegada a Quibdó e Istmina.</li>
-                <li><strong>Limpiar:</strong> Presiona el botón <strong>🧹 Limpiar</strong> que aparece al lado para quitar la simulación y dejar el mapa normal.</li>
-            </ul>
+        <p class="sc-modal-lead">
+            Permite modelar de manera exploratoria la atenuación espacial de la sacudida y la propagación de frentes de onda para cinco escenarios históricos o determinísticos en el Chocó:
+        </p>
+        <ul class="sc-modal-legend-list">
+            <li class="sc-modal-legend-item">
+                <span class="sc-modal-swatch" style="color:#38BDF8; background:#38BDF8;"></span>
+                <div><strong>Frente azul (Onda P):</strong> onda primaria compresiva de mayor velocidad que arriba primero a las cabeceras urbanas.</div>
+            </li>
+            <li class="sc-modal-legend-item">
+                <span class="sc-modal-swatch" style="color:#EF4444; background:#EF4444;"></span>
+                <div><strong>Frente rojo (Onda S):</strong> onda secundaria de corte que transporta la mayor energía destructiva segundos después.</div>
+            </li>
+        </ul>
+        <div class="sc-modal-section" style="padding:11px 14px;">
+            <p class="sc-modal-note" style="margin:0;">
+                <strong>Escenarios incluidos:</strong> Referencia 2026 (Mw 7.4), Falla Murindó 1992 (Mw 7.3), Subducción Pacífico (Mw 8.2), Falla Atrato – Quibdó (Mw 6.8) y Falla Bahía Solano 1970 (Mw 7.0).
+            </p>
+        </div>
+        <div class="sc-modal-callout sc-modal-callout--warn">
+            <div class="sc-modal-callout-icon">${MODAL_ICONS.reset}</div>
+            <div class="sc-modal-callout-body">
+                <h4 class="sc-modal-callout-title">Ejecución y limpieza</h4>
+                <ul class="sc-modal-list">
+                    <li><strong>Simular:</strong> seleccione un escenario y pulse <em>Simular Ruptura Sísmica</em> para observar el avance de las ondas y los tiempos de arribo estimados a Quibdó e Istmina.</li>
+                    <li><strong>Limpiar:</strong> utilice el botón <em>Limpiar</em> contiguo para retirar la simulación del lienzo.</li>
+                </ul>
+            </div>
         </div>
     `,
     'profundidad': `
-        <h2 style="margin-top:0; color:#c084fc; font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Profundidad Máxima: ¿Qué tan hondo ocurrió el sismo?</h2>
-        <p style="font-size:var(--fs-base); line-height:1.55; margin-bottom:12px;">
-            No todos los terremotos nacen a la misma profundidad bajo el suelo. Entre más cerca esté de la superficie, más fuerte suele sentirse justo encima:
+        <div class="sc-modal-header">
+            <div class="sc-modal-icon-badge">${MODAL_ICONS.depth}</div>
+            <div class="sc-modal-title-group">
+                <h2 class="sc-modal-title">Profundidad Hipocentral Máxima</h2>
+                <span class="sc-modal-subtitle">Clasificación vertical del foco sísmico (10 km a 250 km)</span>
+            </div>
+        </div>
+        <p class="sc-modal-lead">
+            La profundidad del foco condiciona la atenuación de las ondas sísmicas antes de alcanzar la superficie. A igual magnitud, un evento somero genera sacudidas locales más severas:
         </p>
-        <ul style="font-size:var(--fs-sm); line-height:1.55; margin:0 0 14px 0; padding-left:18px;">
-            <li style="margin-bottom:6px;"><strong style="color:#EA580C;">Menos de 30 km (Superficiales):</strong> Ocurren en la capa superior de la tierra y suelen sentirse con mayor sacudida cerca del epicentro.</li>
-            <li style="margin-bottom:6px;"><strong style="color:#E11D48;">30 a 70 km (Intermedios):</strong> Se producen donde las grandes placas tectónicas rozan entre sí.</li>
-            <li><strong style="color:#9333EA;">Más de 70 km (Profundos):</strong> Ocurren muy adentro bajo las montañas; aunque se sienten en áreas amplias, su energía llega más repartida a la superficie.</li>
+        <ul class="sc-modal-legend-list">
+            <li class="sc-modal-legend-item">
+                <span class="sc-modal-swatch" style="color:#EA580C; background:#EA580C;"></span>
+                <div><strong>Menos de 30 km (Superficiales / Corticales):</strong> asociados a fallas locales; concentran mayor intensidad epicentral.</div>
+            </li>
+            <li class="sc-modal-legend-item">
+                <span class="sc-modal-swatch" style="color:#E11D48; background:#E11D48;"></span>
+                <div><strong>30 a 70 km (Intermedios):</strong> originados en la interfaz de convergencia entre las placas de Nazca y Sudamérica.</div>
+            </li>
+            <li class="sc-modal-legend-item">
+                <span class="sc-modal-swatch" style="color:#9333EA; background:#9333EA;"></span>
+                <div><strong>Más de 70 km (Profundos):</strong> sismicidad intraplaca en la losa subducida; se perciben en radios amplios con menor concentración puntual.</div>
+            </li>
         </ul>
-        <div style="background:rgba(245,158,11,0.12); border:1.5px solid #F59E0B; border-radius:12px; padding:12px 14px;">
-            <strong style="font-size:var(--fs-sm);">¿Cómo usar esta barra y restablecer?</strong>
-            <ul style="margin:6px 0 0 0; padding-left:18px; font-size:var(--fs-sm); line-height:1.45;">
-                <li><strong>Uso:</strong> Arrastra la barra entre <strong>10 km</strong> y <strong>250 km</strong> (por ejemplo a 30 km) para aislar solo los sismos superficiales.</li>
-                <li><strong>Restablecer:</strong> Llévala de vuelta hasta 250 km o pulsa <strong>↺</strong> en <em>Filtros Paramétricos</em>.</li>
-            </ul>
+        <div class="sc-modal-callout sc-modal-callout--warn">
+            <div class="sc-modal-callout-icon">${MODAL_ICONS.reset}</div>
+            <div class="sc-modal-callout-body">
+                <h4 class="sc-modal-callout-title">Uso y restablecimiento</h4>
+                <ul class="sc-modal-list">
+                    <li><strong>Uso:</strong> desplace la barra hasta 30 km para aislar exclusivamente la sismicidad cortical superficial.</li>
+                    <li><strong>Restablecer:</strong> regrese el control a 250 km o pulse el botón de restablecer en <em>Filtros Paramétricos</em>.</li>
+                </ul>
+            </div>
         </div>
     `,
     'infra_info': `
-        <h2 style="margin-top:0; color:#0284C7; font-size:var(--fs-xl); border-bottom:1px solid rgba(148,163,184,0.22); padding-bottom:12px; margin-bottom:16px;">Infraestructura Crítica y Líneas Vitales</h2>
-        <p style="font-size:var(--fs-base); line-height:1.55; margin-bottom:12px;">
-            Muestra sobre el mapa los caminos, ríos, pistas aéreas, puertos y hospitales esenciales para atender una emergencia o evitar que un municipio quede incomunicado tras un terremoto:
+        <div class="sc-modal-header">
+            <div class="sc-modal-icon-badge">${MODAL_ICONS.map}</div>
+            <div class="sc-modal-title-group">
+                <h2 class="sc-modal-title">Infraestructura Crítica y Líneas Vitales</h2>
+                <span class="sc-modal-subtitle">Red de conectividad multimodal y nodos esenciales de atención</span>
+            </div>
+        </div>
+        <p class="sc-modal-lead">
+            Despliega sobre el mapa las redes viales, fluviales, marítimas, aéreas y hospitalarias determinantes para la respuesta post-sismo y la mitigación del aislamiento territorial:
         </p>
-        <ul style="font-size:var(--fs-sm); line-height:1.55; margin:0 0 14px 0; padding-left:18px;">
-            <li style="margin-bottom:5px;"><strong style="color:#F59E0B;">🛣️ Red Vial Primaria:</strong> Carreteras principales que conectan al Chocó y pueden sufrir derrumbes tras un sismo.</li>
-            <li style="margin-bottom:5px;"><strong style="color:#0284C7;">🚢 Corredor Fluvial:</strong> Ríos navegables clave para llevar ayudas cuando fallan las vías terrestres.</li>
-            <li style="margin-bottom:5px;"><strong style="color:#0D9488;">⛵ Ruta Marítima:</strong> Conexión por mar entre municipios costeros del Pacífico.</li>
-            <li style="margin-bottom:5px;"><strong style="color:#2563EB;">✈️ Terminal Aéreo:</strong> Aeropuertos y pistas vitales para puentes aéreos de emergencia.</li>
-            <li style="margin-bottom:5px;"><strong style="color:#E11D48;">🏥 Centro Asistencial:</strong> Hospitales y centros de salud que deben seguir funcionando tras un sismo.</li>
-            <li><strong style="color:#9333EA;">⚓ Muelle / Puerto:</strong> Puertos y embarcaderos para carga y abastecimiento.</li>
+        <ul class="sc-modal-legend-list">
+            <li class="sc-modal-legend-item">
+                <span class="sc-modal-legend-svg" style="--swatch-color:#F59E0B;">${MODAL_ICONS.road}</span>
+                <div><strong>Red Vial Primaria:</strong> corredores carreteros expuestos a deslizamientos cosísmicos.</div>
+            </li>
+            <li class="sc-modal-legend-item">
+                <span class="sc-modal-legend-svg" style="--swatch-color:#0284C7;">${MODAL_ICONS.waves}</span>
+                <div><strong>Corredor Fluvial:</strong> ejes navegables (Atrato, San Juan, Baudó) vitales para abastecimiento y evacuación.</div>
+            </li>
+            <li class="sc-modal-legend-item">
+                <span class="sc-modal-legend-svg" style="--swatch-color:#0D9488;">${MODAL_ICONS.ship}</span>
+                <div><strong>Ruta Marítima:</strong> enlace costero del Pacífico entre cabeceras sin conexión terrestre.</div>
+            </li>
+            <li class="sc-modal-legend-item">
+                <span class="sc-modal-legend-svg" style="--swatch-color:#2563EB;">${MODAL_ICONS.plane}</span>
+                <div><strong>Terminal Aéreo:</strong> aeropuertos y pistas regionales para puentes aéreos de emergencia.</div>
+            </li>
+            <li class="sc-modal-legend-item">
+                <span class="sc-modal-legend-svg" style="--swatch-color:#E11D48;">${MODAL_ICONS.hospital}</span>
+                <div><strong>Centro Asistencial:</strong> hospitales y puestos de salud catalogados como edificaciones indispensables (NSR-10 Grupo IV).</div>
+            </li>
+            <li class="sc-modal-legend-item">
+                <span class="sc-modal-legend-svg" style="--swatch-color:#9333EA;">${MODAL_ICONS.anchor}</span>
+                <div><strong>Muelle / Puerto:</strong> nodos portuarios DIMAR para logística marítima y fluvial.</div>
+            </li>
         </ul>
-        <div style="background:rgba(245,158,11,0.12); border:1.5px solid #F59E0B; border-radius:12px; padding:12px 14px;">
-            <strong style="font-size:var(--fs-sm);">¿Cómo ver los nombres y cómo quitarla?</strong>
-            <p style="margin:6px 0 0 0; font-size:var(--fs-sm); line-height:1.45;">
-                Activa el interruptor y pasa el ratón por encima de cualquier línea o punto de color para ver el nombre de la vía, río, aeropuerto u hospital. Apaga el interruptor cuando quieras limpiar el mapa.
-            </p>
+        <div class="sc-modal-callout sc-modal-callout--warn">
+            <div class="sc-modal-callout-icon">${MODAL_ICONS.crosshair}</div>
+            <div class="sc-modal-callout-body">
+                <h4 class="sc-modal-callout-title">Inspección de elementos</h4>
+                <p class="sc-modal-callout-text">
+                    Encienda el interruptor y sitúe el cursor sobre cualquier trazo o ícono para ver el nombre y clasificación de la infraestructura. Apáguelo para despejar el mapa.
+                </p>
+            </div>
         </div>
     `
 };
@@ -4450,25 +4808,39 @@ const INFO_MODAL_ACCENTS = {
     nsr10_info: '#047857',
     espectro_info: '#047857',
     geotecnia_info: '#047857',
+    hex: '#047857',
+    sgc: '#047857',
     pot_info: '#B45309',
-    infra_info: '#B45309'
+    infra_info: '#B45309',
+    fallas: '#B45309',
+    calor: '#E11D48',
+    shakemap_info: '#E11D48',
+    ml: '#9333EA',
+    profundidad: '#9333EA'
 };
 
 const INFO_MODAL_PROFILE_CLASSES = {
     nsr10_info: 'modal-ctx-nsr',
     espectro_info: 'modal-ctx-nsr',
     geotecnia_info: 'modal-ctx-nsr',
+    hex: 'modal-ctx-nsr',
+    sgc: 'modal-ctx-nsr',
     pot_info: 'modal-ctx-pot',
-    infra_info: 'modal-ctx-pot'
+    infra_info: 'modal-ctx-pot',
+    fallas: 'modal-ctx-pot',
+    calor: 'modal-ctx-danger',
+    shakemap_info: 'modal-ctx-danger',
+    ml: 'modal-ctx-purple',
+    profundidad: 'modal-ctx-purple'
 };
 
 if (infoModal && closeInfoModal) {
     const infoModalDialog = infoModal.querySelector(':scope > div');
     const applyModalContextBorder = (key) => {
         if (!infoModalDialog) return;
-        const accent = INFO_MODAL_ACCENTS[key] || '#0052CC';
+        const accent = INFO_MODAL_ACCENTS[key] || '#0066CC';
         infoModalDialog.style.borderTop = `4px solid ${accent}`;
-        infoModal.classList.remove('modal-ctx-sismo', 'modal-ctx-nsr', 'modal-ctx-pot');
+        infoModal.classList.remove('modal-ctx-sismo', 'modal-ctx-nsr', 'modal-ctx-pot', 'modal-ctx-danger', 'modal-ctx-purple');
         infoModal.classList.add(INFO_MODAL_PROFILE_CLASSES[key] || 'modal-ctx-sismo');
     };
 
@@ -4509,7 +4881,7 @@ if (infoModal && closeInfoModal) {
 
     // Delegación para botón de cierre dentro de la Guía de Uso
     document.addEventListener('click', (e) => {
-        if (e.target && e.target.id === 'btn-entendido-guia') {
+        if (e.target && e.target.closest('#btn-entendido-guia')) {
             closeModal();
         }
     });
@@ -5347,36 +5719,36 @@ function openFichaPOTModal() {
     subtitle.innerText = `Departamento de ${m.departamento} | Insumo referencial para POT / PBOT / EOT (Decreto 1077/2015 · Ley 1523/2012)`;
 
     body.innerHTML = `
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px;">
-            <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:12px;">
-                <h4 style="margin:0 0 8px 0; font-size:var(--fs-xs); color:#38bdf8; text-transform:uppercase; letter-spacing:0.04em;">1. Localización y Capacidad Institucional</h4>
-                <p style="margin:0 0 4px 0; font-size:var(--fs-xs);"><strong>Municipio:</strong> ${escapeHtml(m.nombre)} (${escapeHtml(m.departamento)})</p>
-                <p style="margin:0 0 4px 0; font-size:var(--fs-xs);"><strong>Categoría Ley 617/2000:</strong> ${escapeHtml(m.categoria_ley617 || 'Referencia')}</p>
-                <p style="margin:0 0 4px 0; font-size:var(--fs-xs);"><strong>Población de Referencia:</strong> ${(m.poblacion || 0).toLocaleString()} habitantes</p>
-                <p style="margin:0 0 4px 0; font-size:var(--fs-xs);"><strong>Conectividad:</strong> ${escapeHtml(m.acceso_principal || 'Consultar red')}</p>
-                <p style="margin:0; font-size:var(--fs-xs);"><strong>Coordenadas Cabecera:</strong> Lat ${m.lat.toFixed(4)}°, Lon ${m.lng.toFixed(4)}°</p>
+        <div class="sc-modal-grid-2 sc-pot-grid" style="margin-bottom:12px;">
+            <div class="sc-pot-card">
+                <h4 class="sc-pot-card-title">${MODAL_ICONS.map}<span>1. Localización y Capacidad Institucional</span></h4>
+                <p><strong>Municipio:</strong> ${escapeHtml(m.nombre)} (${escapeHtml(m.departamento)})</p>
+                <p><strong>Categoría Ley 617/2000:</strong> ${escapeHtml(m.categoria_ley617 || 'Referencia')}</p>
+                <p><strong>Población de Referencia:</strong> ${(m.poblacion || 0).toLocaleString()} habitantes</p>
+                <p><strong>Conectividad:</strong> ${escapeHtml(m.acceso_principal || 'Consultar red')}</p>
+                <p><strong>Coordenadas Cabecera:</strong> Lat ${m.lat.toFixed(4)}°, Lon ${m.lng.toFixed(4)}°</p>
             </div>
 
-            <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:12px;">
-                <h4 style="margin:0 0 8px 0; font-size:var(--fs-xs); color:#38bdf8; text-transform:uppercase; letter-spacing:0.04em;">2. Parámetros Oficiales NSR-10</h4>
-                <p style="margin:0 0 4px 0; font-size:var(--fs-xs);"><strong>Zona de Amenaza Sísmica:</strong> <span class="status-pill critico">🔴 ${escapeHtml(m.zona)}</span></p>
-                <p style="margin:0 0 4px 0; font-size:var(--fs-xs);"><strong>Coeficientes de Aceleración:</strong> Aa = ${m.aa.toFixed(2)} g | Av = ${m.av.toFixed(2)} g</p>
-                <p style="margin:0 0 4px 0; font-size:var(--fs-xs);"><strong>Perfil de Suelo Referencial:</strong> Tipo ${escapeHtml(m.suelo_defecto || 'E')} (Fa=${factors.Fa}, Fv=${factors.Fv})</p>
-                <p style="margin:0; font-size:var(--fs-xs);"><strong>PGA Esperado en Superficie:</strong> <strong style="color:#38bdf8;">${pgaDiseno} g</strong></p>
+            <div class="sc-pot-card">
+                <h4 class="sc-pot-card-title">${MODAL_ICONS.building}<span>2. Parámetros Oficiales NSR-10</span></h4>
+                <p><strong>Zona de Amenaza Sísmica:</strong> <span class="status-pill critico"><span class="sc-pot-dot sc-pot-dot--crit"></span>${escapeHtml(m.zona)}</span></p>
+                <p><strong>Coeficientes de Aceleración:</strong> Aa = ${m.aa.toFixed(2)} g | Av = ${m.av.toFixed(2)} g</p>
+                <p><strong>Perfil de Suelo Referencial:</strong> Tipo ${escapeHtml(m.suelo_defecto || 'E')} (Fa=${factors.Fa}, Fv=${factors.Fv})</p>
+                <p><strong>PGA Esperado en Superficie:</strong> <strong class="sc-pot-metric-highlight">${pgaDiseno} g</strong></p>
             </div>
         </div>
 
-        <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:12px; margin-bottom:14px;">
-            <h4 style="margin:0 0 8px 0; font-size:var(--fs-xs); color:#38bdf8; text-transform:uppercase; letter-spacing:0.04em;">3. Contexto Sismotectónico y Exposición de Líneas Vitales</h4>
-            <p style="margin:0 0 5px 0; font-size:var(--fs-xs);"><strong>Geología Local:</strong> ${escapeHtml(m.geologia)}</p>
-            <p style="margin:0 0 5px 0; font-size:var(--fs-xs);"><strong>Sismos Instrumentales en 50 km:</strong> ${sismos50km} eventos (Magnitud máx: ${maxMag50km > 0 ? maxMag50km.toFixed(1) : 's/d'})</p>
-            <p style="margin:0 0 5px 0; font-size:var(--fs-xs);"><strong>Eventos Históricos de Referencia:</strong> ${escapeHtml(m.ultimo_destructor)}</p>
-            <p style="margin:0 0 5px 0; font-size:var(--fs-xs);"><strong>Fallas Cartografiadas Próximas:</strong> ${fallasCercanas.length > 0 ? fallasCercanas.map(f => `${escapeHtml(f.nombre)} (${f.dist} km)`).join(', ') : 'Sin trazas dentro de 75 km en capa local'}</p>
-            <p style="margin:0; font-size:var(--fs-xs);"><strong>Infraestructura Crítica en 45 km:</strong> ${nearbyInfra.length > 0 ? nearbyInfra.slice(0, 6).map(i => `${escapeHtml(i.nombre)} (${i.distKm} km)`).join('; ') : 'Sin nodos mapeados en 45 km — verificar red local REPS/DIMAR'}</p>
+        <div class="sc-pot-card">
+            <h4 class="sc-pot-card-title">${MODAL_ICONS.sismo}<span>3. Contexto Sismotectónico y Exposición de Líneas Vitales</span></h4>
+            <p><strong>Geología Local:</strong> ${escapeHtml(m.geologia)}</p>
+            <p><strong>Sismos Instrumentales en 50 km:</strong> ${sismos50km} eventos (Magnitud máx: ${maxMag50km > 0 ? maxMag50km.toFixed(1) : 's/d'})</p>
+            <p><strong>Eventos Históricos de Referencia:</strong> ${escapeHtml(m.ultimo_destructor)}</p>
+            <p><strong>Fallas Cartografiadas Próximas:</strong> ${fallasCercanas.length > 0 ? fallasCercanas.map(f => `${escapeHtml(f.nombre)} (${f.dist} km)`).join(', ') : 'Sin trazas dentro de 75 km en capa local'}</p>
+            <p><strong>Infraestructura Crítica en 45 km:</strong> ${nearbyInfra.length > 0 ? nearbyInfra.slice(0, 6).map(i => `${escapeHtml(i.nombre)} (${i.distKm} km)`).join('; ') : 'Sin nodos mapeados en 45 km — verificar red local REPS/DIMAR'}</p>
         </div>
 
-        <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:12px; margin-bottom:14px;">
-            <h4 style="margin:0 0 8px 0; font-size:var(--fs-xs); color:#ff7b72; text-transform:uppercase; letter-spacing:0.04em;">4. Matriz Cualitativa de Fenómenos Concomitantes</h4>
+        <div class="sc-pot-card sc-pot-card--danger">
+            <h4 class="sc-pot-card-title">${MODAL_ICONS.shield}<span>4. Matriz Cualitativa de Fenómenos Concomitantes</span></h4>
             <table class="ficha-pot-table">
                 <thead>
                     <tr>
@@ -5388,29 +5760,29 @@ function openFichaPOTModal() {
                 <tbody>
                     <tr>
                         <td><strong>Licuación de Suelos</strong></td>
-                        <td>${licLabel}</td>
+                        <td><span class="sc-pot-dot sc-pot-dot--${licInfo.pillClass === 'critico' ? 'crit' : (licInfo.pillClass === 'alerta' ? 'warn' : 'ok')}"></span>${licLabel.replace(/^[^\wÁÉÍÓÚÑ]+/u, '')}</td>
                         <td>Indicador cualitativo regional; exige ensayos SPT/CPT y nivel freático en estudios geotécnicos de detalle (NSR-10 Título H).</td>
                     </tr>
                     <tr>
                         <td><strong>Exposición a Tsunami</strong></td>
-                        <td>${m.costero_pacifico ? '🔴 LITORAL PACÍFICO EXPUESTO' : '🟢 INTERIOR (No costero)'}</td>
+                        <td>${m.costero_pacifico ? '<span class="sc-pot-dot sc-pot-dot--crit"></span>LITORAL PACÍFICO EXPUESTO' : '<span class="sc-pot-dot sc-pot-dot--ok"></span>INTERIOR (No costero)'}</td>
                         <td>${m.costero_pacifico ? 'Verificar cartografía oficial de inundación por tsunami (DIMAR / SGC / UNGRD) y rutas hacia cota segura.' : 'Sin exposición directa a oleaje tsunamigénico.'}</td>
                     </tr>
                     <tr>
                         <td><strong>Inestabilidad de Laderas</strong></td>
-                        <td>🟠 ALTA / VARIABLE</td>
+                        <td><span class="sc-pot-dot sc-pot-dot--warn"></span>ALTA / VARIABLE</td>
                         <td>Susceptibilidad potencial a bloqueos viales y fluviales por saturación hídrica cosísmica.</td>
                     </tr>
                 </tbody>
             </table>
         </div>
 
-        <div style="background:rgba(10,132,255,0.08); border:1px solid rgba(10,132,255,0.25); border-radius:10px; padding:12px;">
-            <h4 style="margin:0 0 8px 0; font-size:var(--fs-xs); color:#70b5ff; text-transform:uppercase; letter-spacing:0.04em;">5. Lineamientos Técnicos Orientadores (No Vinculantes)</h4>
-            <ol style="margin:0; padding-left:18px; font-size:var(--fs-xs); color:var(--text-secondary); line-height:1.5;">
-                <li style="margin-bottom:4px;">${directrizTerritorial}</li>
-                <li style="margin-bottom:4px;"><strong>Articulación Decreto 1807 de 2014 (Dec. 1077/2015):</strong> Esta ficha constituye un insumo orientador preliminar y no reemplaza los Estudios Básicos ni Detallados ni las competencias de asistencia técnica de CODECHOCÓ.</li>
-                <li style="margin-bottom:4px;"><strong>Enfoque Territorial y Étnico (Ley 70/1993):</strong> Toda delimitación de suelos de protección o reasentamiento en consejos comunitarios y resguardos requiere cartografía IGAC/ANT y consulta previa (Convenio 169 OIT).</li>
+        <div class="sc-pot-card sc-pot-card--info" style="margin-bottom:0;">
+            <h4 class="sc-pot-card-title">${MODAL_ICONS.book}<span>5. Lineamientos Técnicos Orientadores (No Vinculantes)</span></h4>
+            <ol class="sc-modal-list" style="margin:0; font-size:var(--fs-xs);">
+                <li>${directrizTerritorial}</li>
+                <li><strong>Articulación Decreto 1807 de 2014 (Dec. 1077/2015):</strong> Esta ficha constituye un insumo orientador preliminar y no reemplaza los Estudios Básicos ni Detallados ni las competencias de asistencia técnica de CODECHOCÓ.</li>
+                <li><strong>Enfoque Territorial y Étnico (Ley 70/1993):</strong> Toda delimitación de suelos de protección o reasentamiento en consejos comunitarios y resguardos requiere cartografía IGAC/ANT y consulta previa (Convenio 169 OIT).</li>
                 <li><strong>Edificaciones Indispensables (NSR-10 Grupo IV):</strong> Centros de salud (I = 1.50), sedes de emergencia y nodos portuarios deben priorizar evaluación de vulnerabilidad sísmica estructural.</li>
             </ol>
         </div>

@@ -55,7 +55,7 @@
     <script src="lib/chart.js"></script>
     
     <!-- Estilos Bento Box -->
-    <link rel="stylesheet" href="css/styles.css?v=52">
+    <link rel="stylesheet" href="css/styles.css?v=53">
 
     <!-- Datos Estructurados Schema.org JSON-LD para Google Search & Google Dataset Search -->
     <script type="application/ld+json">
@@ -129,7 +129,9 @@
     <div id="live-seismic-alert-banner" style="display:none; position:fixed; top:20px; left:50%; transform:translateX(-50%); z-index:99999; max-width:90vw; width:480px; background:rgba(15,23,42,0.92); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); border:1.5px solid #10b981; border-radius:16px; box-shadow:0 12px 36px rgba(0,0,0,0.6), 0 0 20px rgba(16,185,129,0.3); padding:14px 18px; color:#F8FAFC; font-family: var(--font-sans); animation:alertSlideDown 0.4s cubic-bezier(0.16,1,0.3,1); transition:all 0.3s ease;">
         <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px;">
             <div style="display:flex; align-items:center; gap:10px;">
-                <span id="alert-banner-icon" style="font-size:var(--fs-xl); animation:pulseAlert 1s infinite alternate;">📡</span>
+                <span id="alert-banner-icon" style="display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; border-radius:10px; background:rgba(16,185,129,0.16); color:#34d399; animation:pulseAlert 1s infinite alternate;" aria-hidden="true">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2"></circle><path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14"></path></svg>
+                </span>
                 <div>
                     <div style="display:flex; align-items:center; gap:6px;">
                         <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#10b981; box-shadow:0 0 8px #10b981;"></span>
@@ -140,7 +142,9 @@
                     </div>
                 </div>
             </div>
-            <button id="btn-close-alert-banner" style="background:transparent; border:none; color:#94A3B8; font-size:var(--fs-lg); cursor:pointer; padding:2px 6px; border-radius:6px; line-height:1;" aria-label="Cerrar alerta">✕</button>
+            <button id="btn-close-alert-banner" type="button" style="background:transparent; border:none; color:#94A3B8; cursor:pointer; padding:4px; border-radius:6px; display:inline-flex; align-items:center; justify-content:center;" aria-label="Cerrar alerta">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+            </button>
         </div>
         <div id="alert-banner-meta" style="margin-top:8px; padding-top:8px; border-top:1px solid rgba(255,255,255,0.1); display:flex; justify-content:space-between; font-size:var(--fs-xs); color:#94A3B8; font-family: var(--font-mono);">
             <span id="alert-banner-time">--:--:--</span>
@@ -244,7 +248,9 @@
                         <span>Limpiar caché móvil</span>
                     </button>
                 </div>
-                <button id="btn-dismiss-device-advice" class="btn-dismiss-advice" aria-label="Cerrar sugerencia">✕</button>
+                <button id="btn-dismiss-device-advice" type="button" class="btn-dismiss-advice" aria-label="Cerrar sugerencia">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+                </button>
             </div>
         </section>
         
@@ -542,11 +548,11 @@
                             </select>
                         </div>
 
-                        <div style="display: flex; gap: 4px; align-items: center;">
-                            <button type="button" class="falla-tipo-btn active" data-tipo="all">Todas</button>
-                            <button type="button" class="falla-tipo-btn" data-tipo="subduccion">Subducción</button>
-                            <button type="button" class="falla-tipo-btn" data-tipo="rumbo">Rumbo</button>
-                            <button type="button" class="falla-tipo-btn" data-tipo="inversa">Inversas</button>
+                        <div style="display: flex; gap: 4px; align-items: center;" role="group" aria-label="Filtrar fallas por cinemática">
+                            <button type="button" class="falla-tipo-btn active" data-tipo="all" aria-label="Mostrar todas las fallas geológicas">Todas</button>
+                            <button type="button" class="falla-tipo-btn" data-tipo="subduccion" aria-label="Filtrar fallas de subducción">Subducción</button>
+                            <button type="button" class="falla-tipo-btn" data-tipo="rumbo" aria-label="Filtrar fallas de rumbo">Rumbo</button>
+                            <button type="button" class="falla-tipo-btn" data-tipo="inversa" aria-label="Filtrar fallas inversas">Inversas</button>
                         </div>
 
                         <label for="check-fallas-buffer" class="subpanel-check-row">
@@ -651,10 +657,10 @@
                         </div>
 
                         <div style="display:flex; gap:6px; margin-bottom:8px;">
-                            <button type="button" id="btn-wave-play" class="btn-secondary" style="flex:1; padding:6px 8px; font-size:var(--fs-xs);">
+                            <button type="button" id="btn-wave-play" class="btn-secondary" aria-label="Reproducir o pausar propagación de ondas P y S" style="flex:1; padding:6px 8px; font-size:var(--fs-xs);">
                                 <span id="wave-play-icon">▶</span> <span id="wave-play-text">Propagar Ondas</span>
                             </button>
-                            <button type="button" id="btn-wave-reset" class="btn-secondary" style="padding:6px 10px; font-size:var(--fs-xs);">
+                            <button type="button" id="btn-wave-reset" class="btn-secondary" aria-label="Reiniciar animación de ondas sísmicas" style="padding:6px 10px; font-size:var(--fs-xs);">
                                 <span>↺ Reiniciar</span>
                             </button>
                         </div>
@@ -709,7 +715,10 @@
                     <div class="accordion-title-wrap">
                         <h3>Exportación y Reportes</h3>
                     </div>
-                    <svg class="accordion-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg>
+                    <div class="accordion-actions">
+                        <button type="button" class="info-btn" data-info="export_info" aria-label="Instrucciones: Exportación y Reportes" title="Instrucciones de uso: Exportación CSV, GeoJSON, PNG y PDF">?</button>
+                        <svg class="accordion-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg>
+                    </div>
                 </summary>
                 <div class="accordion-body">
                     <div class="toggle-group export-grid">
@@ -1097,7 +1106,10 @@
 
             <!-- Directrices Orientadoras e Interoperabilidad Institucional -->
             <section class="control-group">
-                <h3>Articulación Normativa e Interoperabilidad</h3>
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+                    <h3 style="margin:0; flex:1;">Articulación Normativa e Interoperabilidad</h3>
+                    <button type="button" class="info-btn" data-info="normativa_pot_info" aria-label="Instrucciones: Articulación Normativa e Interoperabilidad" title="Instrucciones de uso: Normativa POT, Tablero Simplificado y Geoservicios">?</button>
+                </div>
                 <ul style="font-size:var(--fs-xs); color:var(--text-secondary); padding-left:18px; margin:0 0 10px 0; line-height:1.48;">
                     <li style="margin-bottom:5px;"><strong>Alcance Orientador (Decreto 1807/2014 — Dec. 1077/2015):</strong> Esta vista no sustituye los Estudios Básicos ni Detallados exigidos en POT/PBOT/EOT ni las responsabilidades técnicas de CODECHOCÓ.</li>
                     <li style="margin-bottom:5px;"><strong>Territorios Colectivos y Étnicos (Ley 70/1993):</strong> Toda restricción urbanística requiere cartografía predial IGAC/ANT y consulta previa vinculante (Convenio 169 OIT).</li>
@@ -1288,7 +1300,7 @@
     <script src="js/core-oop.js?v=40"></script>
 
     <!-- Lógica principal con versionamiento para evitar caché persistente -->
-    <script src="js/main.js?v=85"></script>
+    <script src="js/main.js?v=86"></script>
 
     <!-- PWA & Limpieza Activa de CacheStorage -->
     <script>
@@ -1319,7 +1331,7 @@
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js?v=85')
+                navigator.serviceWorker.register('sw.js?v=86')
                     .then(reg => {
                         reg.update();
                     })

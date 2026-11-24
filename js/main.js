@@ -49,22 +49,23 @@ const INFRA_COLORS = {
 };
 
 function buildInfraSvgDataUrl(bgHex, glyphSvg) {
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64"><circle cx="32" cy="32" r="27" fill="${bgHex}" stroke="#FFFFFF" stroke-width="5"/>${glyphSvg}</svg>`;
+    // Margen de seguridad (r=24 + stroke 4 = 26px sobre centro 32px -> 6px libres por borde) para evitar recorte en atlas WebGL
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64"><circle cx="32" cy="32" r="24" fill="${bgHex}" stroke="#FFFFFF" stroke-width="4"/>${glyphSvg}</svg>`;
     return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 }
 
 const INFRA_ICON_URLS = {
     puerto: buildInfraSvgDataUrl(
         INFRA_COLORS.puerto.hex,
-        '<circle cx="32" cy="18" r="3.8" fill="none" stroke="#FFFFFF" stroke-width="3.2"/><line x1="32" y1="22" x2="32" y2="47" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="round"/><line x1="23" y1="28" x2="41" y2="28" stroke="#FFFFFF" stroke-width="3.2" stroke-linecap="round"/><path d="M18 37 C18 46, 25 49, 32 49 C39 49, 46 46, 46 37" fill="none" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="round"/><polyline points="15,40 18,35 22,39" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><polyline points="42,39 46,35 49,40" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>'
+        '<circle cx="32" cy="20" r="3.2" fill="none" stroke="#FFFFFF" stroke-width="2.8"/><line x1="32" y1="23.5" x2="32" y2="44" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round"/><line x1="24" y1="28.5" x2="40" y2="28.5" stroke="#FFFFFF" stroke-width="2.8" stroke-linecap="round"/><path d="M20 36 C20 43.5, 25.5 46, 32 46 C38.5 46, 44 43.5, 44 36" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round"/><polyline points="17.5,38.5 20,34.5 23,38" fill="none" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><polyline points="41,38 44,34.5 46.5,38.5" fill="none" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>'
     ),
     hospital: buildInfraSvgDataUrl(
         INFRA_COLORS.hospital.hex,
-        '<rect x="28" y="18" width="8" height="28" rx="1.8" fill="#FFFFFF"/><rect x="18" y="28" width="28" height="8" rx="1.8" fill="#FFFFFF"/>'
+        '<rect x="28.5" y="19.5" width="7" height="25" rx="1.6" fill="#FFFFFF"/><rect x="19.5" y="28.5" width="25" height="7" rx="1.6" fill="#FFFFFF"/>'
     ),
     aeropuerto: buildInfraSvgDataUrl(
         INFRA_COLORS.aeropuerto.hex,
-        '<path d="M32 16 L35 28 L47 34 L47 38 L35 35 L35 43 L40 46 L40 49 L32 47 L24 49 L24 46 L29 43 L29 35 L17 38 L17 34 L29 28 Z" fill="#FFFFFF"/>'
+        '<path d="M32 18 L34.8 28.5 L45 33.8 L45 37.2 L34.8 34.8 L34.8 41.5 L39 44.2 L39 46.8 L32 45 L25 46.8 L25 44.2 L29.2 41.5 L29.2 34.8 L19 37.2 L19 33.8 L29.2 28.5 Z" fill="#FFFFFF"/>'
     )
 };
 
@@ -79,9 +80,9 @@ function getInfraPixelOffset(feature, allPoints) {
         return Math.abs(lng - olng) < 0.03 && Math.abs(lat - olat) < 0.03;
     });
     if (!hasNearbyPeer) return [0, 0];
-    if (tipo === 'puerto') return [-16, -6];
-    if (tipo === 'aeropuerto') return [16, -6];
-    if (tipo === 'hospital') return [12, 10];
+    if (tipo === 'puerto') return [-18, -8];
+    if (tipo === 'aeropuerto') return [18, -8];
+    if (tipo === 'hospital') return [14, 12];
     return [0, 0];
 }
 
@@ -300,7 +301,7 @@ function handleSgcRasterHover(info) {
         <p><strong>Rango de color en mapa:</strong> ${cls.rangeLabel} <span style="color:var(--text-tertiary);">(Tr = 475 años)</span></p>
         <p style="margin-top:5px; font-size:var(--fs-xs); line-height:1.4; color:var(--text-secondary);">${cls.bandDesc}</p>
         ${nearestMunHtml}
-        <p style="margin-top:6px; font-size:var(--fs-2xs); color:var(--accent); font-weight:600;">💡 Haz clic en este punto para consultar el dato exacto oficial SGC.</p>
+        <p style="margin-top:6px; font-size:var(--fs-2xs); color:var(--accent); font-weight:600;">Haz clic en este punto para consultar el dato exacto oficial SGC.</p>
     `;
     positionTooltip(tooltip, info.x, info.y);
 }
@@ -1008,11 +1009,11 @@ function updateChart(filteredData) {
             const lambda = Math.pow(10, gr.aAnnual - gr.b * magTarget);
             if (lambda > 0) {
                 const tr = 1 / lambda;
-                if (tr > 999) return '> 999 a';
-                return `~${tr.toFixed(1)} a`;
+                if (tr > 999) return '>999\u00A0a';
+                return `~${tr.toFixed(1)}\u00A0a`;
             }
         }
-        return observedCount > 0 ? `~${(yearsSpan / observedCount).toFixed(1)} a` : 's/d';
+        return observedCount > 0 ? `~${(yearsSpan / observedCount).toFixed(1)}\u00A0a` : 's/d';
     };
 
     const countM5 = filteredData.filter(f => (f.properties.magnitud || 0) >= 5.0).length;
@@ -1055,8 +1056,16 @@ function updateChart(filteredData) {
         options: {
             responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { display: false } },
             scales: {
-                x: { title: { display: true, text: 'M' }, grid: { color: 'rgba(255,255,255,0.05)' } },
-                y: { title: { display: true, text: 'Log₁₀(N)' }, grid: { color: 'rgba(255,255,255,0.05)' } }
+                x: {
+                    title: { display: true, text: 'Magnitud (M)', padding: { top: 4 }, font: { size: 10 } },
+                    ticks: { autoSkip: true, maxTicksLimit: 6, maxRotation: 0, font: { size: 10 } },
+                    grid: { color: 'rgba(255,255,255,0.05)' }
+                },
+                y: {
+                    title: { display: true, text: 'Log₁₀(N)', font: { size: 10 } },
+                    ticks: { maxTicksLimit: 4, font: { size: 10 } },
+                    grid: { color: 'rgba(255,255,255,0.05)' }
+                }
             },
             onClick: (event, elements, chart) => {
                 if (elements.length > 0) {
@@ -1149,17 +1158,8 @@ function handleHover(info) {
                 puerto: '#7E22CE'
             };
             applyTooltipContext('sgc', infraPalette.hex, infraPalette.textHex, lightTitleMap[p.tipo] || '#0F172A');
-            const iconMap = {
-                aeropuerto: '✈️',
-                hospital: '🏥',
-                fluvial: '🚢',
-                maritimo: '⛵',
-                puerto: '⚓',
-                vial: '🛣️'
-            };
-            const icon = iconMap[p.tipo] || '📍';
             const sub = escapeHtml(p.subtipo || p.nivel || p.tipo);
-            tooltip.innerHTML = `<h4>${icon} ${escapeHtml(p.nombre)}</h4>
+            tooltip.innerHTML = `<h4>${escapeHtml(p.nombre)}</h4>
                                  <p><strong>Categoría:</strong> ${sub}</p>
                                  ${p.ciudad ? `<p><strong>Municipio:</strong> ${escapeHtml(p.ciudad)}</p>` : ''}
                                  ${p.longitud_km ? `<p><strong>Longitud de Corredor:</strong> ${escapeHtml(p.longitud_km)} km</p>` : ''}
@@ -1189,7 +1189,7 @@ function handleHover(info) {
             tooltip.innerHTML = `<h4 style="display:flex; align-items:center; justify-content:space-between; gap:6px;">
                                     <span style="display:flex; align-items:center; gap:6px;">
                                         <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#10b981; box-shadow:0 0 8px #10b981;"></span>
-                                        📡 Telemetría FDSN: ${escapeHtml(p.fecha)}
+                                        Telemetría FDSN: ${escapeHtml(p.fecha)}
                                     </span>
                                     ${tiempoBadge}
                                  </h4>
@@ -1205,7 +1205,7 @@ function handleHover(info) {
             let benioffExtra = '';
             if (isBenioffMode) {
                 const zVisual = (p.profundidad * benioffExaggeration).toFixed(1);
-                benioffExtra = `<p style="color:#38bdf8; font-size:var(--fs-xs); margin-top:4px;">📐 <strong>Corte Benioff:</strong> Profundidad Z: -${zVisual} km (${benioffExaggeration.toFixed(2)}x)</p>`;
+                benioffExtra = `<p style="color:#38bdf8; font-size:var(--fs-xs); margin-top:4px;"><strong>Corte Benioff:</strong> Profundidad Z: -${zVisual} km (${benioffExaggeration.toFixed(2)}x)</p>`;
             }
             tooltip.innerHTML = `<h4>${escapeHtml(p.fecha)}</h4><p><strong>Magnitud:</strong> ${escapeHtml(p.magnitud)} M <span style="font-size:var(--fs-2xs);color:#94a3b8;">(ML/Mw/mb)</span></p><p><strong>Profundidad:</strong> ${escapeHtml(p.profundidad)} km (${depthStr})</p><p><strong>Ubicación:</strong> ${fuenteInfo}${escapeHtml(p.municipio)}</p>${benioffExtra}`;
         }
@@ -1336,9 +1336,9 @@ function handleBenioffHexHover(info) {
         tooltip.style.left = `${info.x}px`;
         tooltip.style.top = `${info.y}px`;
 
-        let nivel = '🔹 Agrupación Dispersa';
-        if (d.count >= 15) nivel = '🔥 Enjambre Sísmico Denso';
-        else if (d.count >= 5) nivel = '⚡ Concentración Moderada';
+        let nivel = 'Agrupación Dispersa';
+        if (d.count >= 15) nivel = 'Enjambre Sísmico Denso';
+        else if (d.count >= 5) nivel = 'Concentración Moderada';
 
         applyTooltipContext('hex');
         tooltip.innerHTML = `
@@ -2025,6 +2025,8 @@ function renderLayers(options = {}) {
                 data: puntosOrdenados,
                 billboard: true,
                 sizeUnits: 'pixels',
+                alphaCutoff: 0.05,
+                parameters: { depthTest: false },
                 getPosition: d => [d.geometry.coordinates[0], d.geometry.coordinates[1], 32],
                 getIcon: d => ({
                     url: INFRA_ICON_URLS[d.properties.tipo] || INFRA_ICON_URLS.aeropuerto,
@@ -2033,7 +2035,7 @@ function renderLayers(options = {}) {
                     anchorX: 32,
                     anchorY: 32
                 }),
-                getSize: d => d.properties.tipo === 'puerto' ? 28 : (d.properties.tipo === 'aeropuerto' ? 26 : 26),
+                getSize: d => d.properties.tipo === 'puerto' ? 30 : (d.properties.tipo === 'aeropuerto' ? 28 : 28),
                 getPixelOffset: d => getInfraPixelOffset(d, puntosOrdenados),
                 pickable: true,
                 autoHighlight: true,
@@ -2369,7 +2371,7 @@ function renderLayers(options = {}) {
                     tooltip.style.display = 'block';
                     tooltip.style.left = `${info.x}px`;
                     tooltip.style.top = `${info.y}px`;
-                    tooltip.innerHTML = `<h4>🏛️ ${escapeHtml(m.nombre)} (${escapeHtml(m.departamento)})</h4>
+                    tooltip.innerHTML = `<h4>${escapeHtml(m.nombre)} (${escapeHtml(m.departamento)})</h4>
                                          <p><strong>Perfil de Suelo:</strong> Tipo ${escapeHtml(obj.curSuelo)} (Fa=${obj.curFactors.Fa}, Fv=${obj.curFactors.Fv})</p>
                                          <p><strong>Grupo de Uso:</strong> I = ${obj.curI.toFixed(2)}</p>
                                          <p><strong>PGA Terreno:</strong> <strong style="color:#38bdf8;">${obj.curPga} g</strong> (Aa=${m.aa.toFixed(2)}g)</p>
@@ -3252,7 +3254,7 @@ async function loadRealSgcHttp() {
     const subtext = document.getElementById('sgc-live-subtext');
     if (badge) {
         badge.style.display = 'inline-block';
-        badge.innerText = '📡 Sincronizando...';
+        badge.innerText = 'Sincronizando...';
         badge.style.color = '#38bdf8';
         badge.style.borderColor = 'rgba(56,189,248,0.3)';
         badge.style.background = 'rgba(56,189,248,0.15)';
@@ -3588,13 +3590,6 @@ if (checkSgcWms) {
             triggerAutoSgcMunicipioQuery(m, true);
         }
         renderLayers();
-    });
-}
-const btnSgcQueryMunicipio = document.getElementById('btn-sgc-query-municipio');
-if (btnSgcQueryMunicipio) {
-    btnSgcQueryMunicipio.addEventListener('click', () => {
-        const m = selectedNsrMunicipio || selectedPotMunicipio || (municipiosData && municipiosData[0]);
-        triggerAutoSgcMunicipioQuery(m, true);
     });
 }
 document.getElementById('check-ml').addEventListener('change', async e => {
@@ -4149,6 +4144,9 @@ const modalData = {
                     </div>
                 </div>
             </div>
+            <p class="sc-modal-note" style="margin:10px 0 0 0;">
+                <strong>Inspector fijable y comparación:</strong> haga clic sobre cualquier sismo, falla o infraestructura para fijar su tarjeta de datos en pantalla y compararlo directamente con un segundo elemento.
+            </p>
         </div>
 
         <div class="sc-modal-callout sc-modal-callout--ok" style="display:block;">
@@ -4496,10 +4494,14 @@ const modalData = {
             </div>
         </div>
         <p class="sc-modal-lead">
-            Cuando un evento sísmico es captado por pocas estaciones o con cobertura azimutal limitada, su localización epicentral e hipocentral presenta mayor incertidumbre.
+            Cuando un evento sísmico es captado por pocas estaciones o solo desde un mismo lado, su localización epicentral e hipocentral presenta mayor incertidumbre. Este filtro utiliza dos indicadores instrumentales estándar:
         </p>
+        <ul class="sc-modal-list">
+            <li><strong>GAP (cobertura angular ≤ 180°):</strong> mide el mayor ángulo sin estaciones alrededor del epicentro. Un GAP menor a 180° garantiza que el sismo fue rodeado por sensores desde varias direcciones.</li>
+            <li><strong>RMS (error de ajuste ≤ 1.0 s):</strong> indica qué tan bien coinciden los tiempos reales de llegada de las ondas con la ubicación calculada. Valores bajos significan localización más precisa.</li>
+        </ul>
         <p class="sc-modal-body-p">
-            Al activar este filtro se <strong>excluyen los eventos con GAP &gt; 180° o RMS &gt; 1.0 s</strong>, conservando únicamente los sismos con mejor geometría de registro instrumental.
+            Al activar este filtro se <strong>excluyen automáticamente los eventos con GAP &gt; 180° o RMS &gt; 1.0 s</strong>, conservando únicamente los registros mejor localizados.
         </p>
         <div class="sc-modal-callout sc-modal-callout--warn">
             <div class="sc-modal-callout-icon">${MODAL_ICONS.reset}</div>
@@ -4582,7 +4584,7 @@ const modalData = {
             Consulta en línea los reportes sísmicos internacionales (<strong>EMSC</strong> y <strong>USGS</strong>) para desplegar los eventos de magnitud ≥ 3.5 ocurridos durante los últimos 14 días en la región del Chocó.
         </p>
         <p class="sc-modal-body-p">
-            Los registros se representan como anillos verdes pulsantes sobre el mapa. La etiqueta contigua al interruptor indica si los datos provienen de la red en tiempo real o del respaldo local en modo desconectado.
+            Los registros se representan como anillos verdes pulsantes sobre el mapa y se actualizan automáticamente en tiempo real. El <strong>deslizador de umbral de alerta visual</strong> (por defecto ≥ 4.0 M) permite definir desde qué magnitud se despliega el banner emergente cuando entra un evento nuevo.
         </p>
         <div class="sc-modal-callout sc-modal-callout--warn">
             <div class="sc-modal-callout-icon">${MODAL_ICONS.radio}</div>
@@ -4729,9 +4731,10 @@ const modalData = {
             El <strong>Plan de Ordenamiento Territorial (POT)</strong> orienta la ocupación segura del suelo municipal, delimitando áreas con condición de amenaza o riesgo sísmico y priorizando la resiliencia de las líneas vitales:
         </p>
         <ul class="sc-modal-list">
-            <li><strong>Filtro de prioridad territorial:</strong> organiza los municipios por categoría institucional, exposición costera al Pacífico o aislamiento modal fluvial/selvático.</li>
-            <li><strong>Exposición histórica y tectónica:</strong> cuantifica sismos instrumentales cercanos, fallas cartografiadas e infraestructura crítica en el entorno del municipio.</li>
-            <li><strong>Ficha Técnica en PDF:</strong> genera un documento estructurado imprimible como insumo referencial para mesas técnicas de gestión del riesgo.</li>
+            <li><strong>Filtro de prioridad territorial:</strong> organiza los municipios por categoría institucional (Ley 617/2000), exposición costera al Pacífico o aislamiento modal fluvial/selvático.</li>
+            <li><strong>Exposición histórica y tectónica:</strong> cuantifica sismos instrumentales cercanos (radio 30 km), líneas vitales próximas y nivel de peligro sísmico.</li>
+            <li><strong>Insignias de Tsunami y Licuación / Bajamar:</strong> resumen si la cabecera está expuesta al litoral Pacífico y la susceptibilidad cualitativa de sus depósitos de suelo.</li>
+            <li><strong>Aviso de conectividad y alcance de evacuación:</strong> advierte limitaciones de acceso (fluvial/marítimo o deslizamientos) y recuerda que esta herramienta no cartografía rutas de evacuación ni albergues a escala urbana o veredal.</li>
         </ul>
         <div class="sc-modal-callout sc-modal-callout--warn">
             <div class="sc-modal-callout-icon">${MODAL_ICONS.map}</div>
@@ -4763,6 +4766,11 @@ const modalData = {
                 <span class="sc-modal-swatch" style="color:#10B981; background:#10B981;"></span>
                 <div><strong>Curva continua rellena (Diseño):</strong> aceleración espectral resultante al combinar Aa, Av, factores de sitio (Fa, Fv) y coeficiente de importancia (I).</div>
             </li>
+        </ul>
+        <ul class="sc-modal-list">
+            <li><strong>T₀ y Tc (segundos):</strong> delimitan la meseta de máxima demanda sísmica, donde se concentran las edificaciones bajas y medianas más exigidas.</li>
+            <li><strong>TL (segundos):</strong> periodo largo a partir del cual la demanda de aceleración desciende con mayor rapidez en estructuras muy flexibles.</li>
+            <li><strong>Sa Máx (g):</strong> aceleración horizontal máxima de diseño sobre la meseta espectral (expresada como fracción de la gravedad).</li>
         </ul>
         <div class="sc-modal-callout sc-modal-callout--warn">
             <div class="sc-modal-callout-icon">${MODAL_ICONS.sliders}</div>
@@ -4805,7 +4813,8 @@ const modalData = {
             <div class="sc-modal-callout-body">
                 <h4 class="sc-modal-callout-title">Ejecución y limpieza</h4>
                 <ul class="sc-modal-list">
-                    <li><strong>Simular:</strong> seleccione un escenario y pulse <em>Simular Ruptura Sísmica</em> para observar el avance de las ondas y los tiempos de arribo estimados a Quibdó e Istmina.</li>
+                    <li><strong>Simular:</strong> seleccione un escenario y pulse <em>Simular Ruptura Sísmica</em> para visualizar la zona de sacudida y los tiempos estimados de arribo a Quibdó, Istmina, Medellín y Sincelejo.</li>
+                    <li><strong>Propagar / Reiniciar ondas:</strong> use los botones de reproducción para animar el avance en segundos de los frentes de onda P (azul) y S (rojo), pausar o volver al instante t = 0 s.</li>
                     <li><strong>Limpiar:</strong> utilice el botón <em>Limpiar</em> contiguo para retirar la simulación del lienzo.</li>
                 </ul>
             </div>
@@ -4893,6 +4902,60 @@ const modalData = {
                 </p>
             </div>
         </div>
+    `,
+    'export_info': `
+        <div class="sc-modal-header">
+            <div class="sc-modal-icon-badge">${MODAL_ICONS.layers}</div>
+            <div class="sc-modal-title-group">
+                <h2 class="sc-modal-title">Exportación de Datos y Reportes</h2>
+                <span class="sc-modal-subtitle">Descarga abierta de los sismos filtrados y salidas gráficas</span>
+            </div>
+        </div>
+        <p class="sc-modal-lead">
+            Permite llevar fuera de la plataforma exactamente el subconjunto de sismos que tiene activo en pantalla según sus filtros actuales de magnitud, profundidad, año o encuadre visible:
+        </p>
+        <ul class="sc-modal-list">
+            <li><strong>CSV (tabla para Excel):</strong> descarga una hoja de cálculo con fecha, coordenadas, profundidad, magnitud, municipio cercano y fuente del catálogo.</li>
+            <li><strong>GeoJSON (formato SIG abierto):</strong> genera un archivo geográfico listo para abrir en QGIS, ArcGIS o Python, acompañado de metadatos de procedencia y filtros aplicados.</li>
+            <li><strong>Mapa PNG:</strong> guarda una captura fotográfica del lienzo cartográfico visible para informes o presentaciones.</li>
+            <li><strong>Reporte PDF:</strong> abre la vista de impresión con membrete académico de la Universidad de Caldas para guardar o imprimir el estado actual.</li>
+        </ul>
+        <div class="sc-modal-callout sc-modal-callout--info">
+            <div class="sc-modal-callout-icon">${MODAL_ICONS.help}</div>
+            <div class="sc-modal-callout-body">
+                <h4 class="sc-modal-callout-title">Consejo de uso</h4>
+                <p class="sc-modal-callout-text">
+                    Ajuste primero los <em>Filtros Paramétricos</em> o la casilla de encuadre visible antes de exportar; los archivos CSV y GeoJSON solo incluirán los eventos que cumplan esos criterios.
+                </p>
+            </div>
+        </div>
+    `,
+    'normativa_pot_info': `
+        <div class="sc-modal-header">
+            <div class="sc-modal-icon-badge">${MODAL_ICONS.book}</div>
+            <div class="sc-modal-title-group">
+                <h2 class="sc-modal-title">Articulación Normativa e Interoperabilidad</h2>
+                <span class="sc-modal-subtitle">Marco legal orientador, tablero municipal y geoservicios oficiales</span>
+            </div>
+        </div>
+        <p class="sc-modal-lead">
+            Esta sección resume los límites legales de uso de la plataforma en procesos de ordenamiento territorial y brinda acceso a dos salidas complementarias para toma de decisiones:
+        </p>
+        <ul class="sc-modal-list">
+            <li><strong>Decreto 1807/2014 (compilado en Decreto 1077/2015):</strong> aclara que SismoChocó ofrece un insumo técnico orientador y no reemplaza los Estudios Básicos ni Detallados exigidos en POT/PBOT/EOT ni las competencias de CODECHOCÓ.</li>
+            <li><strong>Ley 70/1993 y Convenio 169 OIT:</strong> recuerda que toda restricción de uso del suelo o reasentamiento en consejos comunitarios y resguardos indígenas exige cartografía predial oficial (IGAC/ANT) y consulta previa.</li>
+            <li><strong>Ver Tablero Municipal Simplificado:</strong> despliega una tabla comparativa rápida de los municipios del filtro activo (población, aceleración Aa, conectividad y prioridad) sin salir del panel.</li>
+            <li><strong>Ficha Técnica Territorial (PDF / Imprimir):</strong> genera un resumen ejecutivo descargable con indicadores clave, parámetros NSR-10, fallas cercanas, fenómenos concomitantes y advertencia de alcance de evacuación.</li>
+        </ul>
+        <div class="sc-modal-callout sc-modal-callout--warn">
+            <div class="sc-modal-callout-icon">${MODAL_ICONS.shield}</div>
+            <div class="sc-modal-callout-body">
+                <h4 class="sc-modal-callout-title">Contraste con fuentes oficiales</h4>
+                <p class="sc-modal-callout-text">
+                    Los enlaces inferiores conducen directamente a los portales oficiales del <strong>SGC</strong>, <strong>Colombia en Mapas (IGAC/ANT)</strong> y <strong>SNGRD/UNGRD</strong> para validación normativa vinculante.
+                </p>
+            </div>
+        </div>
     `
 };
 
@@ -4905,6 +4968,7 @@ const INFO_MODAL_ACCENTS = {
     sgc: '#047857',
     pot_info: '#B45309',
     infra_info: '#B45309',
+    normativa_pot_info: '#B45309',
     fallas: '#B45309',
     calor: '#E11D48',
     shakemap_info: '#E11D48',
@@ -4921,6 +4985,7 @@ const INFO_MODAL_PROFILE_CLASSES = {
     sgc: 'modal-ctx-nsr',
     pot_info: 'modal-ctx-pot',
     infra_info: 'modal-ctx-pot',
+    normativa_pot_info: 'modal-ctx-pot',
     fallas: 'modal-ctx-pot',
     calor: 'modal-ctx-danger',
     shakemap_info: 'modal-ctx-danger',
@@ -5650,7 +5715,7 @@ function updateNSR10Metrics() {
     
     if (elLic) {
         const licInfo = classifyLiquefaction(m.licuacion_riesgo, suelo);
-        elLic.innerText = licInfo.uiText;
+        elLic.innerText = licInfo.uiText.replace(/^[^\wÁÉÍÓÚÑ]+/u, '');
         elLic.className = `status-pill ${licInfo.pillClass}`;
     }
 
@@ -5747,7 +5812,12 @@ function updatePOTMetrics() {
     const elSemaforo = document.getElementById('pot-semaforo-badge');
     
     if (elPob) elPob.innerText = (m.poblacion || 0).toLocaleString();
-    if (elCat) elCat.innerText = m.categoria_ley617 || 'Categoría Ley 617';
+    if (elCat) {
+        const fullCat = m.categoria_ley617 || 'Categoría Ley 617';
+        const shortCatMatch = fullCat.match(/Categor[ií]a\s+\d+/i);
+        elCat.innerText = shortCatMatch ? `${shortCatMatch[0]} · Ley 617` : fullCat;
+        elCat.title = fullCat;
+    }
     if (elSismos) elSismos.innerText = `${sismos30km} (${maxMag30km > 0 ? maxMag30km.toFixed(1) + ' M' : 's/d'})`;
     if (elInfraProx) elInfraProx.innerText = `${nearbyInfra.length} nodos/ejes (≤35 km)`;
     if (elAcceso) elAcceso.innerText = m.acceso_principal || 'Consultar cartografía vial';
@@ -6232,7 +6302,7 @@ function animateBenioffViewForMode(mode) {
             transitionDuration: 1600,
             transitionInterpolator: new deck.FlyToInterpolator()
         };
-        if (badge) badge.innerText = '📐 Hipocentros 3D (W → E)';
+        if (badge) badge.innerText = 'Hipocentros 3D (W → E)';
     } else if (mode === 'calor') {
         targetViewState = {
             longitude: targetLng + 0.1,
@@ -6243,7 +6313,7 @@ function animateBenioffViewForMode(mode) {
             transitionDuration: 1600,
             transitionInterpolator: new deck.FlyToInterpolator()
         };
-        if (badge) badge.innerText = '🔥 Concentración Energía 3D';
+        if (badge) badge.innerText = 'Concentración Energía 3D';
     } else if (mode === 'hex') {
         targetViewState = {
             longitude: targetLng + 0.15,
@@ -6254,7 +6324,7 @@ function animateBenioffViewForMode(mode) {
             transitionDuration: 1600,
             transitionInterpolator: new deck.FlyToInterpolator()
         };
-        if (badge) badge.innerText = '📊 Cúmulos Espaciales 3D';
+        if (badge) badge.innerText = 'Cúmulos Espaciales 3D';
     }
 
     if (targetViewState) {
@@ -6677,7 +6747,7 @@ function formatShakemapEpicentroTooltip(d) {
         <div style="font-family:'Inter',system-ui,sans-serif; max-width:320px; line-height:1.4; color:#f8fafc;">
             <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.12); padding-bottom:7px; margin-bottom:8px;">
                 <div style="display:flex; align-items:center; gap:6px;">
-                    <span style="font-size:var(--fs-md);">⚡</span>
+                    <span style="display:inline-block; width:9px; height:9px; border-radius:50%; background:#ff453a; box-shadow:0 0 6px #ff453a;"></span>
                     <strong style="font-size:var(--fs-sm); color:#fff;">Foco Epicentral (${anio})</strong>
                 </div>
                 <span style="background:rgba(255,69,58,0.22); color:#ff6961; border:1px solid #ff453a; border-radius:6px; padding:1px 6px; font-size:var(--fs-2xs); font-weight:700;">
@@ -6776,7 +6846,7 @@ function formatShakemapIsoseistaTooltip(obj) {
         <div style="font-family:'Inter',system-ui,sans-serif; max-width:310px; line-height:1.4; color:#f8fafc;">
             <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.12); padding-bottom:6px; margin-bottom:8px;">
                 <div style="display:flex; align-items:center; gap:6px;">
-                    <span style="font-size:var(--fs-md);">💥</span>
+                    <span style="display:inline-block; width:9px; height:9px; border-radius:50%; border:2px solid #ffd60a;"></span>
                     <strong style="font-size:var(--fs-sm); color:#fff;">ShakeMap: Isoseista</strong>
                 </div>
                 <span style="${getMmiBadgeStyle(safeMmi)}">
@@ -7001,7 +7071,7 @@ async function activateShakemap(scenarioKey) {
     currentShakemapData = scenario;
     waveAnimTimeSec = 0.0;
 
-    if (shakemapText) shakemapText.innerHTML = '🔄 Recalcular Ruptura';
+    if (shakemapText) shakemapText.innerText = 'Recalcular Ruptura';
     if (btnClearShakemap) btnClearShakemap.style.display = 'inline-flex';
     if (btnToggleShakemap) {
         btnToggleShakemap.style.background = '#ff453a';
@@ -7051,7 +7121,7 @@ function deactivateShakemap({ skipRender = false } = {}) {
     currentShakemapData = null;
     waveAnimTimeSec = 0.0;
 
-    if (shakemapText) shakemapText.innerHTML = '⚡ Simular Ruptura Sísmica';
+    if (shakemapText) shakemapText.innerText = 'Simular Ruptura Sísmica';
     if (btnClearShakemap) btnClearShakemap.style.display = 'none';
     if (btnToggleShakemap) {
         btnToggleShakemap.style.background = 'rgba(255,59,48,0.15)';
@@ -7117,7 +7187,7 @@ if (selectShakemap) {
 // ============================================================================
 // SISTEMA GLOBAL DE ATAJOS DE TECLADO NUMÉRICO (0 - 9)
 // ============================================================================
-function showShortcutToast(keyChar, label, icon = '⌨️') {
+function showShortcutToast(keyChar, label, icon = '') {
     let toast = document.getElementById('shortcut-quick-toast');
     if (!toast) {
         toast = document.createElement('div');
@@ -7148,9 +7218,10 @@ function showShortcutToast(keyChar, label, icon = '⌨️') {
         document.body.appendChild(toast);
     }
 
+    const iconMarkup = icon ? `<span style="opacity:0.8; margin-right:4px;">${icon}</span>` : '';
     toast.innerHTML = `
-        <span style="display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:6px; background:#0284c7; color:#fff; font-weight:700; font-family: var(--font-mono); font-size:var(--fs-sm); border:1px solid #38bdf8;">${keyChar}</span>
-        <span style="font-weight:600; color:#E2E8F0;">${icon} ${label}</span>
+        <span style="display:inline-flex; align-items:center; justify-content:center; min-width:22px; height:22px; padding:0 5px; border-radius:6px; background:#0284c7; color:#fff; font-weight:700; font-family: var(--font-mono); font-size:var(--fs-sm); border:1px solid #38bdf8;">${keyChar}</span>
+        <span style="font-weight:600; color:#E2E8F0;">${iconMarkup}${label}</span>
     `;
 
     toast.style.opacity = '1';
@@ -7309,7 +7380,7 @@ function initKeyboardShortcuts() {
             e.preventDefault();
             const isShift = !!e.shiftKey;
             let actionName = '';
-            let iconToast = isShift ? '🔄' : '🧭';
+            const iconToast = '';
 
             if (e.key === 'ArrowUp') {
                 panMapWithArrows(0, 1, isShift);
@@ -7355,7 +7426,7 @@ function initKeyboardShortcuts() {
                     e.preventDefault();
                     triggerProgrammaticClick(btnCol);
                     const collapsed = document.body.classList.contains('panel-collapsed');
-                    showShortcutToast('C', collapsed ? 'Panel Lateral Oculto' : 'Panel Lateral Visible', '▣');
+                    showShortcutToast('C', collapsed ? 'Panel Lateral Oculto' : 'Panel Lateral Visible');
                 }
                 break;
             }
@@ -7365,7 +7436,7 @@ function initKeyboardShortcuts() {
                 const tab1 = document.querySelector('.profile-tab[data-profile="sismologia"]');
                 if (tab1) {
                     triggerProgrammaticClick(tab1);
-                    showShortcutToast('1', 'Perfil: Sismo-Geología', '🌋');
+                    showShortcutToast('1', 'Perfil: Sismo-Geología');
                 }
                 break;
             }
@@ -7375,7 +7446,7 @@ function initKeyboardShortcuts() {
                 const tab2 = document.querySelector('.profile-tab[data-profile="nsr10"]');
                 if (tab2) {
                     triggerProgrammaticClick(tab2);
-                    showShortcutToast('2', 'Perfil: Diseño Estructural', '🏗️');
+                    showShortcutToast('2', 'Perfil: Diseño Estructural');
                 }
                 break;
             }
@@ -7385,7 +7456,7 @@ function initKeyboardShortcuts() {
                 const tab3 = document.querySelector('.profile-tab[data-profile="alcaldia"]');
                 if (tab3) {
                     triggerProgrammaticClick(tab3);
-                    showShortcutToast('3', 'Perfil: Gestión Territorial', '🏛️');
+                    showShortcutToast('3', 'Perfil: Gestión Territorial');
                 }
                 break;
             }
@@ -7395,7 +7466,7 @@ function initKeyboardShortcuts() {
                 const btnPuntos = document.getElementById('btn-puntos');
                 if (btnPuntos) {
                     triggerProgrammaticClick(btnPuntos);
-                    showShortcutToast('4', 'Visualización: Eventos 3D', '⚪');
+                    showShortcutToast('4', 'Visualización: Eventos 3D');
                 }
                 break;
             }
@@ -7405,7 +7476,7 @@ function initKeyboardShortcuts() {
                 const btnCalor = document.getElementById('btn-calor');
                 if (btnCalor) {
                     triggerProgrammaticClick(btnCalor);
-                    showShortcutToast('5', 'Visualización: Mapa de Calor', '🔥');
+                    showShortcutToast('5', 'Visualización: Mapa de Calor');
                 }
                 break;
             }
@@ -7415,7 +7486,7 @@ function initKeyboardShortcuts() {
                 const btnHex = document.getElementById('btn-hex');
                 if (btnHex) {
                     triggerProgrammaticClick(btnHex);
-                    showShortcutToast('6', 'Visualización: Hexbins 3D', '🔷');
+                    showShortcutToast('6', 'Visualización: Hexbins 3D');
                 }
                 break;
             }
@@ -7427,7 +7498,7 @@ function initKeyboardShortcuts() {
                     openAccordionForElement(btnBenioff);
                     triggerProgrammaticClick(btnBenioff);
                     const estado = isBenioffMode ? 'Activado' : 'Desactivado';
-                    showShortcutToast('7', `Corte Benioff 3D: ${estado}`, '▣');
+                    showShortcutToast('7', `Corte Benioff 3D: ${estado}`);
                 }
                 break;
             }
@@ -7440,7 +7511,7 @@ function initKeyboardShortcuts() {
                     checkLive.checked = !checkLive.checked;
                     checkLive.dispatchEvent(new Event('change', { bubbles: true }));
                     const estado = checkLive.checked ? 'Conectado (En Vivo)' : 'Desconectado';
-                    showShortcutToast('8', `Telemetría FDSN: ${estado}`, '●');
+                    showShortcutToast('8', `Telemetría FDSN: ${estado}`);
                 }
                 break;
             }
@@ -7453,7 +7524,7 @@ function initKeyboardShortcuts() {
                     checkFallas.checked = !checkFallas.checked;
                     checkFallas.dispatchEvent(new Event('change', { bubbles: true }));
                     const estado = checkFallas.checked ? 'Visibles' : 'Ocultas';
-                    showShortcutToast('9', `Fallas Geológicas: ${estado}`, '⚡');
+                    showShortcutToast('9', `Fallas Geológicas: ${estado}`);
                 }
                 break;
             }
@@ -7463,7 +7534,7 @@ function initKeyboardShortcuts() {
                 const btnHome = document.getElementById('btn-home');
                 if (btnHome) {
                     triggerProgrammaticClick(btnHome);
-                    showShortcutToast('0', 'Restablecer Todo', '🔄');
+                    showShortcutToast('0', 'Restablecer Todo');
                 }
                 break;
             }
@@ -7476,7 +7547,7 @@ function initKeyboardShortcuts() {
                 e.preventDefault();
                 zoomMapWithKey(0.4);
                 interactionTelemetry.record('keyboard', 'Acercar Zoom (+)', { key: '+' });
-                showShortcutToast('+', 'Acercar Zoom', '🔍');
+                showShortcutToast('+', 'Acercar Zoom');
                 break;
             }
             case '-':
@@ -7484,7 +7555,7 @@ function initKeyboardShortcuts() {
                 e.preventDefault();
                 zoomMapWithKey(-0.4);
                 interactionTelemetry.record('keyboard', 'Alejar Zoom (-)', { key: '-' });
-                showShortcutToast('-', 'Alejar Zoom', '🔎');
+                showShortcutToast('-', 'Alejar Zoom');
                 break;
             }
 

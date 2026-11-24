@@ -503,10 +503,7 @@
                 <div class="accordion-body">
                     <div class="switch-container" style="display: flex; align-items: flex-start; justify-content: space-between;">
                         <label for="check-calidad" style="flex: 1; margin-right: 16px; cursor: pointer;">
-                            <span class="layer-title-row">
-                                <strong>Sismos de Alta Precisión</strong>
-                                <span class="layer-mode-badge layer-mode-badge--offline" title="Disponible 100 % sin conexión a internet">Offline</span>
-                            </span>
+                            <strong style="margin-bottom: 2px;">Sismos de Alta Precisión</strong>
                             Excluye eventos con alta incertidumbre instrumental (GAP &gt; 180° y RMS &gt; 1.0s)
                         </label>
                         <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 8px; flex-shrink: 0;">
@@ -517,10 +514,7 @@
 
                     <div class="switch-container" style="display: flex; align-items: flex-start; justify-content: space-between;" title="Fallas Geológicas (Atajo: 9)">
                         <label for="check-fallas" style="flex: 1; margin-right: 16px; cursor: pointer;">
-                            <span class="layer-title-row">
-                                <strong>Fallas Geológicas</strong>
-                                <span class="layer-mode-badge layer-mode-badge--offline" title="Disponible 100 % sin conexión a internet">Offline</span>
-                            </span>
+                            <strong style="margin-bottom: 2px;">Fallas Geológicas</strong>
                             Trazo referencial con potencial sismogénico Mmax
                         </label>
                         <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 8px; flex-shrink: 0;">
@@ -580,10 +574,7 @@
 
                     <div class="switch-container" style="display: flex; align-items: flex-start; justify-content: space-between;">
                         <label for="check-ml" style="flex: 1; margin-right: 16px; cursor: pointer;">
-                            <span class="layer-title-row">
-                                <strong>Zonas Anómalas (IA)</strong>
-                                <span class="layer-mode-badge layer-mode-badge--offline" title="Disponible 100 % sin conexión (respaldo local precargado)">Offline</span>
-                            </span>
+                            <strong style="margin-bottom: 2px;">Zonas Anómalas (IA)</strong>
                             Clustering espacial (DBSCAN Geodésico, M≥4.0)
                         </label>
                         <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 8px; flex-shrink: 0;">
@@ -989,9 +980,8 @@
                     Superposición de redes viales, corredores fluviales, cabotaje marítimo, muelles, aeródromos y centros de salud sobre trazas de fallas.
                 </p>
                 <label class="switch-container" for="check-infra" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-                    <span class="layer-title-row" style="font-size:var(--fs-xs); color:var(--text-primary); font-weight:600; margin-bottom:0;">
-                        <span>Visualizar Red de Infraestructura Crítica</span>
-                        <span class="layer-mode-badge layer-mode-badge--offline" title="Capa precargada localmente, disponible sin conexión">Offline</span>
+                    <span style="font-size:var(--fs-xs); color:var(--text-primary); font-weight:600;">
+                        Visualizar Red de Infraestructura Crítica
                     </span>
                     <div class="switch"><input type="checkbox" id="check-infra"><span class="slider"></span></div>
                 </label>
@@ -1304,7 +1294,7 @@
     <script src="js/core-oop.js?v=40"></script>
 
     <!-- Lógica principal con versionamiento para evitar caché persistente -->
-    <script src="js/main.js?v=78"></script>
+    <script src="js/main.js?v=79"></script>
 
     <!-- PWA & Limpieza Activa de CacheStorage -->
     <script>
@@ -1335,7 +1325,7 @@
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js?v=78')
+                navigator.serviceWorker.register('sw.js?v=79')
                     .then(reg => {
                         reg.update();
                     })

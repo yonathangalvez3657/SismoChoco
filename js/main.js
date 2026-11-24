@@ -2482,7 +2482,7 @@ function renderLayers(options = {}) {
                 </div>
                 <div class="legend-meta-strip">
                     <span class="legend-epistemic-tag legend-epistemic-tag--model">Modelo exploratorio</span>
-                    <span>Atenuación GMPE · Offline</span>
+                    <span>Atenuación GMPE</span>
                 </div>
             `;
         } else if (viewMode === 'puntos') {
@@ -2497,7 +2497,7 @@ function renderLayers(options = {}) {
                 <div class="legend-note-text">Diámetro proporcional a magnitud (M ≥ ${currentMag.toFixed(1)} · ≤ ${currentMaxDepth} km).</div>
                 <div class="legend-meta-strip">
                     <span class="legend-epistemic-tag">Dato observado</span>
-                    <span class="tabular-num">n = ${visibleCount.toLocaleString()} · SGC Offline</span>
+                    <span class="tabular-num">n = ${visibleCount.toLocaleString()} · Catálogo SGC</span>
                 </div>
             `;
         } else if (viewMode === 'calor') {
@@ -2512,7 +2512,7 @@ function renderLayers(options = {}) {
                     </div>
                     <div class="legend-meta-strip">
                         <span class="legend-epistemic-tag">Dato observado</span>
-                        <span class="tabular-num">n = ${visibleCount.toLocaleString()} · Offline</span>
+                        <span class="tabular-num">n = ${visibleCount.toLocaleString()} · Catálogo SGC</span>
                     </div>
                 `;
             } else {
@@ -2527,7 +2527,7 @@ function renderLayers(options = {}) {
                     <div class="legend-note-text">Kernel ponderado por magnitud sobre eventos filtrados (${currentTime}–2026).</div>
                     <div class="legend-meta-strip">
                         <span class="legend-epistemic-tag">Densidad observada</span>
-                        <span class="tabular-num">n = ${visibleCount.toLocaleString()} · Offline</span>
+                        <span class="tabular-num">n = ${visibleCount.toLocaleString()} · Catálogo SGC</span>
                     </div>
                 `;
             }
@@ -2543,7 +2543,7 @@ function renderLayers(options = {}) {
                     </div>
                     <div class="legend-meta-strip">
                         <span class="legend-epistemic-tag">Agregación observada</span>
-                        <span class="tabular-num">n = ${visibleCount.toLocaleString()} · Offline</span>
+                        <span class="tabular-num">n = ${visibleCount.toLocaleString()} · Catálogo SGC</span>
                     </div>
                 `;
             } else {
@@ -2558,7 +2558,7 @@ function renderLayers(options = {}) {
                     <div class="legend-note-text">Altura y color indican recurrencia acumulada por celda hexagonal.</div>
                     <div class="legend-meta-strip">
                         <span class="legend-epistemic-tag">Agregación observada</span>
-                        <span class="tabular-num">n = ${visibleCount.toLocaleString()} · Offline</span>
+                        <span class="tabular-num">n = ${visibleCount.toLocaleString()} · Catálogo SGC</span>
                     </div>
                 `;
             }
@@ -2618,7 +2618,7 @@ function renderLayers(options = {}) {
                     </div>
                 </div>
                 <div class="legend-meta-strip">
-                    <span class="legend-epistemic-tag">Capa referencial · Offline</span>
+                    <span class="legend-epistemic-tag">Capa referencial</span>
                     <span>REPS · DIMAR · INVIAS</span>
                 </div>
             `;
@@ -2656,7 +2656,7 @@ function renderLayers(options = {}) {
         if (showInfra && (viewMode !== 'none' || showSgcWms || (isSimulatorActive && currentShakemapData))) {
             legend.innerHTML += `
                 <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--border-subtle);">
-                    <div style="font-size: var(--fs-2xs); font-weight: 700; text-transform: uppercase; color: var(--accent-ui); margin-bottom: 5px;">Líneas Vitales (Offline)</div>
+                    <div style="font-size: var(--fs-2xs); font-weight: 700; text-transform: uppercase; color: var(--accent-ui); margin-bottom: 5px;">Líneas Vitales</div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; font-size: var(--fs-2xs); color: var(--text-secondary);">
                         <div style="display:flex; align-items:center; gap:5px;"><span style="width:12px; height:3px; background:${INFRA_COLORS.vial.hex}; display:inline-block; border-radius:1px;"></span> Vías</div>
                         <div style="display:flex; align-items:center; gap:5px;"><span style="width:12px; height:4px; background:${INFRA_COLORS.fluvial.hex}; display:inline-block; border-radius:1px;"></span> Fluvial</div>
@@ -5948,7 +5948,7 @@ function openFichaPOTModal() {
 
         <div class="sc-pot-provenance-footer">
             <span><strong>Fuentes:</strong> Catálogo SGC (1993–2026) · NSR-10 · REPS · DIMAR · INVIAS</span>
-            <span>Generado: ${fechaGeneracion} · SismoChocó RtD (Offline-first)</span>
+            <span>Generado: ${fechaGeneracion} · SismoChocó RtD</span>
         </div>
     `;
 

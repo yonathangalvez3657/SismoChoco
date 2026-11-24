@@ -57,11 +57,16 @@ def sync_catalogo_live(start_date_str=None):
     existing_features = geojson_data.get('features', [])
     
     if not start_date_str:
-        # Detectar la fecha más reciente
+        # Detectar la fecha más reciente y retroceder 3 días de margen de seguridad
+        # (cubre diferencias UTC vs UTC-5 y publicaciones tardías de USGS/EMSC; la deduplicación evita duplicados)
         fechas = [f['properties']['fecha'] for f in existing_features if 'fecha' in f.get('properties', {})]
         if fechas:
             latest = max(fechas)[:10] # YYYY-MM-DD
-            start_date_str = latest
+            try:
+                latest_dt = datetime.strptime(latest, '%Y-%m-%d')
+                start_date_str = (latest_dt - timedelta(days=3)).strftime('%Y-%m-%d')
+            except ValueError:
+                start_date_str = latest
         else:
             start_date_str = '2026-03-18'
 

@@ -2,6 +2,7 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Header, HTTPExcepti
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import JSONResponse
 import json
 import os
 import secrets
@@ -94,10 +95,9 @@ def healthcheck():
     }
 
 @app.on_event("startup")
-def startup_event():
-    load_data_from_supabase()
-    # Iniciar tarea en segundo plano para sincronizar automáticamente el catálogo todos los días a las 00:00 (UTC-5)
-    import asyncio
+async def startup_event():
+    await asyncio.to_thread(load_data_from_supabase)
+    # Iniciar tarea en segundo plano sobre el event loop activo para sincronizar el catálogo todos los días a las 00:00 (UTC-5)
     asyncio.create_task(daily_sync_scheduler())
 
 async def daily_sync_scheduler():
@@ -308,10 +308,11 @@ def _build_live_feature(
 
 
 def fetch_real_sgc_telemetry(limit: int = 30, days_window: int = 14) -> list:
-    """Consulta en vivo sin caché las APIs FDSN de EMSC y USGS en la ventana temporal reciente."""
+    """Consulta en paralelo y sin caché las APIs FDSN de EMSC y USGS en la ventana temporal reciente."""
+    from concurrent.futures import ThreadPoolExecutor
+
     lat_min, lat_max = 3.0, 8.8
     lon_min, lon_max = -78.5, -74.5
-    features = []
     now_utc = datetime.now(timezone.utc)
     start_iso = (now_utc - timedelta(days=days_window)).strftime("%Y-%m-%dT%H:%M:%S")
 
@@ -324,70 +325,81 @@ def fetch_real_sgc_telemetry(limit: int = 30, days_window: int = 14) -> list:
         except Exception:
             municipios = []
 
-    # 1. Consulta EMSC FDSN acotada a ventana temporal
-    try:
-        url_emsc = (
-            "https://www.seismicportal.eu/fdsnws/event/1/query?format=json"
-            f"&starttime={start_iso}&minlat={lat_min}&maxlat={lat_max}"
-            f"&minlon={lon_min}&maxlon={lon_max}&limit={limit}"
-        )
-        resp = requests.get(url_emsc, timeout=6)
-        if resp.status_code == 200:
-            for item in resp.json().get("features", []):
-                p = item.get("properties", {})
-                c = item.get("geometry", {}).get("coordinates", [0, 0, 0])
-                dt_utc = datetime.strptime(p.get("time", "")[:19], "%Y-%m-%dT%H:%M:%S").replace(tzinfo=timezone.utc)
-                lon, lat = float(c[0]), float(c[1])
-                raw_depth = p.get("depth")
-                depth = float(raw_depth if raw_depth is not None else 10.0)
-                mun_name = find_nearest_municipio(lat, lon, municipios) if municipios else p.get("flynn_region", "Chocó")
-                features.append(_build_live_feature(
-                    event_id=p.get("unid", item.get("id")),
-                    dt_utc=dt_utc,
-                    now_utc=now_utc,
-                    lon=lon,
-                    lat=lat,
-                    depth=depth,
-                    mag=p.get("mag") or 0.0,
-                    municipio=f"{mun_name} · EMSC FDSN",
-                    fuente="EMSC FDSN Real-Time (European-Mediterranean Seismological Centre)",
-                    rms=p.get("rms") or 0.0,
-                    gap=p.get("gap") or 0.0,
-                ))
-    except Exception as e:
-        print(f"Aviso telemetría EMSC: {e}")
+    def _fetch_emsc() -> list:
+        out = []
+        try:
+            url_emsc = (
+                "https://www.seismicportal.eu/fdsnws/event/1/query?format=json"
+                f"&starttime={start_iso}&minlat={lat_min}&maxlat={lat_max}"
+                f"&minlon={lon_min}&maxlon={lon_max}&limit={limit}"
+            )
+            resp = requests.get(url_emsc, timeout=6)
+            if resp.status_code == 200:
+                for item in resp.json().get("features", []):
+                    p = item.get("properties", {})
+                    c = item.get("geometry", {}).get("coordinates", [0, 0, 0])
+                    dt_utc = datetime.strptime(p.get("time", "")[:19], "%Y-%m-%dT%H:%M:%S").replace(tzinfo=timezone.utc)
+                    lon, lat = float(c[0]), float(c[1])
+                    raw_depth = p.get("depth")
+                    depth = float(raw_depth if raw_depth is not None else 10.0)
+                    mun_name = find_nearest_municipio(lat, lon, municipios) if municipios else p.get("flynn_region", "Chocó")
+                    out.append(_build_live_feature(
+                        event_id=p.get("unid", item.get("id")),
+                        dt_utc=dt_utc,
+                        now_utc=now_utc,
+                        lon=lon,
+                        lat=lat,
+                        depth=depth,
+                        mag=p.get("mag") or 0.0,
+                        municipio=f"{mun_name} · EMSC FDSN",
+                        fuente="EMSC FDSN Real-Time (European-Mediterranean Seismological Centre)",
+                        rms=p.get("rms") or 0.0,
+                        gap=p.get("gap") or 0.0,
+                    ))
+        except Exception as e:
+            print(f"Aviso telemetría EMSC: {e}")
+        return out
 
-    # 2. Consulta paralela USGS FDSN acotada a la misma ventana temporal
-    try:
-        url_usgs = (
-            "https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson"
-            f"&starttime={start_iso}&minlatitude={lat_min}&maxlatitude={lat_max}"
-            f"&minlongitude={lon_min}&maxlongitude={lon_max}&limit={limit}"
-        )
-        resp = requests.get(url_usgs, timeout=6)
-        if resp.status_code == 200:
-            for item in resp.json().get("features", []):
-                p = item.get("properties", {})
-                c = item.get("geometry", {}).get("coordinates", [0, 0, 0])
-                dt_utc = datetime.fromtimestamp(p.get("time", 0) / 1000.0, tz=timezone.utc)
-                lon, lat = float(c[0]), float(c[1])
-                depth = float(c[2] if c[2] is not None else 10.0)
-                mun_name = find_nearest_municipio(lat, lon, municipios) if municipios else p.get("place", "Chocó")
-                features.append(_build_live_feature(
-                    event_id=item.get("id"),
-                    dt_utc=dt_utc,
-                    now_utc=now_utc,
-                    lon=lon,
-                    lat=lat,
-                    depth=depth,
-                    mag=p.get("mag") or 0.0,
-                    municipio=f"{mun_name} · USGS FDSN",
-                    fuente="USGS FDSN Real-Time (U.S. Geological Survey)",
-                    rms=p.get("rms") or 0.0,
-                    gap=p.get("gap") or 0.0,
-                ))
-    except Exception as e:
-        print(f"Aviso telemetría USGS: {e}")
+    def _fetch_usgs() -> list:
+        out = []
+        try:
+            url_usgs = (
+                "https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson"
+                f"&starttime={start_iso}&minlatitude={lat_min}&maxlatitude={lat_max}"
+                f"&minlongitude={lon_min}&maxlongitude={lon_max}&limit={limit}"
+            )
+            resp = requests.get(url_usgs, timeout=6)
+            if resp.status_code == 200:
+                for item in resp.json().get("features", []):
+                    p = item.get("properties", {})
+                    c = item.get("geometry", {}).get("coordinates", [0, 0, 0])
+                    dt_utc = datetime.fromtimestamp(p.get("time", 0) / 1000.0, tz=timezone.utc)
+                    lon, lat = float(c[0]), float(c[1])
+                    depth = float(c[2] if c[2] is not None else 10.0)
+                    mun_name = find_nearest_municipio(lat, lon, municipios) if municipios else p.get("place", "Chocó")
+                    out.append(_build_live_feature(
+                        event_id=item.get("id"),
+                        dt_utc=dt_utc,
+                        now_utc=now_utc,
+                        lon=lon,
+                        lat=lat,
+                        depth=depth,
+                        mag=p.get("mag") or 0.0,
+                        municipio=f"{mun_name} · USGS FDSN",
+                        fuente="USGS FDSN Real-Time (U.S. Geological Survey)",
+                        rms=p.get("rms") or 0.0,
+                        gap=p.get("gap") or 0.0,
+                    ))
+        except Exception as e:
+            print(f"Aviso telemetría USGS: {e}")
+        return out
+
+    features = []
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        fut_emsc = pool.submit(_fetch_emsc)
+        fut_usgs = pool.submit(_fetch_usgs)
+        features.extend(fut_emsc.result())
+        features.extend(fut_usgs.result())
 
     seen = set()
     dedup = []
@@ -411,7 +423,7 @@ def get_live_sgc():
     now_col = datetime.now(COLOMBIA_TZ)
     eventos_24h = sum(1 for f in real_events if f.get("properties", {}).get("esHoy"))
     ultimo_fecha = real_events[0]["properties"]["fecha"] if real_events else None
-    return {
+    payload = {
         "type": "FeatureCollection",
         "features": real_events,
         "ventana_dias": days_window,
@@ -424,6 +436,10 @@ def get_live_sgc():
             "el SGC no expone feed público FDSN de eventos (404)."
         ),
     }
+    return JSONResponse(
+        content=payload,
+        headers={"Cache-Control": "no-store, no-cache, must-revalidate", "Pragma": "no-cache"},
+    )
 
 @app.websocket("/ws/live_sgc")
 async def websocket_live_sgc(websocket: WebSocket):

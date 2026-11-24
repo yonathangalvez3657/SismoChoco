@@ -3259,12 +3259,13 @@ async function loadRealSgcHttp() {
     }
 
     try {
-        // 1. Intento primario: Endpoint de telemetría en vivo sin caché (EMSC + USGS, ventana móvil 14d)
-        const resp = await fetchWithTimeout(ENDPOINTS.SGC_API, 6000, { cache: 'no-store' });
+        // 1. Intento primario: Endpoint de telemetría en vivo sin caché (EMSC + USGS en paralelo, ventana móvil 14d)
+        const resp = await fetchWithTimeout(ENDPOINTS.SGC_API, 10000, { cache: 'no-store' });
         if (resp.ok) {
             const data = await resp.json();
             const feats = Array.isArray(data.features) ? data.features : [];
             sgcData.features = feats;
+            checkIncomingEventsForAlert(feats);
             const eventos24h = (typeof data.eventos_24h === 'number')
                 ? data.eventos_24h
                 : feats.filter(f => f.properties && f.properties.esHoy).length;
@@ -4628,7 +4629,7 @@ const modalData = {
                 <h4 class="sc-modal-callout-title">Lectura interactiva del servicio WMS</h4>
                 <ul class="sc-modal-list">
                     <li><strong>Paso del cursor:</strong> estima la banda de amenaza correspondiente al color del píxel consultado.</li>
-                    <li><strong>Clic en el mapa o "Consultar cabecera":</strong> recupera el valor puntual oficial emitido por el servidor del SGC.</li>
+                    <li><strong>Selección de municipio o clic en el mapa:</strong> recupera automáticamente los valores puntuales oficiales (PGA, Sa(0.2s) y Sa(1.0s)) emitidos por el servidor del SGC.</li>
                 </ul>
             </div>
         </div>

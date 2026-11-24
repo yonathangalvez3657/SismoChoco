@@ -55,7 +55,7 @@
     <script src="lib/chart.js"></script>
     
     <!-- Estilos Bento Box -->
-    <link rel="stylesheet" href="css/styles.css?v=51">
+    <link rel="stylesheet" href="css/styles.css?v=52">
 
     <!-- Datos Estructurados Schema.org JSON-LD para Google Search & Google Dataset Search -->
     <script type="application/ld+json">
@@ -604,27 +604,6 @@
                         </div>
                         <input type="range" id="slider-alert-threshold" min="3.0" max="6.5" step="0.1" value="4.0" style="width:100%; height:4px; accent-color:#10b981; cursor:pointer;" title="Ajustar magnitud mínima para despliegue de banner flotante">
                     </div>
-
-                    <div class="switch-container" style="display: flex; align-items: flex-start; justify-content: space-between;">
-                        <label for="check-sgc-wms" style="flex: 1; margin-right: 16px; cursor: pointer;">
-                            <strong style="margin-bottom: 2px;">Modelo SGC Oficial (OGC)</strong>
-                            Capa raster PGA Tr=475a + consulta puntual (SGC 2020)
-                        </label>
-                        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 8px; flex-shrink: 0;">
-                            <button type="button" class="info-btn" data-info="sgc_wms" aria-label="Instrucciones: Servicio OGC SGC" title="Instrucciones de uso: Capa Oficial SGC (PGA Tr=475 años)">?</button>
-                            <label class="switch" aria-label="Activar Modelo SGC Oficial"><input type="checkbox" id="check-sgc-wms"><span class="slider"></span></label>
-                        </div>
-                    </div>
-
-                    <div id="sgc-wms-query-box" class="subpanel-box subpanel-box--info" style="display:none;">
-                        <div style="display:flex; justify-content:space-between; align-items:center; gap:6px;">
-                            <span style="font-size:var(--fs-xs); font-weight:600; color:var(--accent-ui);">Consulta OGC SGC (Tr=475a)</span>
-                            <button type="button" id="btn-sgc-query-municipio" class="compact-action-btn">Consultar cabecera</button>
-                        </div>
-                        <div id="sgc-wms-identify-result" style="font-size:var(--fs-xs); color:var(--text-secondary); line-height:1.4;">
-                            Haga clic sobre cualquier punto del mapa o pulse <em>Consultar cabecera</em> para leer PGA, Sa(0.2s) y Sa(1.0s) desde el servidor oficial del SGC.
-                        </div>
-                    </div>
                 </div>
             </details>
 
@@ -895,6 +874,30 @@
                     <p style="font-size:var(--fs-xs); color:var(--text-tertiary); margin:8px 0 0 0;">
                         Nota técnica NSR-10 Título H: Indicador cualitativo preliminar por tipo de depósito. La evaluación cuantitativa de potencial de licuación (CSR/CRR) requiere sondeos SPT o ensayos CPTU en sitio.
                     </p>
+                </div>
+            </section>
+
+            <!-- Contraste Oficial SGC (OGC WMS) vinculado al municipio de Diseño Estructural -->
+            <section class="control-group">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <h3>Modelo SGC Oficial (OGC)</h3>
+                    <button type="button" class="info-btn" data-info="sgc_wms" aria-label="Instrucciones: Servicio OGC SGC" title="Instrucciones de uso: Capa Oficial SGC (PGA Tr=475 años)">?</button>
+                </div>
+                <div class="switch-container" style="display: flex; align-items: center; justify-content: space-between; border-bottom: none; padding-bottom: 0;">
+                    <label for="check-sgc-wms" style="flex: 1; margin-right: 12px; cursor: pointer;">
+                        <strong style="margin-bottom: 2px;">Capa Raster PGA Tr=475a (SGC 2020)</strong>
+                        Contraste oficial en roca firme + consulta puntual de cabecera
+                    </label>
+                    <label class="switch" aria-label="Activar Modelo SGC Oficial"><input type="checkbox" id="check-sgc-wms"><span class="slider"></span></label>
+                </div>
+                <div id="sgc-wms-query-box" class="subpanel-box subpanel-box--ok" style="display:none; margin-top: 10px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; gap:6px;">
+                        <span style="font-size:var(--fs-xs); font-weight:600; color:var(--accent-ui);">Consulta OGC SGC (Tr=475a)</span>
+                        <button type="button" id="btn-sgc-query-municipio" class="compact-action-btn">Consultar cabecera</button>
+                    </div>
+                    <div id="sgc-wms-identify-result" style="font-size:var(--fs-xs); color:var(--text-secondary); line-height:1.4;">
+                        Haga clic sobre cualquier punto del mapa o pulse <em>Consultar cabecera</em> para leer PGA, Sa(0.2s) y Sa(1.0s) desde el servidor oficial del SGC.
+                    </div>
                 </div>
             </section>
         </div>
@@ -1290,7 +1293,7 @@
     <script src="js/core-oop.js?v=40"></script>
 
     <!-- Lógica principal con versionamiento para evitar caché persistente -->
-    <script src="js/main.js?v=80"></script>
+    <script src="js/main.js?v=83"></script>
 
     <!-- PWA & Limpieza Activa de CacheStorage -->
     <script>
@@ -1321,7 +1324,7 @@
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js?v=80')
+                navigator.serviceWorker.register('sw.js?v=83')
                     .then(reg => {
                         reg.update();
                     })

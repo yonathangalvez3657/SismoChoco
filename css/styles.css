@@ -123,14 +123,14 @@ body.theme-light #tooltip h4 {
 body.theme-light #ui-panel footer a,
 body.theme-light #info-modal-content a,
 body.theme-light #map-legend a,
-body.theme-light #btn-sgc-query-municipio:not(:hover),
 body.theme-light #btn-clear-cache-banner,
 body.theme-light #btn-clear-cache-mobile-modal,
 body.theme-light #btn-clear-cache-mobile {
     color: #0052CC !important;
 }
 
-body.theme-light #btn-nsr-locate:not(:hover) {
+body.theme-light #btn-nsr-locate:not(:hover),
+body.theme-light #btn-sgc-query-municipio:not(:hover) {
     color: #047857 !important;
     border-color: rgba(4, 120, 87, 0.42) !important;
     background: rgba(4, 120, 87, 0.1) !important;
@@ -1337,7 +1337,6 @@ body.theme-light #modal-ficha-pot .ficha-pot-kicker {
 /* Hover y estado contextual por perfil (Opción B WCAG AA) */
 #btn-benioff:hover,
 #btn-benioff.active,
-#btn-sgc-query-municipio:hover,
 #btn-reset-vis:hover,
 #btn-reset-vis:focus-visible,
 #btn-reset:hover,
@@ -1356,12 +1355,14 @@ body.theme-light #modal-ficha-pot .ficha-pot-kicker {
     border-color: #DC2626 !important;
 }
 
-#btn-nsr-locate {
+#btn-nsr-locate,
+#btn-sgc-query-municipio {
     border-color: rgba(52, 211, 153, 0.42);
     background: rgba(4, 120, 87, 0.18);
     color: #34D399;
 }
 #btn-nsr-locate:hover,
+#btn-sgc-query-municipio:hover,
 #btn-export-espectro-csv:hover {
     background: #047857 !important;
     color: #FFFFFF !important;
@@ -1740,6 +1741,8 @@ body.theme-light #modal-ficha-pot .ficha-pot-kicker {
 .info-btn[data-info="nsr10_info"]:hover,
 .info-btn[data-info="espectro_info"]:hover,
 .info-btn[data-info="geotecnia_info"]:hover { background: #065F46 !important; box-shadow: 0 3px 8px rgba(4, 120, 87, 0.5) !important; }
+.info-btn[data-info="sgc_wms"] { background: #047857 !important; box-shadow: 0 2px 6px rgba(4, 120, 87, 0.35) !important; }
+.info-btn[data-info="sgc_wms"]:hover { background: #065F46 !important; box-shadow: 0 3px 8px rgba(4, 120, 87, 0.5) !important; }
 
 .info-btn[data-info="pot_info"],
 .info-btn[data-info="infra_info"] { background: #B45309 !important; box-shadow: 0 2px 6px rgba(180, 83, 9, 0.35) !important; }

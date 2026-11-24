@@ -734,7 +734,7 @@ function pinInspectorFromPick(info) {
 function updateCapasActiveBadge() {
     const badge = document.getElementById('capas-active-count');
     if (!badge) return;
-    const count = [highQualityOnly, showFaults, showML, showLiveSGC, showSgcWms].filter(Boolean).length;
+    const count = [highQualityOnly, showFaults, showML, showLiveSGC].filter(Boolean).length;
     badge.innerText = count === 1 ? '1 activa' : `${count} activas`;
     badge.classList.toggle('has-active', count > 0);
 }
@@ -3563,13 +3563,29 @@ document.getElementById('check-live-sgc').addEventListener('change', e => {
         renderLayers();
     }
 });
+let _lastAutoSgcMunicipioKey = null;
+
+function triggerAutoSgcMunicipioQuery(m, force = false) {
+    if (!showSgcWms || !m || m.lng === undefined || m.lat === undefined) return;
+    const key = `${m.nombre || ''}|${m.lat}|${m.lng}`;
+    if (!force && key === _lastAutoSgcMunicipioKey) return;
+    _lastAutoSgcMunicipioKey = key;
+    querySgcOfficialPoint(m.lng, m.lat, `${m.nombre} (${m.departamento})`);
+}
+
 const checkSgcWms = document.getElementById('check-sgc-wms');
 if (checkSgcWms) {
     checkSgcWms.addEventListener('change', e => {
         showSgcWms = e.target.checked;
         const sgcQueryBox = document.getElementById('sgc-wms-query-box');
         if (sgcQueryBox) sgcQueryBox.style.display = showSgcWms ? 'flex' : 'none';
-        if (!showSgcWms) hideSgcRasterTooltipIfActive();
+        if (!showSgcWms) {
+            _lastAutoSgcMunicipioKey = null;
+            hideSgcRasterTooltipIfActive();
+        } else {
+            const m = selectedNsrMunicipio || selectedPotMunicipio || (municipiosData && municipiosData[0]);
+            triggerAutoSgcMunicipioQuery(m, true);
+        }
         renderLayers();
     });
 }
@@ -3577,9 +3593,7 @@ const btnSgcQueryMunicipio = document.getElementById('btn-sgc-query-municipio');
 if (btnSgcQueryMunicipio) {
     btnSgcQueryMunicipio.addEventListener('click', () => {
         const m = selectedNsrMunicipio || selectedPotMunicipio || (municipiosData && municipiosData[0]);
-        if (m && m.lng !== undefined && m.lat !== undefined) {
-            querySgcOfficialPoint(m.lng, m.lat, `${m.nombre} (${m.departamento})`);
-        }
+        triggerAutoSgcMunicipioQuery(m, true);
     });
 }
 document.getElementById('check-ml').addEventListener('change', async e => {
@@ -4244,7 +4258,6 @@ const modalData = {
             <li><strong>Fallas Geológicas:</strong> traza las 11 principales estructuras tectónicas con su potencial sismogénico (Mmax) y franja de retiro referencial.</li>
             <li><strong>Zonas Anómalas (IA DBSCAN):</strong> identifica agrupamientos densos de eventos cercanos (enjambres o secuencias de réplicas).</li>
             <li><strong>Telemetría FDSN Live:</strong> consulta sismos recientes (M ≥ 3.5 en los últimos 14 días) reportados por redes internacionales.</li>
-            <li><strong>Modelo SGC Oficial (OGC):</strong> superpone el mapa oficial de amenaza sísmica del Servicio Geológico Colombiano con lectura interactiva por color y consulta puntual.</li>
         </ul>
         <div class="sc-modal-callout sc-modal-callout--warn">
             <div class="sc-modal-callout-icon">${MODAL_ICONS.reset}</div>
@@ -4464,10 +4477,12 @@ const modalData = {
         <div class="sc-modal-callout sc-modal-callout--warn">
             <div class="sc-modal-callout-icon">${MODAL_ICONS.reset}</div>
             <div class="sc-modal-callout-body">
-                <h4 class="sc-modal-callout-title">Filtrado interactivo (Brushing &amp; Linking)</h4>
-                <p class="sc-modal-callout-text">
-                    Al hacer clic sobre cualquier punto de la curva, el mapa se filtra automáticamente a partir de esa magnitud. Para volver al rango completo, pulse el botón de restablecer en <em>Filtros Paramétricos</em>.
-                </p>
+                <h4 class="sc-modal-callout-title">Interacción bidireccional (Brushing &amp; Linking)</h4>
+                <ul class="sc-modal-list">
+                    <li><strong>Desde la curva hacia el mapa:</strong> al hacer clic sobre cualquier punto de la línea, el mapa se filtra automáticamente a partir de esa magnitud.</li>
+                    <li><strong>Casilla «Vincular gráfica y conteo al encuadre visible del mapa»:</strong> al activarla, restringe la muestra a los sismos visibles en el encuadre actual y recalcula en tiempo real el conteo, la curva, el parámetro <em>b</em> y los periodos de retorno al acercar o desplazar el mapa.</li>
+                    <li><strong>Restablecer:</strong> desmarque la casilla (o cierre el chip <em>Encuadre visible</em>) y use el botón de restablecer en <em>Filtros Paramétricos</em> para volver al catálogo completo.</li>
+                </ul>
             </div>
         </div>
     `,
@@ -4884,6 +4899,7 @@ const INFO_MODAL_ACCENTS = {
     nsr10_info: '#047857',
     espectro_info: '#047857',
     geotecnia_info: '#047857',
+    sgc_wms: '#047857',
     hex: '#047857',
     sgc: '#047857',
     pot_info: '#B45309',
@@ -4899,6 +4915,7 @@ const INFO_MODAL_PROFILE_CLASSES = {
     nsr10_info: 'modal-ctx-nsr',
     espectro_info: 'modal-ctx-nsr',
     geotecnia_info: 'modal-ctx-nsr',
+    sgc_wms: 'modal-ctx-nsr',
     hex: 'modal-ctx-nsr',
     sgc: 'modal-ctx-nsr',
     pot_info: 'modal-ctx-pot',
@@ -5517,6 +5534,7 @@ function updateNSR10Metrics() {
     const idx = parseInt(sel.value) || 0;
     const m = municipiosData[idx] || municipiosData[0];
     selectedNsrMunicipio = m;
+    triggerAutoSgcMunicipioQuery(m);
     
     const suelo = sueloSel ? sueloSel.value : (m.suelo_defecto || 'E');
     const I = usoSel ? parseFloat(usoSel.value) : 1.0;

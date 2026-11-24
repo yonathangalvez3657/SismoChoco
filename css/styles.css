@@ -1079,7 +1079,8 @@ body.theme-light #panel-alcaldia {
     --modal-accent-bg: rgba(16, 185, 129, 0.14);
     --modal-accent-border: rgba(16, 185, 129, 0.34);
 }
-#info-modal.modal-ctx-pot {
+#info-modal.modal-ctx-pot,
+#modal-ficha-pot.modal-ctx-pot {
     --modal-accent: #FBBF24;
     --modal-accent-strong: #B45309;
     --modal-accent-bg: rgba(245, 158, 11, 0.14);
@@ -1110,7 +1111,8 @@ body.theme-light #info-modal.modal-ctx-nsr {
     --modal-accent-bg: rgba(4, 120, 87, 0.10);
     --modal-accent-border: rgba(4, 120, 87, 0.28);
 }
-body.theme-light #info-modal.modal-ctx-pot {
+body.theme-light #info-modal.modal-ctx-pot,
+body.theme-light #modal-ficha-pot.modal-ctx-pot {
     --modal-accent: #B45309;
     --modal-accent-strong: #B45309;
     --modal-accent-bg: rgba(180, 83, 9, 0.10);
@@ -1615,14 +1617,42 @@ body.theme-light #modal-ficha-pot .ficha-pot-kicker {
         color: #0F172A !important;
     }
     body.printing-ficha .ficha-pot-container > div,
-    body.printing-ficha #ficha-pot-body > div {
+    body.printing-ficha #ficha-pot-body > div,
+    body.printing-ficha .sc-pot-card,
+    body.printing-ficha .sc-pot-kpi-card,
+    body.printing-ficha .sc-pot-warning-box {
         background: #F8FAFC !important;
-        border-color: #CBD5E1 !important;
+        border: 1px solid #CBD5E1 !important;
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+
+    body.printing-ficha .sc-pot-kpi-grid {
+        display: grid !important;
+        grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+        gap: 8px !important;
+        background: transparent !important;
+        border: none !important;
+    }
+
+    body.printing-ficha .sc-pot-warning-box {
+        background: #FFFBEB !important;
+        border: 1px solid #D97706 !important;
+        border-left: 4px solid #B45309 !important;
+    }
+
+    body.printing-ficha .sc-pot-provenance-footer {
+        background: transparent !important;
+        border-top: 1px solid #94A3B8 !important;
+        border-left: none !important;
+        border-right: none !important;
+        border-bottom: none !important;
+        color: #334155 !important;
     }
 
     body.printing-ficha .ficha-pot-table th {
-        background: #EFF6FF !important;
-        color: #0052CC !important;
+        background: #FEF3C7 !important;
+        color: #92400E !important;
         border: 1px solid #94A3B8 !important;
     }
     body.printing-ficha .ficha-pot-table td {
@@ -3496,5 +3526,231 @@ body.theme-light .sc-pot-card--info {
     .sc-modal-icon-badge--rotate svg {
         transition: none !important;
         animation: none !important;
+    }
+}
+
+/* ==========================================================================
+   ITERACIÓN RtD — TRAZABILIDAD OFFLINE/ONLINE, LEYENDAS CUANTITATIVAS Y ALCANCE POT
+   ========================================================================== */
+
+.layer-title-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 2px;
+}
+
+.layer-mode-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 1px 6px;
+    border-radius: 999px;
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    line-height: 1.35;
+}
+
+.layer-mode-badge--offline {
+    background: rgba(16, 185, 129, 0.14);
+    border: 1px solid rgba(16, 185, 129, 0.34);
+    color: #6EE7B7;
+}
+
+.layer-mode-badge--online {
+    background: rgba(56, 189, 248, 0.14);
+    border: 1px solid rgba(56, 189, 248, 0.36);
+    color: #7DD3FC;
+}
+
+body.theme-light .layer-mode-badge--offline {
+    background: rgba(4, 120, 87, 0.10);
+    border-color: rgba(4, 120, 87, 0.30);
+    color: #065F46;
+}
+
+body.theme-light .layer-mode-badge--online {
+    background: rgba(0, 82, 204, 0.10);
+    border-color: rgba(0, 82, 204, 0.30);
+    color: #0052CC;
+}
+
+/* Metadatos cuantitativos y epistemológicos en #map-legend */
+.legend-meta-strip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+    padding-top: 7px;
+    border-top: 1px solid var(--border-subtle);
+    font-size: var(--fs-2xs);
+    color: var(--text-tertiary);
+}
+
+.legend-epistemic-tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 1px 6px;
+    border-radius: 6px;
+    font-size: 0.68rem;
+    font-weight: 600;
+    background: rgba(56, 189, 248, 0.14);
+    border: 1px solid rgba(56, 189, 248, 0.32);
+    color: #7DD3FC;
+}
+
+.legend-epistemic-tag--model {
+    background: rgba(245, 158, 11, 0.14);
+    border-color: rgba(245, 158, 11, 0.36);
+    color: #FCD34D;
+}
+
+body.theme-light .legend-epistemic-tag {
+    background: rgba(0, 82, 204, 0.10);
+    border-color: rgba(0, 82, 204, 0.28);
+    color: #0052CC !important;
+}
+
+body.theme-light .legend-epistemic-tag--model {
+    background: rgba(180, 83, 9, 0.10);
+    border-color: rgba(180, 83, 9, 0.30);
+    color: #92400E !important;
+}
+
+.legend-note-text {
+    margin-top: 5px;
+    font-size: 0.72rem;
+    line-height: 1.38;
+    color: var(--text-tertiary);
+    max-width: 265px;
+}
+
+/* Indicador costero y aviso explícito de conectividad/evacuación en POT */
+.pot-coastal-strip {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.pot-coastal-chip {
+    background: var(--glass-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: 10px;
+    padding: 8px 9px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.pot-coastal-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--text-tertiary);
+}
+
+.pot-scope-notice {
+    background: rgba(245, 158, 11, 0.09);
+    border: 1px solid rgba(245, 158, 11, 0.32);
+    border-left: 3px solid #F59E0B;
+    border-radius: 10px;
+    padding: 9px 11px;
+    font-size: var(--fs-2xs);
+    line-height: 1.45;
+    color: var(--text-secondary);
+}
+
+.pot-scope-notice strong {
+    color: var(--text-primary);
+}
+
+body.theme-light .pot-scope-notice {
+    background: rgba(180, 83, 9, 0.07);
+    border-color: rgba(180, 83, 9, 0.28);
+    border-left-color: #B45309;
+    color: #334155;
+}
+
+/* Bloque Ejecutivo KPI y Alerta de Conectividad en Ficha Técnica POT */
+.sc-pot-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.sc-pot-kpi-card {
+    background: var(--modal-surface-elevated);
+    border: 1px solid var(--modal-border-soft);
+    border-top: 2px solid var(--modal-accent, #FBBF24);
+    border-radius: 11px;
+    padding: 10px 11px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.sc-pot-kpi-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--modal-text-dim);
+    line-height: 1.25;
+}
+
+.sc-pot-kpi-value {
+    font-size: var(--fs-md);
+    font-weight: 700;
+    font-family: var(--font-mono);
+    color: var(--modal-text);
+    line-height: 1.2;
+}
+
+.sc-pot-kpi-sub {
+    font-size: 0.7rem;
+    color: var(--modal-text-muted);
+    line-height: 1.3;
+}
+
+.sc-pot-warning-box {
+    background: rgba(245, 158, 11, 0.10);
+    border: 1px solid rgba(245, 158, 11, 0.36);
+    border-left: 4px solid #F59E0B;
+    border-radius: 12px;
+    padding: 11px 14px;
+    margin-bottom: 12px;
+    font-size: var(--fs-xs);
+    line-height: 1.48;
+    color: var(--modal-text-muted);
+}
+
+.sc-pot-warning-box strong {
+    color: var(--modal-text);
+}
+
+body.theme-light .sc-pot-warning-box {
+    background: rgba(180, 83, 9, 0.07);
+    border-color: rgba(180, 83, 9, 0.30);
+    border-left-color: #B45309;
+}
+
+.sc-pot-provenance-footer {
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px solid var(--modal-border-soft);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    font-size: 0.72rem;
+    color: var(--modal-text-dim);
+}
+
+@media (max-width: 720px) {
+    .sc-pot-kpi-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }

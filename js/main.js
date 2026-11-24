@@ -2406,6 +2406,25 @@ function renderLayers(options = {}) {
             }
         }));
 
+        // Indicador visual de exposición costera (tsunami y licuación en bajamar — orientador, no polígono DIMAR)
+        if (selectedPotMunicipio.costero_pacifico) {
+            layers.push(new deck.ScatterplotLayer({
+                id: 'pot-municipio-coastal-ring',
+                data: [{ pos: [selectedPotMunicipio.lng, selectedPotMunicipio.lat] }],
+                getPosition: d => [d.pos[0], d.pos[1], 12],
+                radiusUnits: 'meters',
+                getRadius: 14000,
+                getFillColor: [14, 165, 233, 44],
+                stroked: true,
+                getLineColor: [56, 189, 248, 235],
+                lineWidthMinPixels: 2,
+                pickable: false,
+                updateTriggers: {
+                    getPosition: [selectedPotMunicipio.lng, selectedPotMunicipio.lat]
+                }
+            }));
+        }
+
         // Pin de cabecera municipal POT (Ámbar/Ocre #B45309)
         layers.push(new deck.ScatterplotLayer({
             id: 'pot-municipio-pin',
@@ -2421,15 +2440,19 @@ function renderLayers(options = {}) {
             onHover: (info) => {
                 if (info.object) {
                     const m = info.object.m;
+                    const fac = getFactoresSitioNSR10(m.aa, m.av, m.suelo_defecto || 'E');
+                    const pgaSup = (fac.Fa * m.aa).toFixed(2);
+                    const lic = classifyLiquefaction(m.licuacion_riesgo, m.suelo_defecto || '');
                     applyTooltipContext('pot');
                     tooltip.style.display = 'block';
                     tooltip.style.left = `${info.x}px`;
                     tooltip.style.top = `${info.y}px`;
-                    tooltip.innerHTML = `<h4>🏛️ ${escapeHtml(m.nombre)} (${escapeHtml(m.departamento)}) — POT</h4>
-                                         <p><strong>Población Expuesta:</strong> ${(m.poblacion || 0).toLocaleString()} hab.</p>
-                                         <p><strong>Aceleración Aa:</strong> <strong style="color:#ffd60a;">${escapeHtml(m.aa)} g</strong></p>
-                                         <p><strong>Radio de Análisis:</strong> 30 km circundantes</p>
-                                         <p style="font-size:var(--fs-xs); margin-top:4px; color:#A1A1A6;">${escapeHtml(m.geologia || '')}</p>`;
+                    tooltip.innerHTML = `<h4>${escapeHtml(m.nombre)} (${escapeHtml(m.departamento)}) — POT</h4>
+                                         <p><strong>Población referencia:</strong> ${(m.poblacion || 0).toLocaleString()} hab.</p>
+                                         <p><strong>Aceleración NSR-10:</strong> Aa = ${escapeHtml(m.aa)} g · PGA sup. <strong>${pgaSup} g</strong> (Suelo ${escapeHtml(m.suelo_defecto || 'E')})</p>
+                                         <p><strong>Tsunami / Licuación:</strong> ${m.costero_pacifico ? 'Litoral Pacífico expuesto' : 'Interior (no costero)'} · ${escapeHtml(lic.potText.replace(/^[^\wÁÉÍÓÚÑ]+/u, ''))}</p>
+                                         <p><strong>Conectividad:</strong> ${escapeHtml(m.acceso_principal || 'Consultar red')}</p>
+                                         <p style="font-size:var(--fs-xs); margin-top:4px; color:#A1A1A6;">Radio de análisis 30 km · Indicador orientador (sin rutas de evacuación).</p>`;
                 } else {
                     tooltip.style.display = 'none';
                 }
@@ -2440,21 +2463,26 @@ function renderLayers(options = {}) {
         }));
     }
 
-    // Lógica para la Leyenda Cartográfica Dinámica
+    // Lógica para la Leyenda Cartográfica Dinámica (con indicadores cuantitativos y distinción observado vs. modelo)
     const legend = document.getElementById('map-legend');
+    const visibleCount = Array.isArray(window.currentFilteredData) ? window.currentFilteredData.length : 0;
     if (legend) {
         if (isSimulatorActive && currentShakemapData) {
             legend.style.display = 'block';
             legend.innerHTML = `
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; border-bottom:1px solid rgba(255,255,255,0.12); padding-bottom:5px;">
                     <h4 style="margin:0; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:#fff; font-size:var(--fs-sm);">ShakeMap: Demanda MMI</h4>
-                    <span style="font-size:var(--fs-2xs); color:#ffd60a; font-weight:600;">${currentShakemapData.mw} Mw</span>
+                    <span style="font-size:var(--fs-2xs); color:#ffd60a; font-weight:600; font-family:var(--font-mono);">${currentShakemapData.mw} Mw</span>
                 </div>
                 <div style="display:flex; flex-direction:column; gap:5px; color:#A1A1A6; font-size:var(--fs-xs); font-weight:500;">
-                    <div style="display:flex; align-items:center; gap:8px;"><span style="display:block; width:12px; height:12px; border-radius:50%; background:rgb(255,59,48); border:1px solid #fff;"></span> <strong>MMI VIII - IX</strong> (≥ 0.50g - Severo)</div>
-                    <div style="display:flex; align-items:center; gap:8px;"><span style="display:block; width:12px; height:12px; border-radius:50%; background:rgb(255,140,0); border:1px solid #ffb703;"></span> <strong>MMI VII</strong> (0.25 - 0.50g - Daño Mod.)</div>
-                    <div style="display:flex; align-items:center; gap:8px;"><span style="display:block; width:12px; height:12px; border-radius:50%; background:rgb(255,214,10); border:1px solid #ffe600;"></span> <strong>MMI V - VI</strong> (0.10 - 0.25g - Fuerte)</div>
-                    <div style="display:flex; align-items:center; gap:8px;"><span style="display:block; width:12px; height:12px; border-radius:50%; background:rgb(56,189,248); border:1px solid #38bdf8;"></span> <strong>MMI IV</strong> (&lt; 0.10g - Perceptible)</div>
+                    <div style="display:flex; align-items:center; gap:8px;"><span style="display:block; width:12px; height:12px; border-radius:50%; background:rgb(255,59,48); border:1px solid #fff;"></span> <strong>MMI VIII–IX</strong> (≥ 0.50 g · Severo)</div>
+                    <div style="display:flex; align-items:center; gap:8px;"><span style="display:block; width:12px; height:12px; border-radius:50%; background:rgb(255,140,0); border:1px solid #ffb703;"></span> <strong>MMI VII</strong> (0.25–0.50 g · Muy fuerte)</div>
+                    <div style="display:flex; align-items:center; gap:8px;"><span style="display:block; width:12px; height:12px; border-radius:50%; background:rgb(255,214,10); border:1px solid #ffe600;"></span> <strong>MMI V–VI</strong> (0.10–0.25 g · Fuerte)</div>
+                    <div style="display:flex; align-items:center; gap:8px;"><span style="display:block; width:12px; height:12px; border-radius:50%; background:rgb(56,189,248); border:1px solid #38bdf8;"></span> <strong>MMI IV</strong> (&lt; 0.10 g · Perceptible)</div>
+                </div>
+                <div class="legend-meta-strip">
+                    <span class="legend-epistemic-tag legend-epistemic-tag--model">Modelo exploratorio</span>
+                    <span>Atenuación GMPE · Offline</span>
                 </div>
             `;
         } else if (viewMode === 'puntos') {
@@ -2462,9 +2490,14 @@ function renderLayers(options = {}) {
             legend.innerHTML = `
                 <h4 style="margin: 0 0 10px 0; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-primary);">Profundidad (Okabe-Ito)</h4>
                 <div style="display: flex; flex-direction: column; gap: 6px; color: var(--text-secondary); font-size: var(--fs-xs); font-weight: 500;">
-                    <div style="display:flex; align-items:center; gap: 8px;"><span style="display:inline-flex; align-items:center; justify-content:center; width:12px; height:12px; border-radius:50%; background:rgb(230,159,0); border:1px solid rgba(255,255,255,0.4);"></span> &lt; 30 km (Superficial)</div>
+                    <div style="display:flex; align-items:center; gap: 8px;"><span style="display:inline-flex; align-items:center; justify-content:center; width:12px; height:12px; border-radius:50%; background:rgb(230,159,0); border:1px solid rgba(255,255,255,0.4);"></span> &lt; 30 km (Superficial / Cortical)</div>
                     <div style="display:flex; align-items:center; gap: 8px;"><span style="display:inline-flex; align-items:center; justify-content:center; width:12px; height:12px; border-radius:2px; background:rgb(204,121,167); border:1px solid rgba(255,255,255,0.4);"></span> 30 – 70 km (Intermedio)</div>
-                    <div style="display:flex; align-items:center; gap: 8px;"><span style="display:inline-flex; align-items:center; justify-content:center; width:12px; height:12px; border-radius:50%; background:rgb(0,114,178); border:1px solid rgba(255,255,255,0.4);"></span> &gt; 70 km (Profundo)</div>
+                    <div style="display:flex; align-items:center; gap: 8px;"><span style="display:inline-flex; align-items:center; justify-content:center; width:12px; height:12px; border-radius:50%; background:rgb(0,114,178); border:1px solid rgba(255,255,255,0.4);"></span> &gt; 70 km (Profundo / Losa)</div>
+                </div>
+                <div class="legend-note-text">Diámetro proporcional a magnitud (M ≥ ${currentMag.toFixed(1)} · ≤ ${currentMaxDepth} km).</div>
+                <div class="legend-meta-strip">
+                    <span class="legend-epistemic-tag">Dato observado</span>
+                    <span class="tabular-num">n = ${visibleCount.toLocaleString()} · SGC Offline</span>
                 </div>
             `;
         } else if (viewMode === 'calor') {
@@ -2477,14 +2510,24 @@ function renderLayers(options = {}) {
                         <span>10¹⁰ J (M3)</span>
                         <span>10¹⁵ J (M7+)</span>
                     </div>
+                    <div class="legend-meta-strip">
+                        <span class="legend-epistemic-tag">Dato observado</span>
+                        <span class="tabular-num">n = ${visibleCount.toLocaleString()} · Offline</span>
+                    </div>
                 `;
             } else {
                 legend.innerHTML = `
-                    <h4 style="margin: 0 0 10px 0; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-primary);">Densidad Térmica</h4>
+                    <h4 style="margin: 0 0 10px 0; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-primary);">Densidad de Energía Sísmica</h4>
                     <div style="display: flex; align-items: center; justify-content: space-between; height: 12px; border-radius: 6px; margin-bottom: 5px; background: linear-gradient(to right, rgb(0,0,4), rgb(101,21,110), rgb(159,42,99), rgb(212,72,66), rgb(250,193,39), rgb(252,253,191));"></div>
                     <div style="display: flex; justify-content: space-between; color: var(--text-secondary); font-size: var(--fs-xs); font-weight: 500;">
-                        <span>Baja</span>
-                        <span>Alta</span>
+                        <span>Baja (M3)</span>
+                        <span>Media</span>
+                        <span>Alta (M7+)</span>
+                    </div>
+                    <div class="legend-note-text">Kernel ponderado por magnitud sobre eventos filtrados (${currentTime}–2026).</div>
+                    <div class="legend-meta-strip">
+                        <span class="legend-epistemic-tag">Densidad observada</span>
+                        <span class="tabular-num">n = ${visibleCount.toLocaleString()} · Offline</span>
                     </div>
                 `;
             }
@@ -2498,14 +2541,24 @@ function renderLayers(options = {}) {
                         <span>1 Sismo</span>
                         <span>20+ Sismos</span>
                     </div>
+                    <div class="legend-meta-strip">
+                        <span class="legend-epistemic-tag">Agregación observada</span>
+                        <span class="tabular-num">n = ${visibleCount.toLocaleString()} · Offline</span>
+                    </div>
                 `;
             } else {
                 legend.innerHTML = `
-                    <h4 style="margin: 0 0 10px 0; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-primary);">Agrupación (8 km)</h4>
+                    <h4 style="margin: 0 0 10px 0; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-primary);">Agrupación Espacial (Radio 8 km)</h4>
                     <div style="display: flex; align-items: center; justify-content: space-between; height: 12px; border-radius: 6px; margin-bottom: 5px; background: linear-gradient(to right, rgb(68,1,84), rgb(49,104,142), rgb(53,183,121), rgb(181,222,43), rgb(253,231,37));"></div>
                     <div style="display: flex; justify-content: space-between; color: var(--text-secondary); font-size: var(--fs-xs); font-weight: 500;">
-                        <span>1 Sismo</span>
-                        <span>50+ Sismos</span>
+                        <span>1 sismo</span>
+                        <span>25</span>
+                        <span>50+ sismos</span>
+                    </div>
+                    <div class="legend-note-text">Altura y color indican recurrencia acumulada por celda hexagonal.</div>
+                    <div class="legend-meta-strip">
+                        <span class="legend-epistemic-tag">Agregación observada</span>
+                        <span class="tabular-num">n = ${visibleCount.toLocaleString()} · Offline</span>
                     </div>
                 `;
             }
@@ -2515,10 +2568,10 @@ function renderLayers(options = {}) {
                 <h4 style="margin: 0 0 8px 0; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-primary);">SGC Oficial · PGA Tr=475a</h4>
                 <div style="height: 12px; border-radius: 6px; margin-bottom: 5px; background: linear-gradient(to right, #1a9641 0%, #6abd58 14%, #b3df76 28%, #ffffc0 45%, #ffe8a5 58%, #fed18a 70%, #feba6f 80%, #f89957 88%, #ed6e43 94%, #d7191c 100%); border: 1px solid rgba(148,163,184,0.35);"></div>
                 <div style="display: flex; justify-content: space-between; color: var(--text-secondary); font-size: var(--fs-2xs); font-weight: 600; margin-bottom: 8px;">
-                    <span>0.0 g (Muy baja)</span>
-                    <span>0.10 g (Interm.)</span>
-                    <span>0.20–0.40 g (Alta)</span>
-                    <span>≥ 0.50 g (Muy alta)</span>
+                    <span>0.0 g</span>
+                    <span>0.10 g</span>
+                    <span>0.20–0.40 g</span>
+                    <span>≥ 0.50 g</span>
                 </div>
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:var(--fs-2xs); color:var(--text-secondary); margin-bottom:8px;">
                     <div><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:#1a9641;vertical-align:middle;margin-right:4px;"></span><strong>Baja:</strong> ≤ 0.10 g</div>
@@ -2527,9 +2580,12 @@ function renderLayers(options = {}) {
                     <div><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:#d7191c;vertical-align:middle;margin-right:4px;"></span><strong>Muy Alta:</strong> &gt; 0.40 g</div>
                 </div>
                 <div id="legend-sgc-identify" style="font-size: var(--fs-xs); color: var(--text-secondary); line-height: 1.4; margin-bottom: 6px;">
-                    Pase el cursor sobre cualquier color del mapa para ver su nivel de amenaza y haga clic para consultar el dato oficial SGC.
+                    Pase el cursor sobre cualquier color para estimar PGA en roca o haga clic para consultar el servidor oficial SGC.
                 </div>
-                <a href="https://amenazasismica.sgc.gov.co/" target="_blank" rel="noopener noreferrer" style="color:var(--accent-ui); font-size: var(--fs-xs); font-weight:600;">Consultar visor oficial SGC ↗</a>
+                <div class="legend-meta-strip">
+                    <span class="legend-epistemic-tag legend-epistemic-tag--model">Modelo oficial SGC 2020</span>
+                    <a href="https://amenazasismica.sgc.gov.co/" target="_blank" rel="noopener noreferrer" style="color:var(--accent-ui); font-weight:600;">OGC WMS · En línea ↗</a>
+                </div>
             `;
         } else if (showInfra) {
             legend.style.display = 'block';
@@ -2561,14 +2617,22 @@ function renderLayers(options = {}) {
                         <span><strong style="color:${INFRA_COLORS.puerto.textHex};">Muelle / Puerto</strong></span>
                     </div>
                 </div>
+                <div class="legend-meta-strip">
+                    <span class="legend-epistemic-tag">Capa referencial · Offline</span>
+                    <span>REPS · DIMAR · INVIAS</span>
+                </div>
             `;
         } else if (showLiveSGC) {
             legend.style.display = 'block';
             legend.innerHTML = `
                 <h4 style="margin: 0 0 10px 0; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-primary);">Telemetría FDSN Live (14d)</h4>
                 <div style="display: flex; flex-direction: column; gap: 6px; color: var(--text-secondary); font-size: var(--fs-xs); font-weight: 500;">
-                    <div style="display:flex; align-items:center; gap: 8px;"><span style="display:inline-block; width:12px; height:12px; border-radius:50%; background:rgb(16,185,129); border:2px solid #ffffff;"></span> Sismos últimas 24h</div>
+                    <div style="display:flex; align-items:center; gap: 8px;"><span style="display:inline-block; width:12px; height:12px; border-radius:50%; background:rgb(16,185,129); border:2px solid #ffffff;"></span> Sismos últimas 24 h (M ≥ 3.5)</div>
                     <div style="display:flex; align-items:center; gap: 8px;"><span style="display:inline-block; width:12px; height:12px; border-radius:50%; background:rgb(15,118,110); border:1.5px solid #ccfbf1;"></span> Ventana reciente (2–14 días)</div>
+                </div>
+                <div class="legend-meta-strip">
+                    <span class="legend-epistemic-tag">Dato observado · En línea</span>
+                    <span>EMSC / USGS</span>
                 </div>
             `;
         } else {
@@ -2579,9 +2643,9 @@ function renderLayers(options = {}) {
         if (showLiveSGC && (viewMode !== 'none' || showSgcWms || showInfra || (isSimulatorActive && currentShakemapData))) {
             legend.innerHTML += `
                 <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--border-subtle);">
-                    <div style="font-size: var(--fs-2xs); font-weight: 700; text-transform: uppercase; color: var(--pill-ok-fg); margin-bottom: 5px;">Telemetría FDSN Live (14d)</div>
+                    <div style="font-size: var(--fs-2xs); font-weight: 700; text-transform: uppercase; color: var(--pill-ok-fg); margin-bottom: 5px;">Telemetría FDSN Live (14d · En línea)</div>
                     <div style="display: flex; flex-direction: column; gap: 4px; font-size: var(--fs-2xs); color: var(--text-secondary);">
-                        <div style="display:flex; align-items:center; gap:6px;"><span style="width:9px; height:9px; border-radius:50%; background:rgb(16,185,129); border:1.5px solid #fff; display:inline-block;"></span> Últimas 24h</div>
+                        <div style="display:flex; align-items:center; gap:6px;"><span style="width:9px; height:9px; border-radius:50%; background:rgb(16,185,129); border:1.5px solid #fff; display:inline-block;"></span> Últimas 24 h (M ≥ 3.5)</div>
                         <div style="display:flex; align-items:center; gap:6px;"><span style="width:9px; height:9px; border-radius:50%; background:rgb(15,118,110); border:1.5px solid #ccfbf1; display:inline-block;"></span> Recientes (2–14 días)</div>
                     </div>
                 </div>
@@ -2592,7 +2656,7 @@ function renderLayers(options = {}) {
         if (showInfra && (viewMode !== 'none' || showSgcWms || (isSimulatorActive && currentShakemapData))) {
             legend.innerHTML += `
                 <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--border-subtle);">
-                    <div style="font-size: var(--fs-2xs); font-weight: 700; text-transform: uppercase; color: var(--accent-ui); margin-bottom: 5px;">Líneas Vitales</div>
+                    <div style="font-size: var(--fs-2xs); font-weight: 700; text-transform: uppercase; color: var(--accent-ui); margin-bottom: 5px;">Líneas Vitales (Offline)</div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; font-size: var(--fs-2xs); color: var(--text-secondary);">
                         <div style="display:flex; align-items:center; gap:5px;"><span style="width:12px; height:3px; background:${INFRA_COLORS.vial.hex}; display:inline-block; border-radius:1px;"></span> Vías</div>
                         <div style="display:flex; align-items:center; gap:5px;"><span style="width:12px; height:4px; background:${INFRA_COLORS.fluvial.hex}; display:inline-block; border-radius:1px;"></span> Fluvial</div>
@@ -2628,8 +2692,14 @@ function renderLayers(options = {}) {
             legend.innerHTML += `
                 <div style="${hasBaseLegend ? 'margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--border-subtle);' : ''}">
                     <div style="font-size: var(--fs-2xs); font-weight: 700; text-transform: uppercase; color: #FBBF24; margin-bottom: 5px;">Gestión Territorial POT</div>
-                    <div style="display:flex; align-items:center; gap:6px; font-size: var(--fs-2xs); color: var(--text-secondary);">
-                        <span style="width:10px; height:10px; border-radius:50%; background:#B45309; border:1.5px solid #fff; display:inline-block;"></span> Cabecera y radio 30 km
+                    <div style="display:flex; flex-direction:column; gap:5px; font-size: var(--fs-2xs); color: var(--text-secondary);">
+                        <div style="display:flex; align-items:center; gap:6px;">
+                            <span style="width:10px; height:10px; border-radius:50%; background:#B45309; border:1.5px solid #fff; display:inline-block;"></span> Cabecera y radio 30 km
+                        </div>
+                        ${selectedPotMunicipio.costero_pacifico ? `
+                        <div style="display:flex; align-items:center; gap:6px;">
+                            <span style="width:10px; height:10px; border-radius:50%; background:rgba(14,165,233,0.45); border:1.5px solid #38BDF8; display:inline-block;"></span> Indicador costero (tsunami / bajamar · orientador)
+                        </div>` : ''}
                     </div>
                 </div>
             `;
@@ -3595,7 +3665,7 @@ document.getElementById('btn-export-csv').addEventListener('click', () => {
         const c = f.geometry.coordinates;
         const fecha = safeCsvField(p.fecha || '').replace(/"/g, '""');
         const mun = safeCsvField(p.municipio || '').replace(/"/g, '""');
-        const fnt = safeCsvField(p.fuente || 'Catálogo SGC Consolidado').replace(/"/g, '""');
+        const fnt = safeCsvField(p.fuente || 'Catálogo SGC Consolidado (1993-2026)').replace(/"/g, '""');
         csv += `"${fecha}",${c[1]},${c[0]},${p.profundidad ?? ''},${p.magnitud ?? ''},"${mun}","${fnt}"\r\n`;
     });
     downloadBlob(new Blob([csv], { type: 'text/csv;charset=utf-8;' }), `sismos_choco_${currentTime}_2026.csv`);
@@ -3608,6 +3678,12 @@ if (btnExportGeojson) {
         const fc = {
             type: 'FeatureCollection',
             generado: new Date().toISOString(),
+            metadata: {
+                plataforma: 'SismoChocó (Research through Design — Universidad de Caldas)',
+                fuente_base: 'Catálogo Sísmico Consolidado SGC (1993-2026)',
+                alcance: 'Registros instrumentales observados filtrados para análisis exploratorio',
+                referencias_institucionales: ['SGC', 'NSR-10', 'IGAC/ANT', 'SNGRD/UNGRD']
+            },
             filtros: { anio_inicio: currentTime, magnitud_min: currentMag, profundidad_max_km: currentMaxDepth },
             features: window.currentFilteredData
         };
@@ -5583,6 +5659,35 @@ function getNearbyInfrastructure(m, radiusKm = 45) {
     return items.sort((a, b) => a.distKm - b.distKm);
 }
 
+function buildPotConnectivityNotice(m) {
+    const isCoastal = Boolean(m && m.costero_pacifico);
+    const isIsolated = Boolean(m && m.aislamiento_modal);
+    const disclaimer = 'Esta plataforma no cartografía rutas de evacuación seguras, puntos de encuentro ni albergues temporales a escala urbana o veredal; contrastar con los planes municipales de contingencia (CMGRD / UNGRD / DIMAR).';
+
+    if (isCoastal) {
+        return {
+            level: 'critico',
+            title: 'Conectividad Costera Comprometida y Alcance de Evacuación',
+            summary: 'Cabecera del litoral Pacífico con exposición a tsunami y licuación en zonas de bajamar, sin redundancia vial terrestre continua. Ante sismo fuerte sentido en costa, activar evacuación hacia cota segura y respaldos marítimo-aéreos.',
+            evacuationDisclaimer: `${disclaimer} La señalización costera es orientadora y no sustituye las manchas oficiales de inundación por tsunami (DIMAR / UNGRD).`
+        };
+    }
+    if (isIsolated) {
+        return {
+            level: 'alerta',
+            title: 'Conectividad Fluvial Restringida y Alcance de Evacuación',
+            summary: 'Cabecera sin conexión vial pavimentada continua; ante bloqueo fluvial o afectación de muelles y pistas locales, el acceso de socorro puede quedar comprometido.',
+            evacuationDisclaimer: disclaimer
+        };
+    }
+    return {
+        level: 'normal',
+        title: 'Alcance de Conectividad y Evacuación',
+        summary: 'Acceso principal por corredor terrestre sujeto a cortes por deslizamientos cosísmicos en laderas y afectación de puentes.',
+        evacuationDisclaimer: disclaimer
+    };
+}
+
 function updatePOTMetrics() {
     const sel = document.getElementById('pot-municipio-select');
     if (!sel || !municipiosData || municipiosData.length === 0) return;
@@ -5608,12 +5713,17 @@ function updatePOTMetrics() {
     }
     
     const nearbyInfra = getNearbyInfrastructure(m, 35);
+    const licInfo = classifyLiquefaction(m.licuacion_riesgo, m.suelo_defecto || '');
+    const connNotice = buildPotConnectivityNotice(m);
     const elPob = document.getElementById('pot-pob-val');
     const elCat = document.getElementById('pot-cat-ley617');
     const elSismos = document.getElementById('pot-sismos-cercanos');
     const elInfraProx = document.getElementById('pot-infra-prox');
     const elAcceso = document.getElementById('pot-acceso-val');
     const elAisl = document.getElementById('pot-aislamiento-alert');
+    const elTsunami = document.getElementById('pot-tsunami-badge');
+    const elLicuacion = document.getElementById('pot-licuacion-badge');
+    const elEvacScope = document.getElementById('pot-evacuation-scope-alert');
     const elDestructor = document.getElementById('pot-ultimo-destructor');
     const elSemaforo = document.getElementById('pot-semaforo-badge');
     
@@ -5622,6 +5732,20 @@ function updatePOTMetrics() {
     if (elSismos) elSismos.innerText = `${sismos30km} (${maxMag30km > 0 ? maxMag30km.toFixed(1) + ' M' : 's/d'})`;
     if (elInfraProx) elInfraProx.innerText = `${nearbyInfra.length} nodos/ejes (≤35 km)`;
     if (elAcceso) elAcceso.innerText = m.acceso_principal || 'Consultar cartografía vial';
+    if (elTsunami) {
+        if (m.costero_pacifico) {
+            elTsunami.className = 'status-pill critico';
+            elTsunami.innerText = 'Litoral Expuesto';
+        } else {
+            elTsunami.className = 'status-pill normal';
+            elTsunami.innerText = 'Interior (No costero)';
+        }
+    }
+    if (elLicuacion) {
+        elLicuacion.className = `status-pill ${licInfo.pillClass}`;
+        const cleanLic = licInfo.uiText.replace(/^[^\wÁÉÍÓÚÑ]+/u, '');
+        elLicuacion.innerText = `${cleanLic} (Suelo ${m.suelo_defecto || 'E'})`;
+    }
     if (elAisl) {
         if (m.aislamiento_modal) {
             elAisl.style.display = 'block';
@@ -5629,6 +5753,9 @@ function updatePOTMetrics() {
         } else {
             elAisl.style.display = 'none';
         }
+    }
+    if (elEvacScope) {
+        elEvacScope.innerHTML = `<strong>${escapeHtml(connNotice.title)}:</strong> ${escapeHtml(connNotice.summary)} <span style="display:block; margin-top:4px; opacity:0.92;">${escapeHtml(connNotice.evacuationDisclaimer)}</span>`;
     }
     if (elDestructor) elDestructor.innerText = m.ultimo_destructor;
     
@@ -5708,6 +5835,10 @@ function openFichaPOTModal() {
     const nearbyInfra = getNearbyInfrastructure(m, 45);
     const licInfo = classifyLiquefaction(m.licuacion_riesgo, m.suelo_defecto || '');
     const licLabel = escapeHtml(licInfo.potText);
+    const licClean = licLabel.replace(/^[^\wÁÉÍÓÚÑ]+/u, '');
+    const connNotice = buildPotConnectivityNotice(m);
+    const fechaGeneracion = new Date().toLocaleDateString('es-CO', { year: 'numeric', month: '2-digit', day: '2-digit' });
+    const conectividadCorto = m.costero_pacifico ? 'Marítimo / Aéreo' : (m.aislamiento_modal ? 'Fluvial / Aislado' : 'Corredor Vial');
 
     const directrizTerritorial = m.costero_pacifico
         ? '<strong>Frente Costero Pacífico:</strong> Incorporar planes locales de alerta ante tsunami, muelles alternos y cotas de evacuación rápida por sismo fuerte sentido en playa.'
@@ -5719,6 +5850,34 @@ function openFichaPOTModal() {
     subtitle.innerText = `Departamento de ${m.departamento} | Insumo referencial para POT / PBOT / EOT (Decreto 1077/2015 · Ley 1523/2012)`;
 
     body.innerHTML = `
+        <!-- Bloque Ejecutivo de Indicadores Clave (síntesis rápida para municipios Categoría 6) -->
+        <div class="sc-pot-kpi-grid" aria-label="Indicadores clave del municipio">
+            <div class="sc-pot-kpi-card">
+                <span class="sc-pot-kpi-label">PGA Superficie (NSR-10)</span>
+                <span class="sc-pot-kpi-value">${pgaDiseno} g</span>
+                <span class="sc-pot-kpi-sub">Aa=${m.aa.toFixed(2)} g · Suelo ${escapeHtml(m.suelo_defecto || 'E')}</span>
+            </div>
+            <div class="sc-pot-kpi-card">
+                <span class="sc-pot-kpi-label">Sismos observados (≤ 50 km)</span>
+                <span class="sc-pot-kpi-value">${sismos50km.toLocaleString()}</span>
+                <span class="sc-pot-kpi-sub">Mmax: ${maxMag50km > 0 ? maxMag50km.toFixed(1) + ' M' : 's/d'} (1993–2026)</span>
+            </div>
+            <div class="sc-pot-kpi-card">
+                <span class="sc-pot-kpi-label">Capacidad / Conectividad</span>
+                <span class="sc-pot-kpi-value" style="font-size:var(--fs-sm);">${escapeHtml(conectividadCorto)}</span>
+                <span class="sc-pot-kpi-sub">${escapeHtml(m.categoria_ley617 || 'Ley 617')}</span>
+            </div>
+            <div class="sc-pot-kpi-card">
+                <span class="sc-pot-kpi-label">Tsunami / Licuación</span>
+                <span class="sc-pot-kpi-value" style="font-size:var(--fs-sm);">${m.costero_pacifico ? 'Litoral Expuesto' : 'Interior'}</span>
+                <span class="sc-pot-kpi-sub">Licuación: ${licClean}</span>
+            </div>
+        </div>
+
+        <div class="sc-pot-warning-box" role="note">
+            <strong>${escapeHtml(connNotice.title)}:</strong> ${escapeHtml(connNotice.summary)} ${escapeHtml(connNotice.evacuationDisclaimer)}
+        </div>
+
         <div class="sc-modal-grid-2 sc-pot-grid" style="margin-bottom:12px;">
             <div class="sc-pot-card">
                 <h4 class="sc-pot-card-title">${MODAL_ICONS.map}<span>1. Localización y Capacidad Institucional</span></h4>
@@ -5731,7 +5890,7 @@ function openFichaPOTModal() {
 
             <div class="sc-pot-card">
                 <h4 class="sc-pot-card-title">${MODAL_ICONS.building}<span>2. Parámetros Oficiales NSR-10</span></h4>
-                <p><strong>Zona de Amenaza Sísmica:</strong> <span class="status-pill critico"><span class="sc-pot-dot sc-pot-dot--crit"></span>${escapeHtml(m.zona)}</span></p>
+                <p><strong>Zona de Amenaza Sísmica:</strong> <span class="status-pill critico">${escapeHtml(m.zona)}</span></p>
                 <p><strong>Coeficientes de Aceleración:</strong> Aa = ${m.aa.toFixed(2)} g | Av = ${m.av.toFixed(2)} g</p>
                 <p><strong>Perfil de Suelo Referencial:</strong> Tipo ${escapeHtml(m.suelo_defecto || 'E')} (Fa=${factors.Fa}, Fv=${factors.Fv})</p>
                 <p><strong>PGA Esperado en Superficie:</strong> <strong class="sc-pot-metric-highlight">${pgaDiseno} g</strong></p>
@@ -5760,7 +5919,7 @@ function openFichaPOTModal() {
                 <tbody>
                     <tr>
                         <td><strong>Licuación de Suelos</strong></td>
-                        <td><span class="sc-pot-dot sc-pot-dot--${licInfo.pillClass === 'critico' ? 'crit' : (licInfo.pillClass === 'alerta' ? 'warn' : 'ok')}"></span>${licLabel.replace(/^[^\wÁÉÍÓÚÑ]+/u, '')}</td>
+                        <td><span class="sc-pot-dot sc-pot-dot--${licInfo.pillClass === 'critico' ? 'crit' : (licInfo.pillClass === 'alerta' ? 'warn' : 'ok')}"></span>${licClean}</td>
                         <td>Indicador cualitativo regional; exige ensayos SPT/CPT y nivel freático en estudios geotécnicos de detalle (NSR-10 Título H).</td>
                     </tr>
                     <tr>
@@ -5785,6 +5944,11 @@ function openFichaPOTModal() {
                 <li><strong>Enfoque Territorial y Étnico (Ley 70/1993):</strong> Toda delimitación de suelos de protección o reasentamiento en consejos comunitarios y resguardos requiere cartografía IGAC/ANT y consulta previa (Convenio 169 OIT).</li>
                 <li><strong>Edificaciones Indispensables (NSR-10 Grupo IV):</strong> Centros de salud (I = 1.50), sedes de emergencia y nodos portuarios deben priorizar evaluación de vulnerabilidad sísmica estructural.</li>
             </ol>
+        </div>
+
+        <div class="sc-pot-provenance-footer">
+            <span><strong>Fuentes:</strong> Catálogo SGC (1993–2026) · NSR-10 · REPS · DIMAR · INVIAS</span>
+            <span>Generado: ${fechaGeneracion} · SismoChocó RtD (Offline-first)</span>
         </div>
     `;
 

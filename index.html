@@ -55,7 +55,7 @@
     <script src="lib/chart.js"></script>
     
     <!-- Estilos Bento Box -->
-    <link rel="stylesheet" href="css/styles.css?v=50">
+    <link rel="stylesheet" href="css/styles.css?v=51">
 
     <!-- Datos Estructurados Schema.org JSON-LD para Google Search & Google Dataset Search -->
     <script type="application/ld+json">
@@ -503,7 +503,10 @@
                 <div class="accordion-body">
                     <div class="switch-container" style="display: flex; align-items: flex-start; justify-content: space-between;">
                         <label for="check-calidad" style="flex: 1; margin-right: 16px; cursor: pointer;">
-                            <strong style="margin-bottom: 2px;">Sismos de Alta Precisión</strong>
+                            <span class="layer-title-row">
+                                <strong>Sismos de Alta Precisión</strong>
+                                <span class="layer-mode-badge layer-mode-badge--offline" title="Disponible 100 % sin conexión a internet">Offline</span>
+                            </span>
                             Excluye eventos con alta incertidumbre instrumental (GAP &gt; 180° y RMS &gt; 1.0s)
                         </label>
                         <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 8px; flex-shrink: 0;">
@@ -514,7 +517,10 @@
 
                     <div class="switch-container" style="display: flex; align-items: flex-start; justify-content: space-between;" title="Fallas Geológicas (Atajo: 9)">
                         <label for="check-fallas" style="flex: 1; margin-right: 16px; cursor: pointer;">
-                            <strong style="margin-bottom: 2px;">Fallas Geológicas</strong>
+                            <span class="layer-title-row">
+                                <strong>Fallas Geológicas</strong>
+                                <span class="layer-mode-badge layer-mode-badge--offline" title="Disponible 100 % sin conexión a internet">Offline</span>
+                            </span>
                             Trazo referencial con potencial sismogénico Mmax
                         </label>
                         <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 8px; flex-shrink: 0;">
@@ -574,7 +580,10 @@
 
                     <div class="switch-container" style="display: flex; align-items: flex-start; justify-content: space-between;">
                         <label for="check-ml" style="flex: 1; margin-right: 16px; cursor: pointer;">
-                            <strong style="margin-bottom: 2px;">Zonas Anómalas (IA)</strong>
+                            <span class="layer-title-row">
+                                <strong>Zonas Anómalas (IA)</strong>
+                                <span class="layer-mode-badge layer-mode-badge--offline" title="Disponible 100 % sin conexión (respaldo local precargado)">Offline</span>
+                            </span>
                             Clustering espacial (DBSCAN Geodésico, M≥4.0)
                         </label>
                         <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 8px; flex-shrink: 0;">
@@ -585,8 +594,9 @@
                     
                     <div class="switch-container" style="display: flex; align-items: flex-start; justify-content: space-between;" title="Telemetría FDSN en Vivo (Atajo: 8)">
                         <label for="check-live-sgc" style="flex: 1; margin-right: 16px; cursor: pointer;">
-                            <span style="display:flex; align-items:center; gap:6px; margin-bottom:2px;">
+                            <span class="layer-title-row">
                                 <strong>Telemetría FDSN Live</strong>
+                                <span class="layer-mode-badge layer-mode-badge--online" title="Requiere conexión a internet (usa catálogo local si no hay red)">En línea</span>
                                 <span id="sgc-live-status-badge" class="status-pill seguro" style="display:none; font-size:var(--fs-2xs); padding:1px 6px;">EN VIVO</span>
                             </span>
                             <span id="sgc-live-subtext" style="display:block; font-size:var(--fs-xs); color:var(--text-secondary);">FDSN en vivo 14d · EMSC / USGS (M≥3.5)</span>
@@ -607,7 +617,10 @@
 
                     <div class="switch-container" style="display: flex; align-items: flex-start; justify-content: space-between;">
                         <label for="check-sgc-wms" style="flex: 1; margin-right: 16px; cursor: pointer;">
-                            <strong style="margin-bottom: 2px;">Modelo SGC Oficial (OGC)</strong>
+                            <span class="layer-title-row">
+                                <strong>Modelo SGC Oficial (OGC)</strong>
+                                <span class="layer-mode-badge layer-mode-badge--online" title="Consume geoservicio OGC WMS en línea del Servicio Geológico Colombiano">En línea</span>
+                            </span>
                             Capa raster PGA Tr=475a + consulta puntual (SGC 2020)
                         </label>
                         <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 8px; flex-shrink: 0;">
@@ -947,7 +960,18 @@
                             <span class="metric-desc" id="pot-infra-prox">Exposición líneas vitales</span>
                         </div>
                     </div>
+                    <div id="pot-coastal-exposure-row" class="pot-coastal-strip" aria-live="polite">
+                        <div class="pot-coastal-chip">
+                            <span class="pot-coastal-label">Exposición Tsunami</span>
+                            <span id="pot-tsunami-badge" class="status-pill normal">Interior</span>
+                        </div>
+                        <div class="pot-coastal-chip">
+                            <span class="pot-coastal-label">Licuación / Bajamar</span>
+                            <span id="pot-licuacion-badge" class="status-pill alerta">Evaluar</span>
+                        </div>
+                    </div>
                     <div id="pot-aislamiento-alert" class="pot-isolation-alert" style="display:none;"></div>
+                    <div id="pot-evacuation-scope-alert" class="pot-scope-notice" role="note" aria-live="polite"></div>
                     <div style="font-size:var(--fs-xs); color:var(--text-secondary); line-height:1.4; border-top:1px solid var(--border-subtle); padding-top:8px;">
                         <p style="margin:0 0 4px 0;"><strong style="color:var(--text-primary);">Conectividad predominante:</strong> <span id="pot-acceso-val">--</span></p>
                         <p style="margin:0;"><strong style="color:var(--text-primary);">Evento histórico referencia:</strong> <span id="pot-ultimo-destructor">1992 / 2024</span></p>
@@ -965,8 +989,9 @@
                     Superposición de redes viales, corredores fluviales, cabotaje marítimo, muelles, aeródromos y centros de salud sobre trazas de fallas.
                 </p>
                 <label class="switch-container" for="check-infra" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-                    <span style="font-size:var(--fs-xs); color:var(--text-primary); font-weight:600;">
-                        Visualizar Red de Infraestructura Crítica
+                    <span class="layer-title-row" style="font-size:var(--fs-xs); color:var(--text-primary); font-weight:600; margin-bottom:0;">
+                        <span>Visualizar Red de Infraestructura Crítica</span>
+                        <span class="layer-mode-badge layer-mode-badge--offline" title="Capa precargada localmente, disponible sin conexión">Offline</span>
                     </span>
                     <div class="switch"><input type="checkbox" id="check-infra"><span class="slider"></span></div>
                 </label>
@@ -1140,7 +1165,7 @@
     </div>
 
     <!-- Modal de Ficha Técnica Municipal para POT (Imprimible en PDF) -->
-    <div id="modal-ficha-pot" class="sc-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="ficha-pot-titulo">
+    <div id="modal-ficha-pot" class="sc-modal-overlay modal-ctx-pot" role="dialog" aria-modal="true" aria-labelledby="ficha-pot-titulo">
         <div class="ficha-pot-container sc-modal-dialog sc-modal-dialog--wide">
             <div class="sc-modal-header sc-modal-header--split">
                 <div class="sc-modal-header-main">
@@ -1279,7 +1304,7 @@
     <script src="js/core-oop.js?v=40"></script>
 
     <!-- Lógica principal con versionamiento para evitar caché persistente -->
-    <script src="js/main.js?v=77"></script>
+    <script src="js/main.js?v=78"></script>
 
     <!-- PWA & Limpieza Activa de CacheStorage -->
     <script>
@@ -1310,7 +1335,7 @@
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js?v=77')
+                navigator.serviceWorker.register('sw.js?v=78')
                     .then(reg => {
                         reg.update();
                     })

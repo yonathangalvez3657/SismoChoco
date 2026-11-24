@@ -41,6 +41,7 @@ const fns = [
     'computeApproxMercatorBounds',
     'buildActiveFilterChipsState',
     'extractInspectorData',
+    'buildPotConnectivityNotice',
 ];
 const infraMatch = /const INFRA_COLORS = \{[\s\S]*?\n\};/.exec(mainJs);
 assert.ok(infraMatch, 'No se encontró INFRA_COLORS en main.js');
@@ -291,4 +292,27 @@ test('Chips de filtros activos, encuadre Mercator, búsqueda acento-agnóstica e
     assert.ok(html.includes('id="pinned-inspector"'));
     assert.ok(html.includes('id="check-viewport-filter"'));
     assert.ok(html.includes('id="nsr-municipio-search"') && html.includes('id="pot-municipio-search"'));
+});
+
+test('Aviso explícito de conectividad y alcance de evacuación diferencia municipios costeros, aislados y viales', () => {
+    const bahia = municipios.find(m => m.nombre === 'Bahía Solano (Mutis)');
+    const bojay = municipios.find(m => m.aislamiento_modal && !m.costero_pacifico);
+    const quibdo = municipios.find(m => m.nombre === 'Quibdó');
+
+    assert.ok(bahia && bojay && quibdo);
+
+    const nCoastal = context.buildPotConnectivityNotice(bahia);
+    assert.equal(nCoastal.level, 'critico');
+    assert.match(nCoastal.summary, /tsunami/i);
+    assert.match(nCoastal.evacuationDisclaimer, /no cartografía rutas de evacuación/i);
+    assert.match(nCoastal.evacuationDisclaimer, /DIMAR/i);
+
+    const nIsolated = context.buildPotConnectivityNotice(bojay);
+    assert.equal(nIsolated.level, 'alerta');
+    assert.match(nIsolated.summary, /fluvial/i);
+    assert.match(nIsolated.evacuationDisclaimer, /no cartografía rutas de evacuación/i);
+
+    const nRoad = context.buildPotConnectivityNotice(quibdo);
+    assert.equal(nRoad.level, 'normal');
+    assert.match(nRoad.evacuationDisclaimer, /no cartografía rutas de evacuación/i);
 });

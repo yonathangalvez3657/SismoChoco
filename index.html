@@ -585,9 +585,8 @@
                     
                     <div class="switch-container" style="display: flex; align-items: flex-start; justify-content: space-between;" title="Telemetría FDSN en Vivo (Atajo: 8)">
                         <label for="check-live-sgc" style="flex: 1; margin-right: 16px; cursor: pointer;">
-                            <span class="layer-title-row">
+                            <span style="display:flex; align-items:center; gap:6px; margin-bottom:2px;">
                                 <strong>Telemetría FDSN Live</strong>
-                                <span class="layer-mode-badge layer-mode-badge--online" title="Requiere conexión a internet (usa catálogo local si no hay red)">En línea</span>
                                 <span id="sgc-live-status-badge" class="status-pill seguro" style="display:none; font-size:var(--fs-2xs); padding:1px 6px;">EN VIVO</span>
                             </span>
                             <span id="sgc-live-subtext" style="display:block; font-size:var(--fs-xs); color:var(--text-secondary);">FDSN en vivo 14d · EMSC / USGS (M≥3.5)</span>
@@ -608,10 +607,7 @@
 
                     <div class="switch-container" style="display: flex; align-items: flex-start; justify-content: space-between;">
                         <label for="check-sgc-wms" style="flex: 1; margin-right: 16px; cursor: pointer;">
-                            <span class="layer-title-row">
-                                <strong>Modelo SGC Oficial (OGC)</strong>
-                                <span class="layer-mode-badge layer-mode-badge--online" title="Consume geoservicio OGC WMS en línea del Servicio Geológico Colombiano">En línea</span>
-                            </span>
+                            <strong style="margin-bottom: 2px;">Modelo SGC Oficial (OGC)</strong>
                             Capa raster PGA Tr=475a + consulta puntual (SGC 2020)
                         </label>
                         <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 8px; flex-shrink: 0;">
@@ -1294,7 +1290,7 @@
     <script src="js/core-oop.js?v=40"></script>
 
     <!-- Lógica principal con versionamiento para evitar caché persistente -->
-    <script src="js/main.js?v=79"></script>
+    <script src="js/main.js?v=80"></script>
 
     <!-- PWA & Limpieza Activa de CacheStorage -->
     <script>
@@ -1325,7 +1321,7 @@
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js?v=79')
+                navigator.serviceWorker.register('sw.js?v=80')
                     .then(reg => {
                         reg.update();
                     })

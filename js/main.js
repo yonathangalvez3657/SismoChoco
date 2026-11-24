@@ -2584,7 +2584,7 @@ function renderLayers(options = {}) {
                 </div>
                 <div class="legend-meta-strip">
                     <span class="legend-epistemic-tag legend-epistemic-tag--model">Modelo oficial SGC 2020</span>
-                    <a href="https://amenazasismica.sgc.gov.co/" target="_blank" rel="noopener noreferrer" style="color:var(--accent-ui); font-weight:600;">OGC WMS · En línea ↗</a>
+                    <a href="https://amenazasismica.sgc.gov.co/" target="_blank" rel="noopener noreferrer" style="color:var(--accent-ui); font-weight:600;">Visor oficial SGC ↗</a>
                 </div>
             `;
         } else if (showInfra) {
@@ -2631,7 +2631,7 @@ function renderLayers(options = {}) {
                     <div style="display:flex; align-items:center; gap: 8px;"><span style="display:inline-block; width:12px; height:12px; border-radius:50%; background:rgb(15,118,110); border:1.5px solid #ccfbf1;"></span> Ventana reciente (2–14 días)</div>
                 </div>
                 <div class="legend-meta-strip">
-                    <span class="legend-epistemic-tag">Dato observado · En línea</span>
+                    <span class="legend-epistemic-tag">Dato observado</span>
                     <span>EMSC / USGS</span>
                 </div>
             `;
@@ -2643,7 +2643,7 @@ function renderLayers(options = {}) {
         if (showLiveSGC && (viewMode !== 'none' || showSgcWms || showInfra || (isSimulatorActive && currentShakemapData))) {
             legend.innerHTML += `
                 <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--border-subtle);">
-                    <div style="font-size: var(--fs-2xs); font-weight: 700; text-transform: uppercase; color: var(--pill-ok-fg); margin-bottom: 5px;">Telemetría FDSN Live (14d · En línea)</div>
+                    <div style="font-size: var(--fs-2xs); font-weight: 700; text-transform: uppercase; color: var(--pill-ok-fg); margin-bottom: 5px;">Telemetría FDSN Live (14d)</div>
                     <div style="display: flex; flex-direction: column; gap: 4px; font-size: var(--fs-2xs); color: var(--text-secondary);">
                         <div style="display:flex; align-items:center; gap:6px;"><span style="width:9px; height:9px; border-radius:50%; background:rgb(16,185,129); border:1.5px solid #fff; display:inline-block;"></span> Últimas 24 h (M ≥ 3.5)</div>
                         <div style="display:flex; align-items:center; gap:6px;"><span style="width:9px; height:9px; border-radius:50%; background:rgb(15,118,110); border:1.5px solid #ccfbf1; display:inline-block;"></span> Recientes (2–14 días)</div>

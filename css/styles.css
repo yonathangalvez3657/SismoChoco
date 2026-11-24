@@ -2070,8 +2070,8 @@ body.theme-light #modal-ficha-pot .ficha-pot-kicker {
 }
 
 .vis-mode-cell > .info-btn {
-    align-self: flex-end;
-    margin-right: 3px;
+    align-self: center;
+    margin: 0 auto;
 }
 
 .vis-mode-btn {

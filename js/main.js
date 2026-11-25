@@ -3668,16 +3668,95 @@ function safeCsvField(val) {
     return /^[=+\-@\t\r]/.test(s) ? `'${s}` : s;
 }
 
+function buildCompatibleGeoJSON(rawFeatures, layerName = 'sismos_choco') {
+    const list = Array.isArray(rawFeatures) ? rawFeatures : [];
+    const features = [];
+    let minLon = Infinity;
+    let minLat = Infinity;
+    let maxLon = -Infinity;
+    let maxLat = -Infinity;
+
+    for (let i = 0; i < list.length; i++) {
+        const f = list[i];
+        const coords = f && f.geometry && Array.isArray(f.geometry.coordinates) ? f.geometry.coordinates : null;
+        if (!coords || coords.length < 2) continue;
+
+        const lon = Number(coords[0]);
+        const lat = Number(coords[1]);
+        if (!Number.isFinite(lon) || !Number.isFinite(lat)) continue;
+        if (lon < -180 || lon > 180 || lat < -90 || lat > 90) continue;
+
+        if (lon < minLon) minLon = lon;
+        if (lat < minLat) minLat = lat;
+        if (lon > maxLon) maxLon = lon;
+        if (lat > maxLat) maxLat = lat;
+
+        const p = (f && f.properties && typeof f.properties === 'object') ? f.properties : {};
+        const mag = Number.isFinite(Number(p.magnitud)) ? Number(p.magnitud) : null;
+        const prof = Number.isFinite(Number(p.profundidad)) ? Number(p.profundidad) : null;
+        const elevM = (coords.length >= 3 && Number.isFinite(Number(coords[2])))
+            ? Number(coords[2])
+            : (prof !== null ? Number((-prof * 1000).toFixed(1)) : null);
+        const anio = Number.isFinite(Number(p.anio)) ? Math.trunc(Number(p.anio)) : null;
+        const fecha = p.fecha ? String(p.fecha) : '';
+        const municipio = p.municipio ? String(p.municipio) : 'Sin municipio';
+        const fuente = p.fuente ? String(p.fuente) : 'Catalogo SGC Consolidado (1993-2026)';
+        const magLabel = mag !== null ? `M ${mag.toFixed(1)}` : 'Sismo';
+
+        features.push({
+            type: 'Feature',
+            id: features.length + 1,
+            geometry: {
+                type: 'Point',
+                coordinates: [Number(lon.toFixed(6)), Number(lat.toFixed(6))]
+            },
+            properties: {
+                name: `${magLabel} · ${fecha || 's/f'} · ${municipio}`,
+                fecha,
+                anio,
+                magnitud: mag,
+                profundidad_km: prof,
+                elevacion_hipocentro_m: elevM,
+                latitud: Number(lat.toFixed(6)),
+                longitud: Number(lon.toFixed(6)),
+                municipio,
+                rms: Number.isFinite(Number(p.rms)) ? Number(p.rms) : null,
+                gap: Number.isFinite(Number(p.gap)) ? Number(p.gap) : null,
+                error_lat: Number.isFinite(Number(p.error_lat)) ? Number(p.error_lat) : null,
+                error_lon: Number.isFinite(Number(p.error_lon)) ? Number(p.error_lon) : null,
+                error_prof: Number.isFinite(Number(p.error_prof)) ? Number(p.error_prof) : null,
+                fuente
+            }
+        });
+    }
+
+    const fc = {
+        type: 'FeatureCollection',
+        name: String(layerName || 'sismos_choco')
+    };
+    if (features.length > 0 && Number.isFinite(minLon)) {
+        fc.bbox = [
+            Number(minLon.toFixed(6)),
+            Number(minLat.toFixed(6)),
+            Number(maxLon.toFixed(6)),
+            Number(maxLat.toFixed(6))
+        ];
+    }
+    fc.features = features;
+    return fc;
+}
+
 document.getElementById('btn-export-csv').addEventListener('click', () => {
     if (!window.currentFilteredData) return;
     let csv = '\uFEFFFECHA,LATITUD,LONGITUD,PROFUNDIDAD_KM,MAGNITUD,MUNICIPIO,FUENTE\r\n';
     window.currentFilteredData.forEach(f => {
-        const p = f.properties;
-        const c = f.geometry.coordinates;
+        const p = (f && f.properties) ? f.properties : {};
+        const c = (f && f.geometry && Array.isArray(f.geometry.coordinates)) ? f.geometry.coordinates : null;
+        if (!c || !Number.isFinite(Number(c[1])) || !Number.isFinite(Number(c[0]))) return;
         const fecha = safeCsvField(p.fecha || '').replace(/"/g, '""');
         const mun = safeCsvField(p.municipio || '').replace(/"/g, '""');
         const fnt = safeCsvField(p.fuente || 'Catálogo SGC Consolidado (1993-2026)').replace(/"/g, '""');
-        csv += `"${fecha}",${c[1]},${c[0]},${p.profundidad ?? ''},${p.magnitud ?? ''},"${mun}","${fnt}"\r\n`;
+        csv += `"${fecha}",${Number(c[1]).toFixed(6)},${Number(c[0]).toFixed(6)},${p.profundidad ?? ''},${p.magnitud ?? ''},"${mun}","${fnt}"\r\n`;
     });
     downloadBlob(new Blob([csv], { type: 'text/csv;charset=utf-8;' }), `sismos_choco_${currentTime}_2026.csv`);
 });
@@ -3686,19 +3765,9 @@ const btnExportGeojson = document.getElementById('btn-export-geojson');
 if (btnExportGeojson) {
     btnExportGeojson.addEventListener('click', () => {
         if (!window.currentFilteredData) return;
-        const fc = {
-            type: 'FeatureCollection',
-            generado: new Date().toISOString(),
-            metadata: {
-                plataforma: 'SismoChocó (Research through Design — Universidad de Caldas)',
-                fuente_base: 'Catálogo Sísmico Consolidado SGC (1993-2026)',
-                alcance: 'Registros instrumentales observados filtrados para análisis exploratorio',
-                referencias_institucionales: ['SGC', 'NSR-10', 'IGAC/ANT', 'SNGRD/UNGRD']
-            },
-            filtros: { anio_inicio: currentTime, magnitud_min: currentMag, profundidad_max_km: currentMaxDepth },
-            features: window.currentFilteredData
-        };
-        downloadBlob(new Blob([JSON.stringify(fc)], { type: 'application/geo+json;charset=utf-8;' }), `sismos_choco_${currentTime}_2026.geojson`);
+        const layerName = `sismos_choco_${currentTime}_2026`;
+        const fc = buildCompatibleGeoJSON(window.currentFilteredData, layerName);
+        downloadBlob(new Blob([JSON.stringify(fc)], { type: 'application/geo+json;charset=utf-8' }), `${layerName}.geojson`);
     });
 }
 

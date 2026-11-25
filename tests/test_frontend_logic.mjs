@@ -42,6 +42,7 @@ const fns = [
     'buildActiveFilterChipsState',
     'extractInspectorData',
     'buildPotConnectivityNotice',
+    'buildCompatibleGeoJSON',
 ];
 const infraMatch = /const INFRA_COLORS = \{[\s\S]*?\n\};/.exec(mainJs);
 assert.ok(infraMatch, 'No se encontró INFRA_COLORS en main.js');
@@ -315,4 +316,45 @@ test('Aviso explícito de conectividad y alcance de evacuación diferencia munic
     const nRoad = context.buildPotConnectivityNotice(quibdo);
     assert.equal(nRoad.level, 'normal');
     assert.match(nRoad.evacuationDisclaimer, /no cartografía rutas de evacuación/i);
+});
+
+test('Exportación GeoJSON cumple RFC 7946 2D estricto compatible con QGIS, ArcGIS Earth y Google Earth', () => {
+    const sample = [
+        {
+            type: 'Feature',
+            geometry: { type: 'Point', coordinates: [-78.183, 5.181, -84700.0] },
+            properties: { fecha: '1993-06-03', anio: 1993, magnitud: 2.9, profundidad: 84.7, rms: 0.8, gap: 301, municipio: 'BAJO_BAUDO' }
+        },
+        {
+            type: 'Feature',
+            geometry: { type: 'Point', coordinates: [-76.6611, 5.6947, -25000.0] },
+            properties: { fecha: '2024-01-19', anio: 2024, magnitud: 5.6, profundidad: 25.0, municipio: 'QUIBDO', fuente: 'SGC' }
+        },
+        {
+            type: 'Feature',
+            geometry: { type: 'Point', coordinates: [NaN, 5.0] },
+            properties: { magnitud: 3.0 }
+        }
+    ];
+
+    const fc = context.buildCompatibleGeoJSON(sample, 'sismos_choco_1993_2026');
+    assert.equal(fc.type, 'FeatureCollection');
+    assert.equal(fc.name, 'sismos_choco_1993_2026');
+    assert.deepEqual(Object.keys(fc).sort(), ['bbox', 'features', 'name', 'type']);
+    assert.equal(fc.features.length, 2);
+    assert.deepEqual(Array.from(fc.bbox), [-78.183, 5.181, -76.6611, 5.6947]);
+
+    for (const f of fc.features) {
+        assert.equal(f.type, 'Feature');
+        assert.equal(typeof f.id, 'number');
+        assert.equal(f.geometry.type, 'Point');
+        assert.equal(f.geometry.coordinates.length, 2);
+        assert.ok(typeof f.properties.name === 'string' && f.properties.name.length > 0);
+        assert.ok(typeof f.properties.profundidad_km === 'number');
+        assert.ok(typeof f.properties.elevacion_hipocentro_m === 'number');
+        assert.ok(typeof f.properties.fuente === 'string' && f.properties.fuente.length > 0);
+        for (const v of Object.values(f.properties)) {
+            assert.ok(v === null || ['string', 'number', 'boolean'].includes(typeof v));
+        }
+    }
 });

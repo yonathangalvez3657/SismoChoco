@@ -1304,7 +1304,7 @@
     <script src="js/core-oop.js?v=40"></script>
 
     <!-- Lógica principal con versionamiento para evitar caché persistente -->
-    <script src="js/main.js?v=87"></script>
+    <script src="js/main.js?v=88"></script>
 
     <!-- PWA & Limpieza Activa de CacheStorage -->
     <script>
@@ -1335,7 +1335,7 @@
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js?v=88')
+                navigator.serviceWorker.register('sw.js?v=89')
                     .then(reg => {
                         reg.update();
                     })

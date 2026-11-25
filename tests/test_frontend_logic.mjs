@@ -43,6 +43,8 @@ const fns = [
     'extractInspectorData',
     'buildPotConnectivityNotice',
     'buildCompatibleGeoJSON',
+    'computeFeatureCollectionBbox',
+    'buildChunkedCompatibleGeoJSON',
 ];
 const infraMatch = /const INFRA_COLORS = \{[\s\S]*?\n\};/.exec(mainJs);
 assert.ok(infraMatch, 'No se encontró INFRA_COLORS en main.js');
@@ -357,4 +359,34 @@ test('Exportación GeoJSON cumple RFC 7946 2D estricto compatible con QGIS, ArcG
             assert.ok(v === null || ['string', 'number', 'boolean'].includes(typeof v));
         }
     }
+
+    // Validación de partición automática a máximo 10,000 componentes por archivo
+    const singleChunk = context.buildChunkedCompatibleGeoJSON(sample, 'sismos_choco_1993_2026', 10000);
+    assert.equal(singleChunk.length, 1);
+    assert.equal(singleChunk[0].filename, 'sismos_choco_1993_2026.geojson');
+    assert.equal(singleChunk[0].featureCollection.features.length, 2);
+
+    const syntheticBatch = Array.from({ length: 23500 }, (_, i) => ({
+        type: 'Feature',
+        geometry: { type: 'Point', coordinates: [-77.5 + (i % 100) * 0.01, 5.0 + Math.floor(i / 100) * 0.01, -15000] },
+        properties: { fecha: '2024-01-01', anio: 2024, magnitud: 3.1, profundidad: 15.0, municipio: 'QUIBDO' }
+    }));
+    const multiChunks = context.buildChunkedCompatibleGeoJSON(syntheticBatch, 'sismos_choco_1993_2026', 10000);
+    assert.equal(multiChunks.length, 3);
+    assert.deepEqual(Array.from(multiChunks, c => c.featureCollection.features.length), [10000, 10000, 3500]);
+    assert.deepEqual(Array.from(multiChunks, c => c.filename), [
+        'sismos_choco_1993_2026_parte_1_de_3.geojson',
+        'sismos_choco_1993_2026_parte_2_de_3.geojson',
+        'sismos_choco_1993_2026_parte_3_de_3.geojson'
+    ]);
+    const allIds = new Set();
+    for (const ch of multiChunks) {
+        assert.ok(ch.featureCollection.features.length <= 10000);
+        assert.equal(ch.featureCollection.bbox.length, 4);
+        for (const feat of ch.featureCollection.features) {
+            assert.equal(feat.geometry.coordinates.length, 2);
+            allIds.add(feat.id);
+        }
+    }
+    assert.equal(allIds.size, 23500);
 });

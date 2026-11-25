@@ -3761,13 +3761,101 @@ document.getElementById('btn-export-csv').addEventListener('click', () => {
     downloadBlob(new Blob([csv], { type: 'text/csv;charset=utf-8;' }), `sismos_choco_${currentTime}_2026.csv`);
 });
 
+const GEOJSON_MAX_FEATURES_PER_FILE = 10000;
+
+function computeFeatureCollectionBbox(features) {
+    let minLon = Infinity;
+    let minLat = Infinity;
+    let maxLon = -Infinity;
+    let maxLat = -Infinity;
+    for (let i = 0; i < features.length; i++) {
+        const c = features[i] && features[i].geometry && features[i].geometry.coordinates;
+        if (!c || c.length < 2) continue;
+        const lon = c[0];
+        const lat = c[1];
+        if (lon < minLon) minLon = lon;
+        if (lat < minLat) minLat = lat;
+        if (lon > maxLon) maxLon = lon;
+        if (lat > maxLat) maxLat = lat;
+    }
+    if (!Number.isFinite(minLon)) return null;
+    return [
+        Number(minLon.toFixed(6)),
+        Number(minLat.toFixed(6)),
+        Number(maxLon.toFixed(6)),
+        Number(maxLat.toFixed(6))
+    ];
+}
+
+function buildChunkedCompatibleGeoJSON(rawFeatures, baseLayerName = 'sismos_choco', maxFeaturesPerFile = 10000) {
+    const safeLimit = Math.max(1, Math.trunc(Number(maxFeaturesPerFile) || 10000));
+    const baseName = String(baseLayerName || 'sismos_choco');
+    const fullFc = buildCompatibleGeoJSON(rawFeatures, baseName);
+    const total = fullFc.features.length;
+
+    if (total <= safeLimit) {
+        return [{
+            filename: `${baseName}.geojson`,
+            part: 1,
+            totalParts: 1,
+            featureCount: total,
+            featureCollection: fullFc
+        }];
+    }
+
+    const totalParts = Math.ceil(total / safeLimit);
+    const chunks = [];
+    for (let idx = 0; idx < totalParts; idx++) {
+        const part = idx + 1;
+        const slice = fullFc.features.slice(idx * safeLimit, (idx + 1) * safeLimit);
+        const partName = `${baseName}_parte_${part}_de_${totalParts}`;
+        const fcPart = {
+            type: 'FeatureCollection',
+            name: partName
+        };
+        const bbox = computeFeatureCollectionBbox(slice);
+        if (bbox) fcPart.bbox = bbox;
+        fcPart.features = slice;
+
+        chunks.push({
+            filename: `${partName}.geojson`,
+            part,
+            totalParts,
+            featureCount: slice.length,
+            featureCollection: fcPart
+        });
+    }
+    return chunks;
+}
+
 const btnExportGeojson = document.getElementById('btn-export-geojson');
 if (btnExportGeojson) {
     btnExportGeojson.addEventListener('click', () => {
         if (!window.currentFilteredData) return;
         const layerName = `sismos_choco_${currentTime}_2026`;
-        const fc = buildCompatibleGeoJSON(window.currentFilteredData, layerName);
-        downloadBlob(new Blob([JSON.stringify(fc)], { type: 'application/geo+json;charset=utf-8' }), `${layerName}.geojson`);
+        const chunks = buildChunkedCompatibleGeoJSON(window.currentFilteredData, layerName, GEOJSON_MAX_FEATURES_PER_FILE);
+        const totalExported = chunks.reduce((acc, ch) => acc + ch.featureCount, 0);
+
+        chunks.forEach((chunk, index) => {
+            const triggerDownload = () => {
+                downloadBlob(
+                    new Blob([JSON.stringify(chunk.featureCollection)], { type: 'application/geo+json;charset=utf-8' }),
+                    chunk.filename
+                );
+            };
+            if (index === 0) {
+                triggerDownload();
+            } else {
+                setTimeout(triggerDownload, index * 260);
+            }
+        });
+
+        if (typeof showShortcutToast === 'function') {
+            const msg = chunks.length > 1
+                ? `GeoJSON en ${chunks.length} archivos (${totalExported.toLocaleString()} eventos, máx. ${GEOJSON_MAX_FEATURES_PER_FILE.toLocaleString()}/archivo)`
+                : `GeoJSON exportado (${totalExported.toLocaleString()} eventos)`;
+            showShortcutToast('GIS', msg);
+        }
     });
 }
 
@@ -5251,9 +5339,9 @@ const modalData = {
         </p>
         <ul class="sc-modal-list">
             <li><strong>CSV (tabla para Excel):</strong> descarga una hoja de cálculo con fecha, coordenadas, profundidad, magnitud, municipio cercano y fuente del catálogo.</li>
-            <li><strong>GeoJSON (formato SIG abierto):</strong> genera un archivo geográfico listo para abrir en QGIS, ArcGIS o Python, acompañado de metadatos de procedencia y filtros aplicados.</li>
-            <li><strong>Mapa PNG:</strong> guarda una captura fotográfica del lienzo cartográfico visible para informes o presentaciones.</li>
-            <li><strong>Reporte PDF:</strong> abre la vista de impresión con membrete académico de la Universidad de Caldas para guardar o imprimir el estado actual.</li>
+            <li><strong>GeoJSON (formato SIG RFC 7946):</strong> genera archivos geográficos 2D (WGS 84) compatibles con QGIS, ArcGIS Earth y Google Earth Web. Si el catálogo filtrado supera 10,000 componentes, se divide automáticamente en los archivos consecutivos necesarios (máx. 10,000 por archivo).</li>
+            <li><strong>Mapa PNG:</strong> guarda una lámina cartográfica con membrete, leyenda embebida y métricas de los filtros activos para informes o presentaciones.</li>
+            <li><strong>Reporte PDF:</strong> abre la vista de impresión en una sola página con membrete académico, indicadores clave y mapa rasterizado para guardar o imprimir el estado actual.</li>
         </ul>
         <div class="sc-modal-callout sc-modal-callout--info">
             <div class="sc-modal-callout-icon">${MODAL_ICONS.help}</div>

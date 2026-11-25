@@ -55,7 +55,7 @@
     <script src="lib/chart.js"></script>
     
     <!-- Estilos Bento Box -->
-    <link rel="stylesheet" href="css/styles.css?v=53">
+    <link rel="stylesheet" href="css/styles.css?v=55">
 
     <!-- Datos Estructurados Schema.org JSON-LD para Google Search & Google Dataset Search -->
     <script type="application/ld+json">
@@ -174,7 +174,7 @@
 
     <!-- Membrete Académico de Impresión (Solo visible al imprimir en PDF) -->
     <header id="print-header">
-        <div style="border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: flex-end; font-family: var(--font-sans);">
+        <div class="print-header-bar">
             <div>
                 <h1 style="font-size: var(--fs-lg); margin: 0; color: #000; font-weight: 700;">Plataforma SismoChocó — Reporte Técnico Sismotectónico</h1>
                 <p style="font-size: var(--fs-sm); margin: 2px 0 0 0; color: #333;">Universidad de Caldas | Maestría en Diseño y Creación Interactiva — Investigador: Yonathan Andrés Gálvez Giraldo</p>
@@ -184,7 +184,11 @@
                 <div id="print-filters-summary">Catálogo Oficial SGC (1993-2026)</div>
             </div>
         </div>
+        <div id="print-kpi-strip" class="print-kpi-strip" aria-label="Resumen analítico del reporte"></div>
     </header>
+    <div id="print-map-frame" aria-hidden="true">
+        <img id="print-map-snapshot" alt="Captura cartográfica SismoChocó" />
+    </div>
 
     <!-- Selector de Mapa Base Flotante -->
     <div id="basemap-selector" role="toolbar" aria-label="Estilo del mapa base">
@@ -1300,7 +1304,7 @@
     <script src="js/core-oop.js?v=40"></script>
 
     <!-- Lógica principal con versionamiento para evitar caché persistente -->
-    <script src="js/main.js?v=86"></script>
+    <script src="js/main.js?v=87"></script>
 
     <!-- PWA & Limpieza Activa de CacheStorage -->
     <script>
@@ -1331,7 +1335,7 @@
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js?v=86')
+                navigator.serviceWorker.register('sw.js?v=88')
                     .then(reg => {
                         reg.update();
                     })

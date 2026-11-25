@@ -890,7 +890,10 @@ input:checked + .slider:before { transform: translateX(18px); }
 /* ==========================================================================
    PRINT STYLES (PDF Nativo WebGL & Membrete Académico)
    ========================================================================== */
-#print-header { display: none; }
+#print-header,
+#print-map-frame {
+    display: none;
+}
 
 @media print {
     body:not(.printing-ficha) #ui-panel,
@@ -3785,5 +3788,406 @@ body.theme-light #nsr-geo-titulo {
         min-height: 36px;
         width: 36px;
         height: 36px;
+    }
+}
+
+/* ==========================================================================
+   CONSOLIDACIÓN DE IMPRESIÓN EN PÁGINA ÚNICA (FICHA POT Y REPORTE CARTOGRÁFICO)
+   ========================================================================== */
+@media print {
+    @page {
+        size: auto;
+        margin: 0.55cm;
+    }
+
+    * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    html,
+    body {
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+        background: #FFFFFF !important;
+        color: #0F172A !important;
+    }
+
+    #shortcut-quick-toast,
+    #device-advice-banner,
+    .panel-collapse-btn,
+    .active-filters-bar,
+    .pinned-inspector {
+        display: none !important;
+    }
+
+    /* --- 1) Reporte Cartográfico General (#btn-print) en 1 página exacta --- */
+    body:not(.printing-ficha) {
+        display: flex !important;
+        flex-direction: column !important;
+        width: 100% !important;
+        height: 99vh !important;
+        max-height: 99vh !important;
+        overflow: hidden !important;
+    }
+
+    body:not(.printing-ficha) #print-header {
+        display: block !important;
+        order: -1 !important;
+        flex: 0 0 auto !important;
+        padding: 2px 4px 4px 4px !important;
+        margin: 0 !important;
+        background: #FFFFFF !important;
+    }
+
+    body:not(.printing-ficha) #print-header > .print-header-bar {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: flex-end !important;
+        gap: 10px !important;
+        padding-bottom: 5px !important;
+        margin-bottom: 6px !important;
+        border-bottom: 1.5px solid #0F172A !important;
+        font-family: var(--font-sans) !important;
+    }
+
+    body:not(.printing-ficha) .print-kpi-strip {
+        display: grid !important;
+        grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+        gap: 6px !important;
+        margin: 0 0 6px 0 !important;
+    }
+
+    body:not(.printing-ficha) .print-kpi-card {
+        background: #F8FAFC !important;
+        border: 1px solid #CBD5E1 !important;
+        border-radius: 5px !important;
+        padding: 4px 7px !important;
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 1px !important;
+    }
+
+    body:not(.printing-ficha) .print-kpi-label {
+        font-size: 6.4pt !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.03em !important;
+        color: #475569 !important;
+        font-weight: 600 !important;
+    }
+
+    body:not(.printing-ficha) .print-kpi-val {
+        font-size: 9.5pt !important;
+        font-weight: 700 !important;
+        color: #0F172A !important;
+        line-height: 1.15 !important;
+    }
+
+    body:not(.printing-ficha) .print-kpi-sub {
+        font-size: 6.4pt !important;
+        color: #334155 !important;
+        line-height: 1.15 !important;
+    }
+
+    body:not(.printing-ficha).has-print-snapshot #map-container {
+        display: none !important;
+    }
+
+    body:not(.printing-ficha).has-print-snapshot #print-map-frame {
+        display: flex !important;
+        order: 0 !important;
+        flex: 1 1 auto !important;
+        min-height: 0 !important;
+        width: 100% !important;
+        align-items: center !important;
+        justify-content: center !important;
+        background: #0B1120 !important;
+        border: 1px solid #CBD5E1 !important;
+        border-radius: 6px !important;
+        overflow: hidden !important;
+    }
+
+    body:not(.printing-ficha).has-print-snapshot #print-map-snapshot {
+        width: 100% !important;
+        height: 100% !important;
+        object-fit: cover !important;
+        display: block !important;
+    }
+
+    body.printing-ficha #print-map-frame {
+        display: none !important;
+    }
+
+    body:not(.printing-ficha) #print-header h1 {
+        font-size: 13pt !important;
+        line-height: 1.15 !important;
+    }
+
+    body:not(.printing-ficha) #print-header p {
+        font-size: 8.2pt !important;
+        line-height: 1.2 !important;
+    }
+
+    body:not(.printing-ficha) #print-date,
+    body:not(.printing-ficha) #print-filters-summary {
+        font-size: 7.5pt !important;
+        line-height: 1.2 !important;
+    }
+
+    body:not(.printing-ficha) #map-container {
+        position: relative !important;
+        order: 0 !important;
+        flex: 1 1 auto !important;
+        width: 100% !important;
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: 100% !important;
+        overflow: hidden !important;
+        border: 1px solid #CBD5E1 !important;
+        border-radius: 6px !important;
+    }
+
+    body:not(.printing-ficha) #map-legend {
+        position: fixed !important;
+        bottom: 10px !important;
+        right: 10px !important;
+        max-width: 240px !important;
+        padding: 7px 9px !important;
+        font-size: 7.5pt !important;
+        line-height: 1.25 !important;
+        z-index: 9999 !important;
+    }
+
+    /* --- 2) Ficha Técnica Territorial POT (body.printing-ficha) en 1 página --- */
+    body.printing-ficha {
+        height: auto !important;
+        max-height: none !important;
+        overflow: visible !important;
+    }
+
+    body.printing-ficha #modal-ficha-pot {
+        display: block !important;
+        position: static !important;
+        inset: auto !important;
+        width: 100% !important;
+        height: auto !important;
+        max-height: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        background: #FFFFFF !important;
+        opacity: 1 !important;
+        overflow: visible !important;
+    }
+
+    body.printing-ficha .ficha-pot-container.sc-modal-dialog {
+        width: 100% !important;
+        max-width: 100% !important;
+        max-height: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        border: none !important;
+        border-top: none !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        transform: none !important;
+        background: #FFFFFF !important;
+        overflow: visible !important;
+    }
+
+    body.printing-ficha .ficha-pot-container > .sc-modal-header {
+        background: transparent !important;
+        border: none !important;
+        border-bottom: 1.5px solid #B45309 !important;
+        border-radius: 0 !important;
+        padding: 0 0 6px 0 !important;
+        margin: 0 0 7px 0 !important;
+        gap: 8px !important;
+    }
+
+    body.printing-ficha .sc-modal-icon-badge {
+        width: 28px !important;
+        height: 28px !important;
+        min-width: 28px !important;
+        border-radius: 7px !important;
+        background: #FEF3C7 !important;
+        border: 1px solid #D97706 !important;
+        color: #92400E !important;
+    }
+
+    body.printing-ficha .sc-modal-icon-badge svg {
+        width: 15px !important;
+        height: 15px !important;
+    }
+
+    body.printing-ficha .ficha-pot-kicker {
+        font-size: 6.8pt !important;
+        line-height: 1.15 !important;
+        margin-bottom: 1px !important;
+        color: #92400E !important;
+    }
+
+    body.printing-ficha #ficha-pot-titulo {
+        font-size: 12.5pt !important;
+        line-height: 1.18 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        color: #0F172A !important;
+    }
+
+    body.printing-ficha #ficha-pot-subtitulo {
+        font-size: 7.8pt !important;
+        line-height: 1.2 !important;
+        margin-top: 1px !important;
+        color: #334155 !important;
+    }
+
+    body.printing-ficha #ficha-pot-body {
+        display: block !important;
+        background: transparent !important;
+        border: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    body.printing-ficha .sc-pot-kpi-grid {
+        display: grid !important;
+        grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+        gap: 6px !important;
+        margin: 0 0 7px 0 !important;
+        padding: 0 !important;
+        background: transparent !important;
+        border: none !important;
+    }
+
+    body.printing-ficha .sc-pot-kpi-card {
+        padding: 5px 7px !important;
+        border-radius: 6px !important;
+        background: #F8FAFC !important;
+        border: 1px solid #CBD5E1 !important;
+        gap: 1px !important;
+    }
+
+    body.printing-ficha .sc-pot-kpi-label {
+        font-size: 6.6pt !important;
+        line-height: 1.15 !important;
+        color: #475569 !important;
+    }
+
+    body.printing-ficha .sc-pot-kpi-value {
+        font-size: 10.5pt !important;
+        line-height: 1.18 !important;
+        color: #0F172A !important;
+    }
+
+    body.printing-ficha .sc-pot-kpi-sub {
+        font-size: 6.6pt !important;
+        line-height: 1.15 !important;
+        color: #334155 !important;
+    }
+
+    body.printing-ficha .sc-pot-warning-box {
+        padding: 5px 8px !important;
+        margin: 0 0 7px 0 !important;
+        border-radius: 6px !important;
+        font-size: 7.4pt !important;
+        line-height: 1.26 !important;
+        background: #FFFBEB !important;
+        border: 1px solid #D97706 !important;
+        border-left: 3.5px solid #B45309 !important;
+    }
+
+    body.printing-ficha .sc-modal-grid-2.sc-pot-grid {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 7px !important;
+        margin: 0 0 7px 0 !important;
+        padding: 0 !important;
+        background: transparent !important;
+        border: none !important;
+    }
+
+    body.printing-ficha .sc-pot-card {
+        padding: 6px 9px !important;
+        margin: 0 0 7px 0 !important;
+        border-radius: 6px !important;
+        background: #F8FAFC !important;
+        border: 1px solid #CBD5E1 !important;
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+    }
+
+    body.printing-ficha .sc-pot-grid .sc-pot-card {
+        margin-bottom: 0 !important;
+    }
+
+    body.printing-ficha .sc-pot-card-title {
+        font-size: 8.2pt !important;
+        line-height: 1.2 !important;
+        margin: 0 0 4px 0 !important;
+        gap: 5px !important;
+        color: #92400E !important;
+    }
+
+    body.printing-ficha .sc-pot-card-title svg {
+        width: 12px !important;
+        height: 12px !important;
+    }
+
+    body.printing-ficha .sc-pot-card p {
+        font-size: 7.6pt !important;
+        line-height: 1.28 !important;
+        margin: 0 0 2.5px 0 !important;
+    }
+
+    body.printing-ficha .sc-pot-card p:last-child {
+        margin-bottom: 0 !important;
+    }
+
+    body.printing-ficha .status-pill {
+        padding: 1px 6px !important;
+        font-size: 7pt !important;
+        border-radius: 8px !important;
+    }
+
+    body.printing-ficha .ficha-pot-table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+        margin: 2px 0 0 0 !important;
+        font-size: 7.3pt !important;
+        line-height: 1.24 !important;
+    }
+
+    body.printing-ficha .ficha-pot-table th,
+    body.printing-ficha .ficha-pot-table td {
+        padding: 3.5px 6px !important;
+    }
+
+    body.printing-ficha .sc-pot-card--info .sc-modal-list {
+        margin: 0 !important;
+        padding-left: 15px !important;
+        font-size: 7.3pt !important;
+        line-height: 1.26 !important;
+    }
+
+    body.printing-ficha .sc-pot-card--info .sc-modal-list li {
+        margin-bottom: 2.5px !important;
+    }
+
+    body.printing-ficha .sc-pot-card--info .sc-modal-list li:last-child {
+        margin-bottom: 0 !important;
+    }
+
+    body.printing-ficha .sc-pot-provenance-footer {
+        margin-top: 6px !important;
+        padding-top: 4px !important;
+        font-size: 6.8pt !important;
+        line-height: 1.2 !important;
+        display: flex !important;
+        justify-content: space-between !important;
+        background: transparent !important;
+        border: none !important;
+        border-top: 1px solid #94A3B8 !important;
+        color: #334155 !important;
     }
 }

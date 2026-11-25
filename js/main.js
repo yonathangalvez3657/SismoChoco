@@ -858,7 +858,8 @@ function renderActiveFiltersBar(filteredCount) {
 const deckgl = new deck.DeckGL({
     container: 'map-container',
     mapStyle: currentMapStyle,
-    glOptions: { preserveDrawingBuffer: true }, // Requerido para capturar Canvas en PDF
+    mapOptions: { preserveDrawingBuffer: true, canvasContextAttributes: { preserveDrawingBuffer: true } },
+    glOptions: { preserveDrawingBuffer: true }, // Requerido para capturar Canvas en PNG/PDF
     initialViewState: { longitude: -77.0, latitude: 6.0, zoom: 6.5, pitch: 45, bearing: 15 },
     controller: { dragRotate: true },
     layers: [],
@@ -3701,25 +3702,252 @@ if (btnExportGeojson) {
     });
 }
 
+function collectExportAnalytics() {
+    const data = Array.isArray(window.currentFilteredData) ? window.currentFilteredData : [];
+    const count = data.length;
+    let maxMag = 0;
+    let minMag = Infinity;
+    let depthSum = 0;
+    let maxDepthObs = 0;
+    let depthCount = 0;
+    let shallowCount = 0;
+
+    for (let i = 0; i < count; i++) {
+        const p = data[i] && data[i].properties ? data[i].properties : {};
+        const mag = Number(p.magnitud);
+        if (Number.isFinite(mag)) {
+            if (mag > maxMag) maxMag = mag;
+            if (mag < minMag) minMag = mag;
+        }
+        const dep = Number(p.profundidad);
+        if (Number.isFinite(dep)) {
+            depthSum += dep;
+            depthCount++;
+            if (dep > maxDepthObs) maxDepthObs = dep;
+            if (dep <= 30) shallowCount++;
+        }
+    }
+
+    const visModeNames = {
+        none: 'Sin capa agregada',
+        puntos: 'Eventos 3D (Scatter)',
+        calor: 'Mapa de Calor',
+        hex: 'Hexbins 3D'
+    };
+    const profileNames = {
+        sismologia: 'Sismo-Geología',
+        nsr10: 'Diseño Estructural (NSR-10)',
+        alcaldia: 'Gestión Territorial (POT)'
+    };
+
+    const activeCapas = [];
+    if (highQualityOnly) activeCapas.push('Alta Precisión');
+    if (showFaults) activeCapas.push('Fallas Geológicas');
+    if (showLiveSGC) activeCapas.push('Telemetría Live');
+    if (showSgcWms) activeCapas.push('SGC OGC Tr=475a');
+    if (showML) activeCapas.push('Zonas Anómalas (IA)');
+    if (showInfra) activeCapas.push('Infraestructura Crítica');
+    if (isBenioffMode) activeCapas.push('Corte Benioff 3D');
+    if (isSimulatorActive) activeCapas.push('Simulador ShakeMap');
+
+    const bBadge = document.getElementById('b-value-badge');
+    const bText = bBadge ? bBadge.textContent.trim() : 'b = s/d';
+
+    const focusedMun = currentProfile === 'nsr10'
+        ? selectedNsrMunicipio
+        : (currentProfile === 'alcaldia' ? selectedPotMunicipio : null);
+
+    return {
+        count,
+        maxMag: maxMag > 0 ? maxMag : null,
+        minMag: Number.isFinite(minMag) ? minMag : null,
+        avgDepth: depthCount > 0 ? (depthSum / depthCount) : null,
+        maxDepthObs: depthCount > 0 ? maxDepthObs : null,
+        shallowPct: depthCount > 0 ? Math.round((shallowCount / depthCount) * 100) : 0,
+        visModeLabel: visModeNames[viewMode] || viewMode,
+        profileLabel: profileNames[currentProfile] || 'Sismo-Geología',
+        activeCapas,
+        bText,
+        focusedMun,
+        dateLabel: new Date().toLocaleDateString('es-CO', {
+            year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
+        }),
+        centerLat: currentViewportState && Number.isFinite(currentViewportState.latitude) ? currentViewportState.latitude : 6.0,
+        centerLng: currentViewportState && Number.isFinite(currentViewportState.longitude) ? currentViewportState.longitude : -77.0,
+        zoom: currentViewportState && Number.isFinite(currentViewportState.zoom) ? currentViewportState.zoom : 6.5
+    };
+}
+
+function extractLegendEntries() {
+    const legendEl = document.getElementById('map-legend');
+    if (!legendEl || getComputedStyle(legendEl).display === 'none') return { title: '', items: [] };
+    const titleEl = legendEl.querySelector('h4');
+    const title = titleEl ? titleEl.textContent.trim() : 'Convenciones';
+    const items = [];
+    const seen = new Set();
+    legendEl.querySelectorAll('span[style*="background"]').forEach(swatch => {
+        const row = swatch.parentElement;
+        if (!row || seen.has(row)) return;
+        seen.add(row);
+        const labelText = row.textContent.replace(/\s+/g, ' ').trim();
+        if (!labelText) return;
+        const bg = getComputedStyle(swatch).backgroundColor;
+        const color = (bg && bg !== 'rgba(0, 0, 0, 0)' && bg !== 'transparent') ? bg : '#38bdf8';
+        items.push({ color, label: labelText.slice(0, 44) });
+    });
+    return { title, items: items.slice(0, 8) };
+}
+
+function drawRoundedRectPath(ctx2d, x, y, w, h, r) {
+    const radius = Math.min(r, w / 2, h / 2);
+    ctx2d.beginPath();
+    ctx2d.moveTo(x + radius, y);
+    ctx2d.lineTo(x + w - radius, y);
+    ctx2d.quadraticCurveTo(x + w, y, x + w, y + radius);
+    ctx2d.lineTo(x + w, y + h - radius);
+    ctx2d.quadraticCurveTo(x + w, y + h, x + w - radius, y + h);
+    ctx2d.lineTo(x + radius, y + h);
+    ctx2d.quadraticCurveTo(x, y + h, x, y + h - radius);
+    ctx2d.lineTo(x, y + radius);
+    ctx2d.quadraticCurveTo(x, y, x + radius, y);
+    ctx2d.closePath();
+}
+
+function composeMapSnapshot({ includeCartographicFrame = false } = {}) {
+    try {
+        if (typeof deckgl !== 'undefined' && deckgl) {
+            if (typeof deckgl.redraw === 'function') deckgl.redraw(true);
+            const mbMap = typeof deckgl.getMapboxMap === 'function' ? deckgl.getMapboxMap() : null;
+            if (mbMap && typeof mbMap.triggerRepaint === 'function') mbMap.triggerRepaint();
+        }
+    } catch (_) {}
+
+    const container = document.getElementById('map-container');
+    const canvases = container ? Array.from(container.querySelectorAll('canvas')).filter(c => c.width > 0 && c.height > 0) : [];
+    if (canvases.length === 0) return null;
+
+    const base = canvases[0];
+    const mapW = Math.max(960, base.width || window.innerWidth || 1280);
+    const mapH = Math.max(540, base.height || window.innerHeight || 720);
+
+    const headerH = includeCartographicFrame ? Math.round(mapH * 0.095) : 0;
+    const footerH = includeCartographicFrame ? Math.round(mapH * 0.085) : 0;
+    const out = document.createElement('canvas');
+    out.width = mapW;
+    out.height = mapH + headerH + footerH;
+    const ctxOut = out.getContext('2d');
+
+    ctxOut.fillStyle = '#0B1120';
+    ctxOut.fillRect(0, 0, out.width, out.height);
+
+    // Dibujar mapa base + superposición Deck.gl
+    canvases.forEach(c => {
+        try {
+            ctxOut.drawImage(c, 0, headerH, mapW, mapH);
+        } catch (_) {}
+    });
+
+    if (!includeCartographicFrame) {
+        return out;
+    }
+
+    const stats = collectExportAnalytics();
+    const padX = Math.max(18, Math.round(mapW * 0.02));
+    const titleSize = Math.max(16, Math.round(mapW * 0.0155));
+    const subSize = Math.max(11, Math.round(mapW * 0.0095));
+    const metaSize = Math.max(11, Math.round(mapW * 0.0092));
+
+    // Franja superior (Membrete Cartográfico)
+    ctxOut.fillStyle = '#0F172A';
+    ctxOut.fillRect(0, 0, mapW, headerH);
+    ctxOut.fillStyle = '#0EA5E9';
+    ctxOut.fillRect(0, headerH - 3, mapW, 3);
+
+    ctxOut.fillStyle = '#F8FAFC';
+    ctxOut.font = `700 ${titleSize}px Inter, system-ui, -apple-system, sans-serif`;
+    ctxOut.textBaseline = 'middle';
+    ctxOut.fillText('SismoChocó — Lámina Cartográfica Sismotectónica', padX, Math.round(headerH * 0.36));
+
+    ctxOut.fillStyle = '#94A3B8';
+    ctxOut.font = `500 ${subSize}px Inter, system-ui, -apple-system, sans-serif`;
+    const subtitleLeft = `Perfil: ${stats.profileLabel} · Modo: ${stats.visModeLabel}${stats.focusedMun ? ` · Municipio: ${stats.focusedMun.nombre} (Aa=${stats.focusedMun.aa.toFixed(2)} g)` : ''}`;
+    ctxOut.fillText(subtitleLeft, padX, Math.round(headerH * 0.72));
+
+    ctxOut.textAlign = 'right';
+    ctxOut.fillStyle = '#E2E8F0';
+    ctxOut.font = `600 ${metaSize}px Inter, system-ui, -apple-system, sans-serif`;
+    ctxOut.fillText(`Generado: ${stats.dateLabel}`, mapW - padX, Math.round(headerH * 0.36));
+    ctxOut.fillStyle = '#94A3B8';
+    ctxOut.font = `500 ${metaSize}px monospace`;
+    ctxOut.fillText(`Centro: ${stats.centerLat.toFixed(3)}°N, ${stats.centerLng.toFixed(3)}°W · Z=${stats.zoom.toFixed(1)}`, mapW - padX, Math.round(headerH * 0.72));
+    ctxOut.textAlign = 'left';
+
+    // Leyenda cartográfica embebida (esquina inferior derecha sobre el mapa)
+    const legend = extractLegendEntries();
+    if (legend.items.length > 0) {
+        const legW = Math.min(280, Math.max(210, Math.round(mapW * 0.21)));
+        const rowH = Math.max(18, Math.round(mapH * 0.028));
+        const legH = 34 + legend.items.length * rowH;
+        const legX = mapW - legW - padX;
+        const legY = headerH + mapH - legH - 16;
+
+        ctxOut.save();
+        drawRoundedRectPath(ctxOut, legX, legY, legW, legH, 10);
+        ctxOut.fillStyle = 'rgba(15, 23, 42, 0.90)';
+        ctxOut.fill();
+        ctxOut.strokeStyle = 'rgba(148, 163, 184, 0.45)';
+        ctxOut.lineWidth = 1.2;
+        ctxOut.stroke();
+
+        ctxOut.fillStyle = '#F8FAFC';
+        ctxOut.font = `700 ${Math.max(10, Math.round(subSize * 0.92))}px Inter, system-ui, sans-serif`;
+        ctxOut.fillText(legend.title.toUpperCase().slice(0, 32), legX + 12, legY + 17);
+
+        legend.items.forEach((it, idx) => {
+            const ry = legY + 34 + idx * rowH;
+            ctxOut.fillStyle = it.color;
+            ctxOut.beginPath();
+            ctxOut.arc(legX + 18, ry, 5, 0, Math.PI * 2);
+            ctxOut.fill();
+            ctxOut.fillStyle = '#E2E8F0';
+            ctxOut.font = `500 ${Math.max(10, Math.round(subSize * 0.9))}px Inter, system-ui, sans-serif`;
+            ctxOut.fillText(it.label, legX + 30, ry + 1);
+        });
+        ctxOut.restore();
+    }
+
+    // Franja inferior (Métricas analíticas + Procedencia)
+    const footY = headerH + mapH;
+    ctxOut.fillStyle = '#0F172A';
+    ctxOut.fillRect(0, footY, mapW, footerH);
+    ctxOut.fillStyle = 'rgba(148, 163, 184, 0.35)';
+    ctxOut.fillRect(0, footY, mapW, 1.5);
+
+    const kpiLine = `Ventana: ${currentTime}–2026  |  M ≥ ${currentMag.toFixed(1)}  |  Prof ≤ ${currentMaxDepth} km  |  Eventos: ${stats.count.toLocaleString()}  |  Mmax: ${stats.maxMag ? stats.maxMag.toFixed(1) + ' M' : 's/d'}  |  Prof. media: ${stats.avgDepth ? stats.avgDepth.toFixed(1) + ' km' : 's/d'}  |  ${stats.bText}`;
+    ctxOut.fillStyle = '#F8FAFC';
+    ctxOut.font = `600 ${metaSize}px Inter, system-ui, -apple-system, sans-serif`;
+    ctxOut.fillText(kpiLine, padX, footY + Math.round(footerH * 0.36));
+
+    const capasLine = stats.activeCapas.length > 0 ? `Capas activas: ${stats.activeCapas.join(', ')}` : 'Capas activas: Catálogo sísmico base';
+    ctxOut.fillStyle = '#94A3B8';
+    ctxOut.font = `500 ${Math.max(10, Math.round(metaSize * 0.92))}px Inter, system-ui, -apple-system, sans-serif`;
+    ctxOut.fillText(capasLine, padX, footY + Math.round(footerH * 0.72));
+
+    ctxOut.textAlign = 'right';
+    ctxOut.fillText('Fuentes: SGC (1993–2026) · NSR-10 · REPS · DIMAR · Universidad de Caldas', mapW - padX, footY + Math.round(footerH * 0.72));
+    ctxOut.textAlign = 'left';
+
+    return out;
+}
+
 const btnExportPng = document.getElementById('btn-export-png');
 if (btnExportPng) {
     btnExportPng.addEventListener('click', () => {
         try {
-            const container = document.getElementById('map-container');
-            const canvases = container ? Array.from(container.querySelectorAll('canvas')) : [];
-            if (canvases.length === 0) return;
-            const base = canvases[0];
-            const out = document.createElement('canvas');
-            out.width = base.width || window.innerWidth;
-            out.height = base.height || window.innerHeight;
-            const ctxOut = out.getContext('2d');
-            ctxOut.fillStyle = '#0f172a';
-            ctxOut.fillRect(0, 0, out.width, out.height);
-            canvases.forEach(c => {
-                try { ctxOut.drawImage(c, 0, 0, out.width, out.height); } catch (_) {}
-            });
+            const out = composeMapSnapshot({ includeCartographicFrame: true });
+            if (!out) return;
             out.toBlob(blob => {
-                if (blob) downloadBlob(blob, `sismochoco_mapa_${Date.now()}.png`);
+                if (blob) downloadBlob(blob, `sismochoco_mapa_${currentTime}_2026_${Date.now()}.png`);
             }, 'image/png');
         } catch (err) {
             console.warn('No fue posible componer captura PNG:', err);
@@ -3727,32 +3955,70 @@ if (btnExportPng) {
     });
 }
 
-document.getElementById('btn-print').addEventListener('click', () => {
+function populateGeneralPrintReport() {
+    const stats = collectExportAnalytics();
     const printDate = document.getElementById('print-date');
     if (printDate) {
-        printDate.innerText = new Date().toLocaleDateString('es-CO', { 
-            year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' 
-        });
+        printDate.innerText = `Generado: ${stats.dateLabel}`;
     }
     const printFilters = document.getElementById('print-filters-summary');
     if (printFilters) {
-        const visModeNames = {
-            'none': 'Sin visualización agregada',
-            'puntos': 'Eventos Individuales (Scatter 3D)',
-            'calor': 'Concentración de Energía (Heatmap)',
-            'hex': 'Agrupación Espacial 3D (Hexbins)'
-        };
-        const activeCapas = [];
-        if (highQualityOnly) activeCapas.push('Alta Precisión');
-        if (showFaults) activeCapas.push('Fallas Geológicas');
-        if (showLiveSGC) activeCapas.push('Telemetría Live');
-        if (showSgcWms) activeCapas.push('SGC Oficial PGA Tr=475a');
-        if (showML) activeCapas.push('Zonas Anómalas (IA)');
-        
-        const countStr = window.currentFilteredData ? window.currentFilteredData.length.toLocaleString() : '0';
-        printFilters.innerText = `Ventana: ${currentTime}-2026 | M ≥ ${currentMag.toFixed(1)} | Prof ≤ ${currentMaxDepth} km | Muestra: ${countStr} eventos | Modo: ${visModeNames[viewMode] || viewMode}${activeCapas.length > 0 ? ' | Capas: ' + activeCapas.join(', ') : ''}`;
+        printFilters.innerText = `Perfil: ${stats.profileLabel} | Ventana: ${currentTime}-2026 | M ≥ ${currentMag.toFixed(1)} | Prof ≤ ${currentMaxDepth} km | Modo: ${stats.visModeLabel}`;
     }
-    window.print();
+
+    const kpiStrip = document.getElementById('print-kpi-strip');
+    if (kpiStrip) {
+        const munCard = stats.focusedMun
+            ? `<div class="print-kpi-card"><span class="print-kpi-label">Municipio Enfocado</span><strong class="print-kpi-val">${escapeHtml(stats.focusedMun.nombre)}</strong><span class="print-kpi-sub">Aa=${stats.focusedMun.aa.toFixed(2)} g · Suelo ${escapeHtml(stats.focusedMun.suelo_defecto || 'E')}</span></div>`
+            : `<div class="print-kpi-card"><span class="print-kpi-label">Gutenberg-Richter</span><strong class="print-kpi-val">${escapeHtml(stats.bText)}</strong><span class="print-kpi-sub">Encuadre ${stats.centerLat.toFixed(2)}°N, ${stats.centerLng.toFixed(2)}°W</span></div>`;
+
+        kpiStrip.innerHTML = `
+            <div class="print-kpi-card">
+                <span class="print-kpi-label">Eventos en Muestra</span>
+                <strong class="print-kpi-val">${stats.count.toLocaleString()}</strong>
+                <span class="print-kpi-sub">Ventana ${currentTime}–2026</span>
+            </div>
+            <div class="print-kpi-card">
+                <span class="print-kpi-label">Magnitud Máxima</span>
+                <strong class="print-kpi-val">${stats.maxMag ? stats.maxMag.toFixed(1) + ' M' : 's/d'}</strong>
+                <span class="print-kpi-sub">Filtro M ≥ ${currentMag.toFixed(1)}</span>
+            </div>
+            <div class="print-kpi-card">
+                <span class="print-kpi-label">Profundidad Media</span>
+                <strong class="print-kpi-val">${stats.avgDepth ? stats.avgDepth.toFixed(1) + ' km' : 's/d'}</strong>
+                <span class="print-kpi-sub">${stats.shallowPct}% superficiales (≤ 30 km)</span>
+            </div>
+            ${munCard}
+            <div class="print-kpi-card">
+                <span class="print-kpi-label">Capas Activas</span>
+                <strong class="print-kpi-val" style="font-size:7.6pt;">${escapeHtml(stats.activeCapas.length > 0 ? stats.activeCapas.slice(0, 3).join(' · ') : 'Catálogo Base')}</strong>
+                <span class="print-kpi-sub">${escapeHtml(stats.visModeLabel)}</span>
+            </div>
+        `;
+    }
+
+    const snapImg = document.getElementById('print-map-snapshot');
+    const snapCanvas = composeMapSnapshot({ includeCartographicFrame: false });
+    if (snapImg && snapCanvas) {
+        try {
+            snapImg.src = snapCanvas.toDataURL('image/png');
+            document.body.classList.add('has-print-snapshot');
+        } catch (_) {
+            document.body.classList.remove('has-print-snapshot');
+        }
+    }
+}
+
+document.getElementById('btn-print').addEventListener('click', () => {
+    document.body.classList.remove('printing-ficha');
+    populateGeneralPrintReport();
+    const snapImg = document.getElementById('print-map-snapshot');
+    if (snapImg && snapImg.src && !snapImg.complete) {
+        snapImg.onload = () => { window.print(); };
+        snapImg.onerror = () => { window.print(); };
+    } else {
+        setTimeout(() => window.print(), 60);
+    }
 });
 
 // Mobile Panel Toggle & Gestos Táctiles (Swipe Up / Down tipo Apple Maps)
@@ -6239,6 +6505,9 @@ if (!window.__sismoAfterPrintBound) {
     window.__sismoAfterPrintBound = true;
     window.addEventListener('afterprint', () => {
         document.body.classList.remove('printing-ficha');
+        document.body.classList.remove('has-print-snapshot');
+        const snapImg = document.getElementById('print-map-snapshot');
+        if (snapImg) snapImg.removeAttribute('src');
     });
 }
 const btnFichaPrintAction = document.getElementById('btn-ficha-print-action');

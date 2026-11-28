@@ -1,7 +1,7 @@
 {
-    "name": "Plataforma Tensión Sísmica Chocó",
+    "name": "SismoChocó — Mediación Interactiva de Información Sismológica",
     "short_name": "SismoChocó",
-    "description": "Análisis probabilístico de la acumulación de tensión sísmica en el Chocó.",
+    "description": "Escuchar la fractura, habitar el indicio. Mediación interactiva de información sismológica en el Chocó (Universidad de Caldas).",
     "start_url": "index.html",
     "display": "standalone",
     "background_color": "#000000",

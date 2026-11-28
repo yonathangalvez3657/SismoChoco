@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <!-- SEO Meta Tags Primarios -->
-    <title>Plataforma interactiva basada en Research through Design para visualización analítica de tensión sísmica en el Chocó</title>
-    <meta name="title" content="Plataforma interactiva basada en Research through Design para visualización analítica de tensión sísmica en el Chocó">
-    <meta name="description" content="Plataforma interactiva basada en Research through Design (RtD) para la visualización analítica de la acumulación de tensión sísmica en el Chocó, Colombia. Maestría en Diseño y Creación Interactiva, Universidad de Caldas.">
+    <title>SismoChocó — Mediación Interactiva de Información Sismológica</title>
+    <meta name="title" content="SismoChocó — Mediación Interactiva de Información Sismológica">
+    <meta name="description" content="SismoChocó: Mediación Interactiva de Información Sismológica. Escuchar la fractura, habitar el indicio. Plataforma basada en Research through Design (RtD), Maestría en Diseño y Creación Interactiva, Universidad de Caldas.">
     <meta name="keywords" content="Research through Design, RtD, visualización analítica, sismicidad Chocó, tensión sísmica, Universidad de Caldas, Maestría en Diseño y Creación Interactiva, Servicio Geológico Colombiano, DBSCAN, Gutenberg-Richter, Benioff 3D, NSR-10, POT">
     <meta name="author" content="Yonathan Andrés Gálvez Giraldo - Universidad de Caldas">
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
@@ -20,17 +20,17 @@
     <!-- Open Graph / Facebook / WhatsApp -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://sismochoco.onrender.com/">
-    <meta property="og:title" content="SismoChocó: Visualización Analítica de Tensión Sísmica y Gestión del Riesgo en Chocó">
-    <meta property="og:description" content="Plataforma de Research through Design (RtD) para la visualización de sismicidad histórica, deformación cortical, norma sismorresistente NSR-10 y planes de ordenamiento territorial en Chocó, Colombia.">
+    <meta property="og:title" content="SismoChocó — Mediación Interactiva de Información Sismológica">
+    <meta property="og:description" content="Escuchar la fractura, habitar el indicio. Plataforma de Research through Design (RtD) para la mediación interactiva de sismicidad, norma NSR-10 y gestión territorial en Chocó, Colombia.">
     <meta property="og:image" content="https://sismochoco.onrender.com/icon.svg">
     <meta property="og:locale" content="es_CO">
-    <meta property="og:site_name" content="SismoChocó - Universidad de Caldas">
+    <meta property="og:site_name" content="SismoChocó — Universidad de Caldas">
 
     <!-- Twitter Cards -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:url" content="https://sismochoco.onrender.com/">
-    <meta name="twitter:title" content="SismoChocó: Visualización Analítica de Tensión Sísmica">
-    <meta name="twitter:description" content="Visualización interactiva 3D con Research through Design de sismicidad del Chocó (1993-2026), subducción Nazca y perfiles POT / NSR-10.">
+    <meta name="twitter:title" content="SismoChocó — Mediación Interactiva de Información Sismológica">
+    <meta name="twitter:description" content="Escuchar la fractura, habitar el indicio. Mediación interactiva de información sismológica del Chocó (1993-2026), subducción Nazca y perfiles NSR-10 / POT.">
     <meta name="twitter:image" content="https://sismochoco.onrender.com/icon.svg">
 
     <!-- PWA Config -->
@@ -55,7 +55,7 @@
     <script src="lib/chart.js"></script>
     
     <!-- Estilos Bento Box -->
-    <link rel="stylesheet" href="css/styles.css?v=55">
+    <link rel="stylesheet" href="css/styles.css?v=56">
 
     <!-- Datos Estructurados Schema.org JSON-LD para Google Search & Google Dataset Search -->
     <script type="application/ld+json">
@@ -65,7 +65,7 @@
         {
           "@type": "SoftwareApplication",
           "@id": "https://sismochoco.onrender.com/#software",
-          "name": "SismoChocó - Plataforma Analítica de Tensión Sísmica",
+          "name": "SismoChocó — Mediación Interactiva de Información Sismológica",
           "alternateName": "SismoChocó RtD",
           "operatingSystem": "Web Browser, iOS Safari, Android Chrome, macOS, Windows",
           "applicationCategory": "EducationalApplication",
@@ -120,8 +120,10 @@
     <!-- Pantalla de Carga -->
     <div id="loader-overlay" style="position: absolute; top:0; left:0; width:100vw; height:100vh; background: #000; z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; color: #F5F5F7; font-family: var(--font-sans); transition: opacity 0.8s ease;">
         <div style="width: 60px; height: 60px; border: 4px solid rgba(255,255,255,0.1); border-top: 4px solid #0A84FF; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 24px;"></div>
-        <h2 style="margin:0; font-size: var(--fs-xl); letter-spacing: 0.05em;">SismoChocó</h2>
-        <p style="color: #A1A1A6; margin-top: 8px;">Conectando a base de datos... <span id="loader-progress" style="color: #0A84FF; font-weight: 600;">0%</span></p>
+        <h2 style="margin:0; font-size: var(--fs-xl); letter-spacing: 0.04em;">SismoChocó</h2>
+        <p style="color: #E2E8F0; margin: 6px 0 2px 0; font-size: var(--fs-sm); font-weight: 500; text-align: center;">Mediación Interactiva de Información Sismológica</p>
+        <p style="color: #94A3B8; margin: 0 0 12px 0; font-size: var(--fs-xs); font-style: italic; text-align: center;">Escuchar la fractura, habitar el indicio</p>
+        <p style="color: #A1A1A6; margin-top: 4px; font-size: var(--fs-xs);">Conectando a base de datos... <span id="loader-progress" style="color: #0A84FF; font-weight: 600;">0%</span></p>
         <style>@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
     </div>
 
@@ -176,8 +178,8 @@
     <header id="print-header">
         <div class="print-header-bar">
             <div>
-                <h1 style="font-size: var(--fs-lg); margin: 0; color: #000; font-weight: 700;">Plataforma SismoChocó — Reporte Técnico Sismotectónico</h1>
-                <p style="font-size: var(--fs-sm); margin: 2px 0 0 0; color: #333;">Universidad de Caldas | Maestría en Diseño y Creación Interactiva — Investigador: Yonathan Andrés Gálvez Giraldo</p>
+                <h1 style="font-size: var(--fs-lg); margin: 0; color: #000; font-weight: 700;">SismoChocó — Mediación Interactiva de Información Sismológica</h1>
+                <p style="font-size: var(--fs-sm); margin: 2px 0 0 0; color: #333;">Universidad de Caldas | Maestría en Diseño y Creación Interactiva — Yonathan Andrés Gálvez Giraldo</p>
             </div>
             <div style="text-align: right; font-size: var(--fs-xs); color: #555;">
                 <div id="print-date">Generado: 2026</div>
@@ -215,12 +217,14 @@
         
         <section class="header-section">
             <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px;">
-                <h2 style="margin: 0;">Sismicidad Chocó</h2>
+                <h2 style="margin: 0;">SismoChocó</h2>
                 <button type="button" id="btn-theme-toggle" class="panel-theme-btn" aria-pressed="false" title="Conmutar tema claro de alto contraste del panel para lectura en campo u oficina">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path></svg>
                     <span>Claro</span>
                 </button>
             </div>
+            <p class="brand-subtitle">Mediación Interactiva de Información Sismológica</p>
+            <p class="brand-motto">Escuchar la fractura, habitar el indicio</p>
             <div class="panel-theme-row">
                 <span id="server-status-badge" class="server-status-pill" title="Estado de conexión con el backend">
                     <span class="status-dot"></span> Online
@@ -237,7 +241,7 @@
                     </span>
                 </button>
             </div>
-            <span class="subtitle">Research through Design en sismicidad (1993-2026).<br>Catálogo estructurado: <strong id="count" class="tabular-num is-skeleton" style="color:var(--text-primary)">0</strong> eventos.</span>
+            <span class="subtitle brand-catalog-line">Catálogo estructurado SGC (1993-2026): <strong id="count" class="tabular-num is-skeleton" style="color:var(--text-primary)">0</strong> eventos.</span>
             
             <!-- Banner contextual Mobile/Tablet: Sugerencia de visualización en PC -->
             <div id="mobile-device-advice" class="mobile-device-banner" role="note" aria-label="Sugerencia de visualización">
@@ -1304,7 +1308,7 @@
     <script src="js/core-oop.js?v=40"></script>
 
     <!-- Lógica principal con versionamiento para evitar caché persistente -->
-    <script src="js/main.js?v=89"></script>
+    <script src="js/main.js?v=90"></script>
 
     <!-- PWA & Limpieza Activa de CacheStorage -->
     <script>
@@ -1335,7 +1339,7 @@
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js?v=90')
+                navigator.serviceWorker.register('sw.js?v=91')
                     .then(reg => {
                         reg.update();
                     })

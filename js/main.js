@@ -4023,7 +4023,7 @@ function composeMapSnapshot({ includeCartographicFrame = false } = {}) {
     ctxOut.fillStyle = '#F8FAFC';
     ctxOut.font = `700 ${titleSize}px Inter, system-ui, -apple-system, sans-serif`;
     ctxOut.textBaseline = 'middle';
-    ctxOut.fillText('SismoChocó — Lámina Cartográfica Sismotectónica', padX, Math.round(headerH * 0.36));
+    ctxOut.fillText('SismoChocó — Mediación Interactiva de Información Sismológica', padX, Math.round(headerH * 0.36));
 
     ctxOut.fillStyle = '#94A3B8';
     ctxOut.font = `500 ${subSize}px Inter, system-ui, -apple-system, sans-serif`;

@@ -3778,6 +3778,36 @@ body.theme-light .sc-pot-warning-box {
     min-height: 26px;
 }
 
+.brand-subtitle {
+    margin: 4px 0 2px 0;
+    font-size: var(--fs-2xs);
+    font-weight: 600;
+    line-height: 1.3;
+    color: var(--text-primary);
+    letter-spacing: 0.01em;
+}
+
+.brand-motto {
+    margin: 0 0 6px 0;
+    padding-left: 8px;
+    border-left: 2px solid rgba(56, 189, 248, 0.55);
+    font-size: var(--fs-2xs);
+    font-style: italic;
+    line-height: 1.3;
+    color: var(--text-secondary);
+}
+
+body.theme-light .brand-motto {
+    border-left-color: #0052CC;
+    color: #334155;
+}
+
+.brand-catalog-line {
+    display: block;
+    margin-top: 2px;
+    font-size: var(--fs-2xs);
+}
+
 body.theme-light #nsr-geo-titulo {
     filter: brightness(0.72) saturate(1.15);
 }
